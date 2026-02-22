@@ -1,0 +1,36 @@
+# Only track config files that matter: commands, agents, CLAUDE.md, settings
+# Ignore everything else by default
+*
+
+# Track these
+!.gitignore
+!CLAUDE.md
+!commands/
+!commands/*.md
+!agents/
+!agents/*.md
+!config/
+!config/**
+!settings.json
+!settings.local.json
+
+# Never track these even if unignored above
+*.backup
+cache/
+debug/
+file-history/
+history.jsonl
+ide/
+paste-cache/
+plans/
+plugins/
+projects/
+session-env/
+shell-snapshots/
+stats-cache.json
+statsig/
+tasks/
+telemetry/
+todos/
+backups/
+mcp-scripts/
