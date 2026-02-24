@@ -87,6 +87,7 @@ Follow ALL format requirements specified in the Writing Brief's "Format Requirem
 - One idea per paragraph; 4-8 sentences per paragraph
 - Use hedging language appropriately: "suggests", "indicates", "appears to" (not "proves", "definitely")
 - Domain-specific terminology: use the vocabulary conventions described in the Writing Brief
+- **Em dash discipline**: Do NOT use em dashes (---) as generic connectors or list-introducers. Em dashes are reserved for (1) strong parenthetical asides that genuinely interrupt sentence flow, and (2) abrupt contrasts where commas or semicolons would understate the shift. Maximum one em dash pair per paragraph. For lists, use a colon; for clarifications, use commas or "which"; for additions, start a new sentence. **Structural variety**: when writing consecutive paragraphs (e.g., hypothesis deductions), vary the list-insertion structure — do not reuse the same pattern (comma-insert, parenthetical, colon-split) more than twice in succession.
 
 ### LaTeX Conventions (from CLAUDE.md)
 - **Sentence case for all section titles**: `\section{Results of necessary condition analysis}` (NOT Title Case)

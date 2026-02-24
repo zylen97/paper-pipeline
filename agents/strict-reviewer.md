@@ -100,6 +100,7 @@ Evaluate the section under review on ALL of the following dimensions. For each d
   - Self-evaluative claims where the author declares rather than demonstrates quality ("novel approach", "important contribution", "significant implications" without evidence)
   - Filler adverbs that could be deleted with zero information loss ("basically", "actually", "essentially", "obviously", "clearly", "indeed")
   - If a section has pervasive modifier bloat (averaging 2+ decorative modifiers per paragraph), flag as a **Major Issue** under Clarity — the prose lacks scientific discipline.
+- **Em dash discipline check**: Flag any em dash used as a generic connector (replacing a comma, semicolon, or colon for routine list insertion). Em dashes are acceptable ONLY for strong parenthetical interruptions or abrupt contrasts. If a paragraph contains more than one em dash pair, or a section repeats the same `X---list---Y` structure 3+ times, flag as a **Minor Issue** under Clarity.
 
 ### 5. Literature Engagement
 - Is the literature review comprehensive and up-to-date?

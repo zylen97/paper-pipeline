@@ -383,6 +383,27 @@ Scientific writing treats modifiers as precision instruments. In Chinese academi
 
 **Audit metric**: Apply the three-function test (narrow scope / specify measurement / disambiguate) to every modifier in the polished text. A well-edited academic paragraph of 5–6 sentences should contain at most 3–4 modifiers that are NOT performing one of these three functions. Exceeding this threshold signals residual decoration.
 
+### Category M: Em Dash Discipline (破折号规范)
+
+Chinese academic writing produced with AI assistance frequently overuses em dashes as generic connectors, replacing commas, colons, and semicolons that are more precise in academic English.
+
+**The Rule**: Em dashes are reserved for exactly two uses:
+1. **Strong parenthetical aside** that genuinely interrupts sentence flow
+2. **Abrupt contrast** at sentence end where "but" or "however" would be weaker
+
+**Substitution table**:
+
+| Overused pattern | Correct replacement |
+|---|---|
+| `X---such as A, B, and C---Y` | comma: `X, such as A, B, and C, Y` or parentheses: `X (e.g., A, B, and C) Y` |
+| `X---including A, B, and C` | comma: `X, including A, B, and C` |
+| `X---from A to B---Y` | comma: `X, ranging from A to B, Y` or split into two sentences |
+| `X adopt Y---embedding A into Z---rather than W` | `X adopt Y by embedding A into Z, rather than W` |
+
+**Structural variety**: If consecutive paragraphs all use the same list-insertion structure (e.g., repeated comma-insert patterns), vary them: use colon for one, parentheses for another, sentence split for a third.
+
+**Audit rule**: If a paragraph contains more than one em dash (or one em dash pair), review all instances. Replace any that serve as routine list connectors. Target: at most one em dash per paragraph, only if it creates genuine dramatic effect.
+
 ## Basic Grammar Checks (Secondary Priority)
 
 After Chinglish elimination, also check:
@@ -401,7 +422,7 @@ After Chinglish elimination, also check:
 2. Clearly indicate the line range in the manuscript this corresponds to
 3. After the polished text, provide a **Change Summary**:
    - Total number of changes made
-   - Categories of changes: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X
+   - Categories of changes: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**
    - A dedicated **Chinglish Fixes** subsection listing every collocation/pattern fix with the original → corrected pair
    - The 3 most significant changes with brief explanations
 4. If you encounter content-level issues (factual errors, logical gaps), do NOT fix them — instead, flag them in a separate **Content Notes** section for the user's attention
