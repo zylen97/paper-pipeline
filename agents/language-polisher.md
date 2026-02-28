@@ -65,6 +65,7 @@ You improve:
 ### DO NOT change:
 - `(ref)` markers — leave them exactly as they are
 - `\citep{}`, `\citet{}`, or any citation commands
+- In-text citations in any format — e.g., `(He et al., 2020)`, `Smith (2019)`, `[1]`, `[1, 2]` — preserve exactly as they appear
 - LaTeX commands, environments, labels, or structure
 - Section/subsection titles
 - Table content, figure captions, or mathematical expressions
