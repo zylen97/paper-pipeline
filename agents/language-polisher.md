@@ -25,7 +25,6 @@ When invoked directly from the main session with raw text and no pipeline contex
      - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**
      - A dedicated **Chinglish Fixes** subsection: table with original → corrected pairs and category label
      - Top 3 most significant changes with brief explanations
-  3. If you notice content-level issues (factual errors, logical gaps), briefly note them after the Change Summary — do not fix them
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
@@ -445,7 +444,7 @@ After Chinglish elimination, also check:
    - Categories of changes: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**
    - A dedicated **Chinglish Fixes** subsection listing every collocation/pattern fix with the original → corrected pair
    - The 3 most significant changes with brief explanations
-4. If you encounter content-level issues (factual errors, logical gaps), do NOT fix them — instead, flag them in a separate **Content Notes** section for the user's attention
+
 
 ## Quality Standards
 
