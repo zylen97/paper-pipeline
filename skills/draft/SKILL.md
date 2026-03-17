@@ -61,8 +61,8 @@ introduction         → structure/1_introduction/introduction.md
 literature           → structure/2_literature/literature.md
 model/method/formul  → structure/3_methodology/methodology.md
 equilibrium/result/analysis → structure/4_results/results.md
-simulation/numerical → structure/5_simulation/simulation.md
-discussion           → structure/6_discussion/discussion.md
+simulation/numerical → Glob("structure/*simulation*/simulation.md") 动态匹配
+discussion           → Glob("structure/*discussion*/discussion.md") 动态匹配
 conclusion           → 无对应 md，停止并提示用户
 ```
 

@@ -43,14 +43,15 @@ description: "交互式构建叙述型章节的要点（论点 + citations），
 
 ```
 叙述型: Introduction, Literature review, Discussion
-技术型: Model formulation, Equilibrium analysis, Numerical simulation
 ```
 
-- **技术型** → 显示警告并退出：
+判断规则：匹配 section 所属的顶层 section 是否在叙述型列表中。不在列表中 → 视为技术型。
+
+- **非叙述型** → 显示警告并退出：
   ```
-  ⚠️ "{section title}" 属于技术型章节。
+  ⚠️ "{section title}" 不属于叙述型章节。
   /outline 仅适用于叙述型章节（Introduction, Literature Review, Discussion）。
-  技术型章节的素材应直接在章节 md 的 "## 完整素材" 中编写。
+  其他章节的素材应直接在章节 md 的 "## 完整素材" 中编写。
   ```
 - **Conclusion** → 显示提示并退出：Conclusion 无对应 md 文件，不适用 /outline。
 
@@ -67,7 +68,7 @@ description: "交互式构建叙述型章节的要点（论点 + citations），
 section 关键词        → 目录
 introduction         → structure/1_introduction/introduction.md
 literature           → structure/2_literature/literature.md
-discussion           → structure/6_discussion/discussion.md
+discussion           → Glob("structure/*discussion*/discussion.md") 动态匹配
 ```
 
 3. 记录 `{CHAPTER_MD_PATH}`

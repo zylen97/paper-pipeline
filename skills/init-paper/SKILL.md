@@ -54,7 +54,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 方法类型决定：
 - 是否创建 `structure/5_simulation/` 目录（仅 game-theory）
-- 使用哪套 methodology/results/progress 模板
+- 使用哪套 methodology/results 模板
 - CLAUDE.md 中 structure 表格的内容
 
 ## 模板目录
@@ -68,16 +68,13 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ├── game-theory/         # 博弈论专用模板
 │   ├── methodology.md.tmpl
 │   ├── results.md.tmpl
-│   ├── simulation.md.tmpl
-│   └── progress.md.tmpl
+│   └── simulation.md.tmpl
 ├── survey-sem/          # 问卷专用模板
 │   ├── methodology.md.tmpl
-│   ├── results.md.tmpl
-│   └── progress.md.tmpl
+│   └── results.md.tmpl
 ├── panel-regression/    # 面板回归专用模板
 │   ├── methodology.md.tmpl
-│   ├── results.md.tmpl
-│   └── progress.md.tmpl
+│   └── results.md.tmpl
 ├── publishers/          # 出版社专用模板
 │   ├── elsevier/        # manuscript + submission files
 │   ├── asce/
@@ -98,7 +95,11 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
    - elsevier → `coverletter.tex, declaration.tex, highlights.tex, titlepage.tex`
    - asce → `coverletter.tex`
    - emerald → `coverletter.tex, titlepage.tex`
-7. 写入目标路径
+7. 将 CLAUDE.md.tmpl 中的 `{TECHNICAL_SECTIONS}` 替换为对应方法类型的技术型章节列表：
+   - game-theory → `Methodology, Results, Simulation`
+   - survey-sem → `Methodology, Results`
+   - panel-regression → `Methodology, Results`
+8. 写入目标路径
 
 ### {STRUCTURE_TABLE} 替换内容
 
@@ -106,7 +107,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ```
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
-| `0_global/` | 跨章节纲领、进度追踪、参考PDF库 | `idea.md`（纲领）, `progress.md`（进度）, `pandoc_header.tex` |
+| `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
 | `3_methodology/` | 模型设定（符号、假设、框架） | `methodology.md` |
@@ -119,7 +120,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ```
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
-| `0_global/` | 跨章节纲领、进度追踪、参考PDF库 | `idea.md`（纲领）, `progress.md`（进度）, `pandoc_header.tex` |
+| `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
 | `3_methodology/` | 研究设计（框架、问卷、抽样） | `methodology.md` |
@@ -131,7 +132,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ```
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
-| `0_global/` | 跨章节纲领、进度追踪、参考PDF库 | `idea.md`（纲领）, `progress.md`（进度）, `pandoc_header.tex` |
+| `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
 | `3_methodology/` | 研究设计（数据、变量、模型） | `methodology.md` |
@@ -343,15 +344,14 @@ fi
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 17 | `{METHOD_TYPE}/progress.md.tmpl` | `structure/0_global/progress.md` |
-| 18 | `{METHOD_TYPE}/methodology.md.tmpl` | `structure/3_methodology/methodology.md` |
-| 19 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
+| 17 | `{METHOD_TYPE}/methodology.md.tmpl` | `structure/3_methodology/methodology.md` |
+| 18 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
 
 **仅 game-theory**：
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 20 | `game-theory/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
+| 19 | `game-theory/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
 
 #### Discussion（目录编号因方法类型而异）
 
@@ -422,7 +422,7 @@ git push -u origin main
 5. **编译验证** — ✅ 通过
 6. **项目结构说明**：
    - `structure/` 三层文档系统：idea.md（纲领）→ 各章节md（素材）→ manuscript.tex（产出）
-   - 研究推进顺序见 `structure/0_global/progress.md`
+   - 研究推进顺序见 `CLAUDE.md` 中的"研究推进顺序"
 7. **下一步操作建议**：
    - 填写 `CLAUDE.md` 中的 TODO 项目信息（英文标题、方法、目标期刊）
    - 开始撰写 `structure/0_global/idea.md`（研究纲领）
