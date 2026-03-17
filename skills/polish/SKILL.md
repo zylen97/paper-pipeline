@@ -105,11 +105,11 @@ END FOR
 ```
 完成后跳转步骤 7 Form 2 汇总。
 
-## 步骤 2：提取 Anchor Points（打磨模式）
+## 步骤 2：提取要点（打磨模式）
 
 > 步骤 2-6 = 单 section Polish 流水线（Form 1 执行一次，Form 2 每个子 section 重复）
 
-从已有文本提取 anchor points。打磨模式关注**现有文本的逻辑骨架**和**不可变更的事实性内容**，防止多轮修改中破坏逻辑或篡改数据。
+从已有文本提取要点。打磨模式关注**现有文本的逻辑骨架**和**不可变更的事实性内容**，防止多轮修改中破坏逻辑或篡改数据。
 
 **提取内容**：核心论点（每段主要观点）、论证链条（前提→推理→结论）、硬性事实与数据细节（样本、时间、数据库、方法、阈值等，绝不可修改/省略/近似化）、已有引用（原样保留）
 
@@ -117,7 +117,7 @@ END FOR
 
 **输出**：
 1. 对话中显示
-2. 保存 anchor points → `{WORK_DIR}/00_anchor_points.md`（含 Section、Mode: Polish (Logic Structure)、Date）
+2. 保存要点 → `{WORK_DIR}/00_key_points.md`（含 Section、Mode: Polish (Logic Structure)、Date）
 3. 保存原始文本 → `{WORK_DIR}/01_original_text.md`
 4. 自动继续
 
@@ -130,9 +130,9 @@ END FOR
 - 读取 `drafts/writing_brief.md`
 - Section、Mode: Polish（打磨已有文本）、第 1 轮
 - `{STRUCTURAL_CONTEXT}`
-- 读取 `{WORK_DIR}/00_anchor_points.md`（逻辑结构锚点，建议不得破坏逻辑结构，如会改变因果关系需寻找替代方案）
+- 读取 `{WORK_DIR}/00_key_points.md`（逻辑结构锚点，建议不得破坏逻辑结构，如会改变因果关系需寻找替代方案）
 - 待审：`{WORK_DIR}/01_original_text.md`
-- **约束**：字数（用户指定→±10%；未指定→原文字数基准）；Drift Check 含 Anchor Point Verification 表格
+- **约束**：字数（用户指定→±10%；未指定→原文字数基准）；Drift Check 含 Key Point Verification 表格
 - 按 Review Output Format 输出
 
 **Checkpoint**：`{WORK_DIR}/02_review_r1.md`
@@ -142,11 +142,11 @@ END FOR
 - 读取 `drafts/writing_brief.md`
 - Section、Mode: Polish
 - `{STRUCTURAL_CONTEXT}`
-- 读取 `{WORK_DIR}/00_anchor_points.md`（保护性锚点，严格保持核心论点和论证链条，不改变因果关系和论证层次）
+- 读取 `{WORK_DIR}/00_key_points.md`（保护性锚点，严格保持核心论点和论证链条，不改变因果关系和论证层次）
 - 当前版本：`{WORK_DIR}/01_original_text.md`
 - 审稿意见：`{WORK_DIR}/02_review_r1.md`
-- **约束**：字数同 3a；禁止 `\textbf{}`；禁止新引用用 `(ref)`；Anchor Points 优先（冲突保留原文逻辑并说明）；超字数限制则拒绝建议
-- 按 Output Protocol 输出，含处理方式、实际字数、逻辑结构完整性确认、Anchor Point Verification 表格
+- **约束**：字数同 3a；禁止 `\textbf{}`；禁止新引用用 `(ref)`；要点优先（冲突保留原文逻辑并说明）；超字数限制则拒绝建议
+- 按 Output Protocol 输出，含处理方式、实际字数、逻辑结构完整性确认、Key Point Verification 表格
 
 **Checkpoint**：`{WORK_DIR}/03_revision_r1.md`
 
@@ -162,7 +162,7 @@ END FOR
 - 读取 `drafts/writing_brief.md`
 - Section、经过 2 轮审稿修改
 - `{STRUCTURAL_CONTEXT}`
-- 读取 `{WORK_DIR}/00_anchor_points.md`（不得改变含义、强度和范围）
+- 读取 `{WORK_DIR}/00_key_points.md`（不得改变含义、强度和范围）
 - 待润色：`{WORK_DIR}/05_revision_r2.md`
 - **约束**：不改变逻辑结构；不用 `\textbf{}`；`(ref)` 和已有引用保持不变；修改记录在 Change Summary
 - 按 Output Protocol 输出
@@ -172,20 +172,20 @@ END FOR
 ## 步骤 6：生成输出文件
 
 ### 文件 1：`{WORK_DIR}/changelog.md`
-含 Section、Date、Mode: Polish、Work Directory、Structural Context、Anchor Points (Logic Structure)、Original Word Count、R1 Review/Revision、R2 Review/Revision、Language Polish 摘要、Final Word Count、Logic Structure Integrity
+含 Section、Date、Mode: Polish、Work Directory、Structural Context、Key Points (Logic Structure)、Original Word Count、R1 Review/Revision、R2 Review/Revision、Language Polish 摘要、Final Word Count、Logic Structure Integrity
 
 ### 文件 2：`{WORK_DIR}/final.md`
 从 `06_polished.md` 提取 ```latex``` code block（不含 Change Summary），包裹为：标题 `{Section} — Polished Version`，`> Ready to copy`，LaTeX block，Target location，Original→Final word count
 
 ### 文件 3：`_latest_final.md`（便捷入口）
 - Form 1: `drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_latest_final.md`（顶级 section 省略 prefix）
-- Form 2: `drafts/{segment.base_dir}/{CURRENT_SECTION_NAME}_latest_final.md`
+- Form 2: `drafts/{PARENT_HIERARCHY}/{CURRENT_SECTION_NAME}_latest_final.md`
 - 复制 `final.md` 内容，已存在则覆盖
 
 ## 步骤 7：完成提示
 
 ### Form 1
-显示：完成状态、Structural Context 概要、工作目录/便捷入口路径、字数变化（原文→最终）、Anchor points 完整性、Checkpoint 文件清单、提醒手动合并
+显示：完成状态、Structural Context 概要、工作目录/便捷入口路径、字数变化（原文→最终）、要点完整性、Checkpoint 文件清单、提醒手动合并
 
 ### Form 2
-显示：全部 {N} 个子 section 完成、基础目录 `{MULTI_BASE_DIR}`、汇总表（子 Section / 工作目录 / 便捷入口 / 原文→终稿字数 / Anchor 状态）、按顺序检查合并建议、提醒手动合并
+显示：全部 {N} 个子 section 完成、基础目录 `{MULTI_BASE_DIR}`、汇总表（子 Section / 工作目录 / 便捷入口 / 原文→终稿字数 / 要点状态）、按顺序检查合并建议、提醒手动合并

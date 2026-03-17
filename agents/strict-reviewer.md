@@ -103,13 +103,13 @@ Evaluate on ALL dimensions. For each: rating (Strong / Adequate / Weak / Critica
 ### 6. Journal-Specific Requirements
 Check against Writing Brief's "Format Requirements": abstract format, required sections, citation style, person/voice, heading style.
 
-### 7. Drift Check (Anchor Point Alignment)
+### 7. Drift Check (Key Point Alignment)
 
-When anchor points are provided, evaluate each using the verification table:
+When 要点 are provided, evaluate each using the verification table:
 
 ```
-### Anchor Point Verification
-| # | Anchor Point | Present? | Location | Prominence | Integrity | Status |
+### Key Point Verification
+| # | Key Point | Present? | Location | Prominence | Integrity | Status |
 |---|-------------|----------|----------|------------|-----------|--------|
 | 1 | {text}      | Yes/No   | Para X   | Primary/Supporting/Buried | Intact/Weakened/Altered | OK/DRIFT |
 ```
@@ -120,7 +120,7 @@ When anchor points are provided, evaluate each using the verification table:
 
 **DRIFT triggers**: Primary→Buried = WARNING; Weakened/Altered = WARNING; Present=No = CRITICAL DRIFT
 
-**This dimension OVERRIDES other suggestions**: do NOT recommend changes that would weaken an anchor point.
+**This dimension OVERRIDES other suggestions**: do NOT recommend changes that would weaken a 要点.
 
 ## Review Output Format
 
@@ -169,8 +169,8 @@ Structure your review EXACTLY as follows:
 | Journal Compliance | [Rating] | [One-line summary] |
 | Drift Check | [Rating] | [One-line summary] |
 
-### Anchor Point Verification
-[Include the structured verification table. If no anchor points provided, write "N/A".]
+### Key Point Verification
+[Include the structured verification table. If no 要点 provided, write "N/A".]
 ```
 
 ## Review Philosophy

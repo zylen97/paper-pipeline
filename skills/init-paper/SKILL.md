@@ -181,14 +181,102 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 | 3 | `vscode-settings.json.tmpl` | `.vscode/settings.json` |
 | 4 | `claude-settings.json.tmpl` | `.claude/settings.local.json` |
 | 5 | `unicode-guard.sh.tmpl` | `.claude/hooks/unicode-guard.sh` |
+| 6 | `latex-compile.sh.tmpl` | `.claude/hooks/latex-compile.sh` |
 
 #### LaTeX 文件（根据 {PUBLISHER} 选择）
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 6 | `publishers/{PUBLISHER}/manuscript.tex.tmpl` | `manuscript.tex` |
-| 7 | `bib.tmpl` | `{ID}.bib` |
-| 8 | `latexmkrc.tmpl` | `latexmkrc` |
+| 7 | `publishers/{PUBLISHER}/manuscript.tex.tmpl` | `manuscript.tex` |
+| 8 | `bib.tmpl` | `{ID}.bib` |
+
+#### manuscript.tex 方法类型适配（写入 manuscript.tex 后立即执行）
+
+manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHOD_TYPE}` 替换 section 名称和 subsection 结构：
+
+**game-theory**：
+```latex
+\section{Research method and modeling process}
+\subsection{Research method}
+% TODO: Write content here
+
+\subsection{Modeling process}
+% TODO: Write content here
+
+\section{Equilibrium analysis}
+\subsection{Equilibrium analysis}
+% TODO: Write content here
+
+\subsection{Comparative analysis}
+% TODO: Write content here
+
+\section{Numerical analysis}
+\subsection{Numerical simulation}
+% TODO: Write content here
+
+\subsection{Simulation results}
+% TODO: Write content here
+
+\section{Discussion}
+```
+
+**panel-regression**：
+```latex
+\section{Research methods}
+\subsection{Sampling and data collection}
+% TODO: Write content here
+
+\subsection{Measures}
+% TODO: Write content here
+
+\subsection{Methods of analysis}
+% TODO: Write content here
+
+\section{Results}
+\subsection{Descriptive statistics and correlations}
+% TODO: Write content here
+
+\subsection{Hypothesis testing}
+% TODO: Write content here
+
+\subsection{Robustness checks}
+% TODO: Write content here
+
+\section{Discussion}
+```
+
+**survey-sem**：
+```latex
+\section{Methodology}
+\subsection{Data collection}
+% TODO: Write content here
+
+\subsection{Bias mitigation and evaluation}
+% TODO: Write content here
+
+\subsection{Questionnaire development}
+% TODO: Write content here
+
+\subsection{Measures}
+% TODO: Write content here
+
+\subsection{Analytical methods}
+% TODO: Write content here
+
+\section{Results}
+\subsection{Reliability and validity}
+% TODO: Write content here
+
+\subsection{Hypothesis testing}
+% TODO: Write content here
+
+\subsection{Robustness checks}
+% TODO: Write content here
+
+\section{Discussion}
+```
+
+即：用上面的对应块**整体替换** manuscript.tex 中从 `\section{Methodology}` 到 `\section{Discussion}`（不含）的内容。三个出版社模板均使用 `\section{Methodology}` 作为统一锚点。
 
 #### submission/ 投稿附件（根据 {PUBLISHER} 选择）
 
@@ -276,7 +364,7 @@ fi
 #### 设置 hook 可执行权限
 
 ```bash
-chmod +x .claude/hooks/unicode-guard.sh
+chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
 ```
 
 #### 空目录占位（仅 game-theory）
@@ -303,17 +391,17 @@ latexmk manuscript.tex
 
 **elsevier**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc elsarticle.cls elsarticle-harv.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib elsarticle.cls elsarticle-harv.bst structure/ submission/ .vscode/ .claude/
 ```
 
 **asce**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc ascelike.cls ascelike.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib ascelike.cls ascelike.bst structure/ submission/ .vscode/ .claude/
 ```
 
 **emerald**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib structure/ submission/ .vscode/ .claude/
 ```
 
 ```bash
@@ -339,4 +427,4 @@ git push -u origin main
    - 填写 `CLAUDE.md` 中的 TODO 项目信息（英文标题、方法、目标期刊）
    - 开始撰写 `structure/0_global/idea.md`（研究纲领）
    - idea 确定后运行 `/lit-plan` 规划文献检索方向
-   - WoS 检索完成后运行 `/lit-review` 分析筛选文献
+   - WoS 检索完成后运行 `/lit-review`(筛选) → `/lit-tag`(打标签) → `/lit-pool`(引用池)

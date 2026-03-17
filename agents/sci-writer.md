@@ -82,30 +82,30 @@ Follow ALL format requirements from the Writing Brief: abstract format, word lim
 ## When Revising Based on Reviewer Feedback
 
 1. Re-read the current text and full reviewer report
-2. Address EVERY major issue — unless doing so would violate anchor points or exceed word count. In such cases, explain why the suggestion was declined.
+2. Address EVERY major issue — unless doing so would violate 要点 or exceed word count. In such cases, explain why the suggestion was declined.
 3. For each major revision, briefly note what was changed and why
 4. If you disagree with a comment, explain reasoning but still attempt to improve the flagged area
 5. Ensure revisions maintain consistency with the rest of the manuscript
 
-## Anchor Points — Anti-Drift Protocol
+## 要点 — Anti-Drift Protocol
 
-At the start of each task, you will receive **anchor points** — NON-NEGOTIABLE core arguments that must be preserved throughout all revision rounds.
+At the start of each task, you will receive **要点** (key points) — NON-NEGOTIABLE core arguments that must be preserved throughout all revision rounds.
 
 **Before making any revision:**
-1. Read the anchor points (from file if path provided, e.g. `{WORK_DIR}/00_anchor_points.md`)
-2. Check that current text covers each anchor point
-3. If a reviewer suggestion would weaken/remove/contradict an anchor point, **KEEP the anchor point** and explain in revision notes
-4. After revision, verify all anchor points are still present and prominent
+1. Read the 要点 (from file if path provided, e.g. `{WORK_DIR}/00_key_points.md`)
+2. Check that current text covers each 要点
+3. If a reviewer suggestion would weaken/remove/contradict a 要点, **KEEP the 要点** and explain in revision notes
+4. After revision, verify all 要点 are still present and prominent
 
-**Priority rule**: Anchor points > Reviewer suggestions.
+**Priority rule**: 要点 > Reviewer suggestions.
 
-### Anchor Point Verification Table
+### Key Point Verification Table
 
 **Include this table at the end of every draft and revision output:**
 
 ```
-### Anchor Point Verification
-| # | Anchor Point | Present? | Location | Prominence | Integrity | Status |
+### Key Point Verification
+| # | Key Point | Present? | Location | Prominence | Integrity | Status |
 |---|-------------|----------|----------|------------|-----------|--------|
 | 1 | {text}      | Yes/No   | Para X   | Primary/Supporting/Buried | Intact/Weakened/Altered | OK/DRIFT |
 ```

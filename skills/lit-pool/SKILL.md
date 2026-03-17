@@ -4,7 +4,7 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 # Lit-Pool — 引用池生成
 
-从 `/lit-review` 产出的 direction reports 中提取所有入选文献，按功能标签汇总，生成 `citation_pool.md`，为各章节写作提供结构化的引用指南。
+从 `/lit-review` 产出的 direction reports 中提取所有入选文献，按功能标签汇总，生成 `citation_pool/` 目录（含 BG.md/LR.md/GAP.md/METHOD.md/DISC.md/COMP.md），为各章节写作提供结构化的引用指南。
 
 **输入**：无参数，直接运行 `/lit-pool`
 
@@ -12,11 +12,25 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 ---
 
-## 全局约束：SubAgent负载上限
+## 全局约束
 
-**AGENT_ITEM_LIMIT = 50**
+### 输出语言
+**所有描述性文本必须使用中文**，包括但不限于：引用场景、与本研究的关键差异、标签文件header/备注。文献的标题、期刊名、作者名保持原文（通常为英文）。
 
-单个subAgent处理的文献条目数不得超过50篇。超过时必须拆分为多个subAgent并行处理。此约束适用于步骤3中所有引用池生成任务。
+### SubAgent负载上限
+**AGENT_ITEM_LIMIT = 30**
+
+单个subAgent处理的文献条目数不得超过30篇。超过时必须拆分。
+
+### 分批启动规则
+**MAX_CONCURRENT_AGENTS = 6**
+
+```
+if 总agent数 ≤ 6: 一次性全部并行启动
+else: 分为 ⌈总数/6⌉ 批，每批 ≤ 6个，第N批完成后启动第N+1批
+```
+
+失败重试：失败agent加入下一批重试（最多1次），仍失败则报告用户。
 
 ---
 
@@ -26,7 +40,7 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 - 读取 `structure/0_global/idea.md` → 提取研究上下文（RQ、方法论，用于生成引用场景）
 - Glob `structure/2_literature/direction*_report.md` → 确认存在
   - 不存在 → 停止，提示先运行 `/lit-review`
-- 检查 `structure/2_literature/citation_pool.md` 是否已存在
+- 检查 `structure/2_literature/citation_pool/` 目录是否已存在
   - 已存在 → 询问用户：覆盖还是跳过？
 
 ---
@@ -63,55 +77,63 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 |:-----|:------------------:|
 | BG   | {n} |
 | LR   | {n} |
-| GAP-RQ1 | {n} |
-| GAP-RQ2 | {n} |
-| GAP-RQ3 | {n} |
+| GAP-RQx | {n} |（按实际RQ数量动态生成行）
 | METHOD-基础 | {n} |
 | METHOD-先例 | {n} |
-| DISC-RQ1 | {n} |
-| DISC-RQ2 | {n} |
-| DISC-RQ3 | {n} |
+| DISC-RQx | {n} |（按实际RQ数量动态生成行）
 | COMP | {n} |
 ```
+
+### 1.3 预生成citation key映射表
+
+主Agent按全局规则（`auth.lower + year + shorttitle(1,1)`，见`~/.claude/CLAUDE.md`）为每篇去重文献统一生成citation key。将映射表传给所有subAgent，subAgent必须使用映射表中的key，不可自行生成。
 
 ---
 
 ## 步骤 2：动态拆分Agent任务（主Agent执行）
 
-基于步骤1的文献量统计，使用以下算法分配subAgent任务：
+基于步骤1的文献量统计，严格按 **AGENT_ITEM_LIMIT = 30** 分配subAgent任务。
 
-**THRESHOLD = AGENT_ITEM_LIMIT = 50**
+### 2.1 按标签分组 + 按篇数切割
 
 ```
-for each tag:
+for each tag (BG, LR, GAP-RQx, METHOD-基础, METHOD-先例, DISC-RQx, COMP):
     if N_tag == 0:
         跳过
-    elif N_tag ≤ 30:
+    elif N_tag ≤ 15:
         标记为"可合并"
-    elif N_tag ≤ THRESHOLD:
-        分配1个独立agent，处理该标签全部文献
-    elif N_tag ≤ 2 × THRESHOLD:
-        按方向来源对半拆分为2个agent
     else:
-        按方向来源拆分为3个agent
+        分配 ⌈N_tag / 30⌉ 个agent，按方向来源均匀分割
+        每个agent处理 ≤ 30篇
 
-将所有"可合并"标签按 N_tag 降序依次贪心装入，使每个agent处理总量 ≤ THRESHOLD
+将所有"可合并"标签按 N_tag 降序依次贪心合并，使每个合并agent处理总量 ≤ 30
 ```
 
-**展示拆分计划**（在对话中展示，等待用户确认）：
+### 2.2 展示拆分计划（等待用户确认）
+
+示例（以zl14为例）：
 
 ```
 Agent任务分配：
 | Agent# | 处理标签 | 文献数 | 备注 |
 |:------:|:---------|:------:|:-----|
-| 1 | LR (D1+D2+D3) | 48 | 拆分1/3 |
-| 2 | LR (D4+D5) | 45 | 拆分2/3 |
-| 3 | LR (D6) | 42 | 拆分3/3 |
-| 4 | METHOD | 45 | 独立 |
-| 5 | GAP | 40 | 独立 |
-| 6 | DISC | 35 | 独立 |
-| 7 | BG+COMP | 22 | 合并 |
-共 7 个并行subAgent
+| 1 | BG (D1+D2) | 28 | 拆分1/2 |
+| 2 | BG (D3+D4+D5+D6) | 27 | 拆分2/2 |
+| 3 | GAP (D1+D2) | 26 | 拆分1/2 |
+| 4 | GAP (D3+D4+D5+D6) | 26 | 拆分2/2 |
+| 5 | METHOD-基础 | 19 | 独立 |
+| 6 | METHOD-先例 (D1+D2+D4) | 22 | 拆分1/3 |
+| 7 | METHOD-先例 (D5+D6) | 21 | 拆分2/3 |
+| 8 | METHOD-先例 (D3) | 21 | 拆分3/3 |
+| 9 | DISC-RQ1 (D1+D2) | 28 | 拆分1/2 |
+| 10 | DISC-RQ1 (D3+D4+D5+D6) | 28 | 拆分2/2 |
+| 11 | DISC-RQ2+RQ3+COMP | 27 | 合并 |
+| 12 | LR (D1) | 30 | 拆分1/5 |
+| 13 | LR (D2) | 30 | 拆分2/5 |
+| 14 | LR (D3) | 30 | 拆分3/5 |
+| 15 | LR (D4+D5) | 30 | 拆分4/5 |
+| 16 | LR (D6) | 30 | 拆分5/5 |
+共 16 个agent，分3批（每批≤6个）
 ```
 
 ---
@@ -144,168 +166,96 @@ Agent任务分配：
 
 ## 输出格式
 对你负责的每个标签，输出Markdown表格，保存为 `structure/2_literature/_tmp_pool_agent{N}.md`
+
+**语言要求**：所有描述性文本（引用场景）必须使用中文。文献标题、期刊名、作者名保持英文原文。
 ```
 
 ---
 
-## 步骤 4：合并组装 `citation_pool.md`（主Agent执行）
+## 步骤 4：合并组装 `citation_pool/` 目录（主Agent用bash执行，不用subAgent）
 
-所有subAgent完成后：
+所有subAgent完成后，主Agent用bash拼接临时文件到目录结构：
 
-### 4.1 读取临时文件
-- 读取所有 `structure/2_literature/_tmp_pool_agent*.md`
+### 4.1 创建目录
+```bash
+mkdir -p structure/2_literature/citation_pool/
+```
 
-### 4.2 合并同标签内容
-- 同一标签被拆分到多个agent时（如LR拆为3个agent），将表格合并
-- 合并后重新按分级+年份排序
-- 检查去重（防御性检查）
+### 4.2 按标签组装6个文件
 
-### 4.3 组装最终文件
-输出 `structure/2_literature/citation_pool.md`，格式如下（见下方模板）。
+| 目标文件 | 组装方式 |
+|:---------|:---------|
+| `BG.md` | 从BG临时文件直接copy |
+| `LR.md` | bash拼接各方向LR临时文件，加总header |
+| `GAP.md` | 合并GAP临时文件，按RQ子section拼接 |
+| `METHOD.md` | 直接copy METHOD临时文件 |
+| `DISC.md` | 合并DISC临时文件，按RQ子section拼接 |
+| `COMP.md` | 从COMP临时文件直接copy |
 
-### 4.4 清理临时文件
-- 删除所有 `structure/2_literature/_tmp_pool_agent*.md`
+> GAP和DISC的合并：同一RQ的内容从多个临时文件追加到同一子section下。
+
+### 4.2b header处理规则
+- 拆分同一agent文件为多个标签时，为每个标签文件补写独立header
+- 拼接同一标签的多个agent文件时，只保留第一个文件的header，去掉后续文件的重复header
+- 每个标签文件的标准header：`# {TAG全名}（{n}篇）\n> 生成日期: {date}\n> 服务章节: {章节}`
+
+### 4.3 清理临时文件
+- 删除所有 `structure/2_literature/_tmp_pool_*.md`
+- 删除旧的 `citation_pool/` 目录（如存在）
 
 ---
 
-### citation_pool.md 输出格式模板
+### 各标签文件格式模板
 
+每个标签文件独立，格式示例见 `BG.md`：
 ```markdown
-# Citation Pool — {项目编号}
-
+# BG — Background（{n}篇）
 > **生成日期**: {YYYY-MM-DD}
-> **文献总量**: 去重后{N}篇
-> **来源**: direction reports (×{M}个方向)
-
----
-
-## BG — Background（{n}篇）
-> **引用偏好**: 优先近5年高质量期刊，体现掌握最新动态
+> **引用偏好**: 优先近3年高质量期刊
 > **服务章节**: Introduction [主]
 
 | 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
 |:----:|:-----|:----:|:------------|:---------|:-----|
-| 核心 | ... | ... | ... | ... | ... |
-| 重要 | ... | ... | ... | ... | ... |
-| 备选 | ... | ... | ... | ... | ... |
-
----
-
-## LR — Literature Review（{n}篇）
-> **引用偏好**: 优先近5年核心文献，展示理论前沿
-> **服务章节**: Literature Review [主], Introduction [次]
-
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
----
-
-## GAP — Gap Support（{n}篇）
-> **服务章节**: Introduction [主], Literature Review [主]
-
-### GAP-RQ1（{n}篇）：{RQ1简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
-### GAP-RQ2（{n}篇）：{RQ2简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
-### GAP-RQ3（{n}篇）：{RQ3简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
----
-
-## METHOD — Methodology（{n}篇）
-> **服务章节**: Methodology [主], Literature Review [次]
-
-### METHOD-基础：方法论理论来源（{n}篇）
-> 经典奠基文献优先，年份可较早
-
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
-### METHOD-先例：方法论应用先例（{n}篇）
-> 展示方法在其他领域的应用，优先近5年
-
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
----
-
-## DISC — Discussion（{n}篇）
-> **服务章节**: Discussion [主]
-
-### DISC-RQ1（{n}篇）：{RQ1简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
-### DISC-RQ2（{n}篇）：{RQ2简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
-### DISC-RQ3（{n}篇）：{RQ3简述}
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
-
----
-
-## COMP — Competitor（{n}篇）
-> **引用偏好**: 必须详细分析差异化空间
-> **服务章节**: 跨章节（决定能不能做）
-
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 与本研究的关键差异 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:------------------|:-----|
 | ... |
 ```
+
+其他文件同理。GAP.md/DISC.md 内部按RQ分子section，METHOD.md 内部按基础/先例分子section，COMP.md 额外含"与本研究的关键差异"列。
 
 ---
 
 ## 步骤 5：更新各章节md的引用池
 
-自动读取各章节md，将引用池区块更新为指向 `citation_pool.md`：
+自动读取各章节md，将引用池区块更新为指向 `citation_pool/` 目录下的具体文件：
 
 **introduction.md**：
 ```
 ## 引用池
-- **[主] BG标签文献** → 见 `2_literature/citation_pool.md` §BG
-- **[主] GAP-RQ1/RQ2/RQ3** → 见 `2_literature/citation_pool.md` §GAP
-- **[次] LR标签文献** → 见 `2_literature/citation_pool.md` §LR
+- **[主] BG** → 见 `2_literature/citation_pool/BG.md`
+- **[主] GAP-RQx** → 见 `2_literature/citation_pool/GAP.md`
+- **[次] LR** → 见 `2_literature/citation_pool/LR.md`
 ```
 
 **literature.md**：
 ```
 ## 引用池
-- **[主] LR标签文献** → 见 `2_literature/citation_pool.md` §LR
-- **[主] GAP-RQ1/RQ2/RQ3** → 见 `2_literature/citation_pool.md` §GAP
-- **[次] METHOD-基础 / METHOD-先例** → 见 `2_literature/citation_pool.md` §METHOD
-- **[次] DISC-RQ1/RQ2/RQ3** → 见 `2_literature/citation_pool.md` §DISC
+- **[主] LR** → 见 `2_literature/citation_pool/LR.md`
+- **[主] GAP-RQx** → 见 `2_literature/citation_pool/GAP.md`
+- **[次] METHOD** → 见 `2_literature/citation_pool/METHOD.md`
+- **[次] DISC-RQx** → 见 `2_literature/citation_pool/DISC.md`
 ```
 
 **methodology.md**：
 ```
 ## 引用池
-- **[主] METHOD-基础** → 见 `2_literature/citation_pool.md` §METHOD-基础
-- **[主] METHOD-先例** → 见 `2_literature/citation_pool.md` §METHOD-先例
+- **[主] METHOD** → 见 `2_literature/citation_pool/METHOD.md`
 ```
 
 **discussion.md**：
 ```
 ## 引用池
-- **[主] DISC-RQ1** → 见 `2_literature/citation_pool.md` §DISC-RQ1
-- **[主] DISC-RQ2** → 见 `2_literature/citation_pool.md` §DISC-RQ2
-- **[主] DISC-RQ3** → 见 `2_literature/citation_pool.md` §DISC-RQ3
-- **[次] LR标签文献** → 见 `2_literature/citation_pool.md` §LR
+- **[主] DISC-RQx** → 见 `2_literature/citation_pool/DISC.md`
+- **[主] COMP** → 见 `2_literature/citation_pool/COMP.md`
+- **[次] LR** → 见 `2_literature/citation_pool/LR.md`
 ```
 
 ---
@@ -315,8 +265,148 @@ Agent任务分配：
 在对话中展示：
 1. 各标签文献数量分布表
 2. 核心/重要/备选的总体比例
-3. citation_pool.md 的文件路径
+3. `citation_pool/` 目录路径
 4. 提醒用户审阅，确认引用场景是否准确
+5. 提示：正在生成完整评估报告（master_report.md）...
+
+---
+
+## 步骤 7：生成总报告 master_report.md
+
+所有引用池文件生成完毕后，主Agent基于以下数据源生成 `structure/2_literature/master_report.md`：
+- direction reports（各方向筛选结果）
+- tag_report.md（标签统计与均衡性，由 `/lit-tag` 生成）
+- citation_pool/ 目录（各标签引用池）
+- idea.md（RQ、Gap、方法论）
+
+回答以下 **6个硬问题**：
+
+```markdown
+# 文献总报告 — {项目编号}
+
+> **日期**: {YYYY-MM-DD}
+> **分析方向数**: {N}
+> **文献总量**: 检索{X}篇 → 去重后入选{Y}篇（核心{a} + 重要{b} + 备选{c}）
+
+---
+
+## 一、创新性判断：有没有人做过？
+
+### 竞品论文清单
+| # | 作者 | 标题 | 年份 | 来源方向 | 与本研究的相似度 | 关键差异 |
+|:--|:-----|:-----|:----:|:---------|:---------------:|:---------|
+
+### 判断
+- **直接竞品**: {有/无}。{如有，说明差异化空间}
+- **间接竞品**: {列出方法相似但问题不同、或问题相似但方法不同的论文}
+- **结论**: {能做/需调整/风险高}
+
+---
+
+## 二、Research Gap 分析
+
+根据 idea.md 的成熟度，自动选择模式：
+
+### 模式A：验证模式（idea.md 中已有明确 Gap/RQ）
+
+逐个Gap评估：
+
+| Gap | 描述 | 文献支撑 | 是否已被填补 | 评估 |
+|:----|:-----|:---------|:------------|:-----|
+| G1 | ... | {哪些文献证明这个Gap存在} | {有无文献已解决} | ✅真实 / ⚠️部分填补 / ❌已解决 |
+| G2 | ... | ... | ... | ... |
+
+### 模式B：发现模式（idea.md 仅有初步idea，Gap/RQ尚不明确）
+
+基于各方向文献分析，识别潜在Gap：
+
+| 潜在Gap | 文献证据 | 来源方向 | 可发展为RQ的方向 | 置信度 |
+|:--------|:---------|:---------|:----------------|:------:|
+| {现有文献缺少什么} | {哪些文献暗示了这个缺口} | 方向X | {建议的RQ方向} | 高/中/低 |
+
+> 发现模式下，总报告额外输出一节 **"Gap → RQ 建议"**，帮助用户从文献中提炼出可行的研究问题。用户确认后可回写 idea.md。
+
+---
+
+## 三、方法论先例：本研究方法有无应用先例？
+
+| 先例论文 | 方法 | 应用领域 | 与本研究的方法论距离 |
+|:---------|:-----|:---------|:--------------------|
+
+- **结论**: {方法论有充分先例 / 有部分先例需论证 / 首次应用需重点论证}
+
+---
+
+## 四、紧迫性与实践需求
+
+- **行业实践证据**: {列出支撑研究紧迫性的文献/事件}
+- **政策/行业趋势**: {列出相关趋势}
+- **结论**: {紧迫性高/中/低}
+
+---
+
+## 五、引用池充足性
+
+### 按分级
+
+| 分级 | 数量 | 充足性 | 补检建议 |
+|:-----|:----:|:------:|:---------|
+| 核心 | {n} | ✅足够 / ⚠️偏少 | ... |
+| 重要 | {n} | ... | ... |
+| 备选 | {n} | ... | ... |
+
+### 按标签
+
+> 基于 tag_report.md 和 citation_pool/ 的实际标签数据。
+
+| 标签 | Pool目标 | 实际入选 | 达标率 | 状态 |
+|:-----|:-------:|:-------:|:-----:|:----:|
+| BG | 50 | {n} | {%} | ✅/⚠️/❌ |
+| LR | 150 | {n} | {%} | ... |
+| GAP-RQx | 75 | {n} | {%} | ... |
+| METHOD | 60 | {n} | {%} | ... |
+| DISC-RQx | 65 | {n} | {%} | ... |
+
+---
+
+## 六、补检建议
+
+| 建议编号 | 补检方向 | 原因 | 建议检索式 | 预估文献量 |
+|:---------|:---------|:-----|:----------|:----------|
+
+---
+
+## 综合评估
+
+### 本研究可行性: {✅可行 / ⚠️可行但需调整 / ❌风险过高}
+
+### 核心发现
+1. {发现1}
+2. {发现2}
+3. ...
+
+### 对研究设计的建议
+1. {建议1：如调整RQ措辞、补充某个理论视角等}
+2. {建议2}
+3. ...
+
+### 文献分布可视化
+
+| 方向 | ████████ 核心 | ████ 重要 | ██ 备选 | 合计 |
+|:-----|:-------------|:---------|:--------|:----:|
+| 方向1 | {n} | {n} | {n} | {n} |
+| ... | ... | ... | ... | ... |
+| **总计** | {n} | {n} | {n} | **{N}** |
+```
+
+### 对话汇报
+生成完毕后在对话中展示：
+1. 可行性结论
+2. 竞品预警（如有）
+3. Gap真实性评估
+4. 引用池充足性（按标签）
+5. 补检建议（如有）
+6. **下一步建议**：用户审阅 master_report.md → 确认/调整 idea.md → 进入步骤③ idea定稿 → 步骤④ 填充各章节md
 
 ---
 
@@ -326,6 +416,7 @@ Agent任务分配：
 |:-----|:-----|
 | direction reports 不存在 | 停止，提示先运行 `/lit-review` |
 | 某标签下文献数为0 | 在对话中警告，建议补检 |
-| citation_pool.md 已存在 | 询问覆盖/跳过 |
+| citation_pool/ 目录已存在 | 询问覆盖/跳过 |
 | 某章节md不存在 | 跳过该章节的引用池更新 |
 | direction report 格式异常 | 报告错误，继续处理其他 reports |
+| tag_report.md 不存在 | 警告标签统计缺失，建议先运行 `/lit-tag` |
