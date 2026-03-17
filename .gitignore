@@ -9,6 +9,9 @@
 !commands/*.md
 !agents/
 !agents/*.md
+!skills/
+!skills/*/
+!skills/*/*.md
 !config/
 !config/**
 !settings.json
