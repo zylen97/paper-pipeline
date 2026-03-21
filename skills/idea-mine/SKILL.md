@@ -12,25 +12,38 @@ description: "从一组中文/英文论文PDF中挖掘可迁移的研究idea，�
 
 ## 参数解析
 
-从 `$ARGUMENTS` 中提取两个必需参数：
+通过两步交互获取参数：
+
+**第一步：目标方向**
+
+使用 AskUserQuestion 询问目标方向（自由文本输入）：
+```
+请输入目标迁移方向（一句话描述），例如：
+- 建设工程管理
+- 制造业供应链可持续
+- 智慧城市与碳管理
+- 应急管理与城市韧性
+```
+
+记录为 `{DIRECTION}`。
+
+**第二步：目标期刊**
+
+读取 `~/.claude/skills/idea-mine/journals.md` 中的期刊池，展示完整列表，让用户输入编号多选（2-4个）：
 
 ```
-/idea-mine <目标方向> -> <目标期刊1>, <目标期刊2>[, ...]
+请从以下期刊池中选择 2-4 个目标期刊（输入编号，逗号分隔，如 3,6,14）：
+
+1.  Cities                                          #城市
+2.  Habitat International                           #城市 #可持续
+3.  Journal of Cleaner Production                   #城市 #可持续
+...
+（完整列表从 journals.md 读取）
 ```
 
-**示例**：
-```
-/idea-mine 建设工程管理 -> JCEM, Building and Environment, SCS
-/idea-mine 制造业供应链可持续 -> JCLP, IJPE, Annals of OR
-/idea-mine 智慧城市与碳管理 -> SCS, Energy Policy
-```
+记录为 `{JOURNALS}`。
 
-- `$ARGUMENTS` 的值为：`$ARGUMENTS`
-- 如果为空或格式不对，使用 AskUserQuestion 询问：
-  1. 目标方向（一句话描述迁移目标领域）
-  2. 目标期刊（2-4个期刊缩写/全称，逗号分隔）
-
-记录为 `{DIRECTION}` 和 `{JOURNALS}`。
+**快捷方式**：如果用户在 `$ARGUMENTS` 中直接传入了方向和期刊编号（如 `/idea-mine 建设工程管理 -> 6,13,14`），则跳过交互直接解析。`$ARGUMENTS` 的值为：`$ARGUMENTS`
 
 ## 前置检查
 
