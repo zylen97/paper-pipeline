@@ -1,0 +1,44 @@
+% !TEX program = pdflatex
+% Title Page — for Elsevier double-blind submission (upload separately)
+
+\documentclass[authoryear,preprint,times,12pt]{elsarticle}
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\usepackage{hyperref}
+
+% Remove Elsevier preprint footer
+\makeatletter
+\def\ps@pprintTitle{%
+  \let\@oddhead\@empty
+  \let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}%
+  \let\@evenfoot\@oddfoot}
+\makeatother
+
+\journal{TODO: Fill in journal name}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{TODO: Fill in paper title}
+
+\author[labela]{TODO: Author 1\corref{cor1}}
+\ead{TODO: email}
+
+\cortext[cor1]{Corresponding author.}
+
+\affiliation[labela]{organization={TODO: School/Department, University},
+            city={TODO},
+            postcode={TODO},
+            country={TODO}}
+
+\end{frontmatter}
+
+\section*{CRediT authorship contribution statement}
+\textbf{TODO: Author 1}: Conceptualization, Methodology, Writing -- original draft.
+
+\section*{Acknowledgments}
+TODO: Fill in funding information.
+
+\end{document}

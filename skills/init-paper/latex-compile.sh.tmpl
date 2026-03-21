@@ -1,0 +1,17 @@
+#!/bin/bash
+# PostToolUse hook: auto-compile .tex files after Edit/Write
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Only compile standalone .tex files (skip headers/includes)
+case "$FILE_PATH" in
+  *pandoc_header.tex) exit 0 ;;
+  *.tex) ;;
+  *) exit 0 ;;
+esac
+
+# Compile in background to avoid blocking
+(cd "$(dirname "$FILE_PATH")" && latexmk "$(basename "$FILE_PATH")" > /dev/null 2>&1) &
+
+exit 0

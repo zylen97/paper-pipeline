@@ -1,0 +1,36 @@
+#!/bin/bash
+# PreToolUse hook: block Unicode characters illegal in pdfLaTeX .tex files
+# Checks new_string (Edit) or content (Write) for forbidden characters
+
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Only check .tex files (but not pandoc_header.tex which needs CJK)
+case "$FILE_PATH" in
+  *pandoc_header.tex) echo '{"decision":"approve"}'; exit 0 ;;
+  *.tex) ;;
+  *) echo '{"decision":"approve"}'; exit 0 ;;
+esac
+
+# Extract the text to check: new_string for Edit, content for Write
+if [ "$TOOL" = "Edit" ]; then
+  TEXT=$(echo "$INPUT" | jq -r '.tool_input.new_string // empty')
+elif [ "$TOOL" = "Write" ]; then
+  TEXT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
+else
+  echo '{"decision":"approve"}'
+  exit 0
+fi
+
+# Forbidden Unicode pattern (macOS grep -E with literal chars in bracket)
+PATTERN='[αβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ→←↔⇒⇐⇔−×÷±∓≠≈≤≥∈∉⊂⊃∩∪∞∝∑∏∫，。；：！？""''（）【】·]'
+
+if echo "$TEXT" | grep -q "$PATTERN" 2>/dev/null; then
+  CHARS=$(echo "$TEXT" | grep -o "$PATTERN" 2>/dev/null | sort -u | tr '\n' ' ')
+  echo "{\"decision\":\"block\",\"reason\":\"pdfLaTeX incompatible Unicode detected: ${CHARS}. Use LaTeX commands instead (e.g. beta->\\\\$\\\\beta\\\\$, arrow->\\\\$\\\\rightarrow\\\\$). Full-width punctuation is also forbidden.\"}"
+  exit 0
+fi
+
+echo '{"decision":"approve"}'
+exit 0

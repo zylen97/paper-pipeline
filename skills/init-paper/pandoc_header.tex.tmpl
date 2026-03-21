@@ -1,0 +1,23 @@
+% CJK support with proper line breaking
+\usepackage{xeCJK}
+\setCJKmainfont{PingFang SC}
+\setCJKmonofont{PingFang SC}
+\setCJKsansfont{PingFang SC}
+
+% Fix overfull hbox (text overflowing margins)
+\usepackage{microtype}
+\tolerance=1000
+\emergencystretch=3em
+\setlength{\parskip}{0.5em}
+
+% Better code block wrapping
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{
+  breaklines,
+  breakanywhere,
+  commandchars=\\\{\},
+  fontsize=\small
+}
+
+% Table column wrapping
+\usepackage{array}

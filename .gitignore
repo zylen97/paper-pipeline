@@ -12,6 +12,13 @@
 !skills/
 !skills/*/
 !skills/*/*.md
+!skills/**/*.tmpl
+!skills/**/publishers/
+!skills/**/publishers/*/
+!skills/**/publishers/*/*.tmpl
+!skills/**/*.sh.tmpl
+!skills/**/*.json.tmpl
+!skills/**/*.tex.tmpl
 !config/
 !config/**
 !settings.json

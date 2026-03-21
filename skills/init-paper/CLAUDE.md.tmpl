@@ -1,0 +1,71 @@
+# Project Contract
+
+## 项目信息
+- **项目编号**: {ID}
+- **英文标题**: TODO: Fill in English title
+- **一句话概括**: TODO: 一句话概括研究内容
+- **方法**: TODO: 填写研究方法
+- **目标期刊**: TODO: 填写目标期刊 [首选] / 备选期刊 [备选]
+
+## 核心配置
+- **模板**: {TEMPLATE_CLASS}
+- **主文件**: `manuscript.tex` · **文献**: `{ID}.bib`
+- **投稿附件**: `submission/`（{SUBMISSION_FILES}）
+
+## structure/ 组织说明
+项目研究素材按 manuscript 章节组织在 `structure/` 下：
+
+{STRUCTURE_TABLE}
+
+- `pandoc_header.tex` 勿删改
+
+### 文件交互规则
+
+**层级**: idea.md（纲领：为什么/方向）→ 各章节 X.md（素材：完整细节）→ manuscript.tex（产出）
+
+**章节 md 的两种类型**:
+
+章节 md 分为两类，颗粒度要求不同：
+
+| 类型 | 章节 | md 中的标记 | 内容要求 | sci-writer 的任务 |
+|:-----|:-----|:-----------|:---------|:-----------------|
+| 叙述型 | Introduction, Literature Review, Discussion | `## 大纲` | 要点（论点 + citation key） | 把要点**展开**成论证段落 |
+| 技术型 | {TECHNICAL_SECTIONS} | `## 完整素材` | 所有公式、符号、假设、推导、数值结果 | **原样转译**为学术英文，不得修改任何技术内容 |
+
+**md 书写语言**：中文表述，但以下内容用英文原文：citation key（`\citet{}`/`\citep{}`）、专用术语、公式符号
+
+**叙述型颗粒度标准**：
+- 每个论点、每个要引用的文献（citation key）都必须写明
+- 可用 `/pen-outline` 自动生成，再根据需要修改
+
+**技术型颗粒度标准**：
+- 包含全部技术细节（公式、符号定义、假设条件、证明思路、参数取值等）
+- 表格内容写在 md 中，图表由用户单独处理（sci-writer 只写文字和公式，不处理图表插入）
+
+**技术型素材迭代工作流**:
+1. 日常对话中逐步填充技术细节到章节 md（公式、假设、推导、参数取值等），每次修改基于 md 现有内容进行增补或调整
+2. md 是唯一素材源——所有技术决策的最终结果都必须落入 md，不能只存在于对话中
+
+**idea.md 规范**:
+- 修改必须先征得用户同意，不得自行回写
+- 保持文档结构不变，覆盖式更新内容（迭代历史由 git 追踪）
+- 只放"为什么"和"方向"，不含具体公式/推导/数值结果。违反则移至对应章节 md
+
+**章节 md 间一致性约束**:
+- RQ编号：idea.md §2 定义 → introduction.md 展开 → discussion.md 回应，三处编号和措辞必须一致
+- 贡献声明：idea.md §4 意图 → discussion.md 论证，逻辑必须对应
+
+**研究推进顺序**:
+```
+① 确定idea（研究主题+大致方向）
+    ↓
+② /lit-plan → 用户WoS检索 → /lit-review(筛选) → /lit-tag(打标签) → /lit-pool(引用池)
+    ↓
+③ idea定稿（Gap/RQ/方法论确认，回写idea.md）
+    ↓
+④ 填充 structure/ 各章节 md（素材层）
+    ↓
+⑤ 用户确认各章节 md 后，/pen-draft → /pen-polish → 写入 manuscript.tex
+```
+- **核心原则**：产出必须先落入章节 md，用户确认后才写入 manuscript.tex
+- **前进不可跳步，回改随时允许**：按"素材联动更新"规则处理

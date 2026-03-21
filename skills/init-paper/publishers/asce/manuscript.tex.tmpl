@@ -1,0 +1,96 @@
+% !TEX program = pdflatex
+% ASCE ascelike template (Journal mode, single-blind)
+\documentclass[Journal,SectionNumbers,10pt]{ascelike}
+
+% ===== Math packages =====
+\usepackage{amsmath}
+\let\Bbbk\relax
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}
+
+% Citation compatibility: map cls \cite/\citeN to natbib-style \citep/\citet
+\AtBeginDocument{%
+  \let\citep\cite
+  \let\citet\citeN
+}
+
+% ===== Figure & table packages =====
+\usepackage{graphicx}
+\usepackage{booktabs}
+  \setlength\heavyrulewidth{1.5pt}
+  \setlength\lightrulewidth{1.0pt}
+\usepackage{threeparttable}
+\usepackage{adjustbox}
+\usepackage{multirow}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+
+% Override cls default 1.5x to true double spacing (ASCE requirement)
+\AtBeginDocument{\doublespacing}
+
+% ASCE footer tag (corresponding author)
+\NameTag{TODO: Corresponding author last name, \today}
+
+\begin{document}
+
+% Paper title
+\title{TODO: Fill in paper title}
+
+% Author information (ASCE single-blind: authors visible)
+\author[1]{TODO: Author 1, Ph.D.}
+\author[2]{TODO: Author 2, Ph.D.}
+
+\affil[1]{TODO: Title, School/Department, University, City PostCode, Country. Email: TODO}
+\affil[2]{TODO: Title, School/Department, University, City PostCode, Country. Email: TODO}
+
+\maketitle
+
+% Abstract
+\begin{abstract}
+TODO: Write abstract here.
+%
+\KeyWords{TODO: keyword 1; keyword 2; keyword 3.}
+\end{abstract}
+
+% ===== Main body =====
+
+\section{Introduction}
+
+TODO
+
+\section{Literature review}
+
+TODO
+
+\section{Methodology}
+% TODO: Add subsections based on method type
+
+\section{Results}
+% TODO: Add subsections based on method type
+
+\section{Discussion}
+\subsection{Discussion on the research questions}
+% TODO: Write content here
+
+\subsection{Theoretical implications}
+% TODO: Write content here
+
+\subsection{Practical implications}
+% TODO: Write content here
+
+
+\section{Conclusion}
+% TODO: Write content here
+
+\section*{Data availability statement}
+TODO: Some or all data, models, or code that support the findings of this study are available from the corresponding author upon reasonable request.
+
+\section*{Acknowledgments}
+TODO: Fill in funding information.
+
+\bibliographystyle{ascelike}
+\bibliography{{ID}}
+
+\end{document}

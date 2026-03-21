@@ -1,0 +1,190 @@
+% !TEX program = pdflatex
+% 这行告诉LaTeX编辑器使用pdfLaTeX引擎编译
+
+% Elsarticle文档类声明：review格式，10pt字体（5号字），author-year引用风格
+\documentclass[authoryear,preprint,review,times,10pt]{elsarticle}
+
+% ===== 宏包导入部分 =====
+% 数学相关宏包（必备！工程管理论文经常用到数学公式）
+\usepackage{amsmath}      % 强大的数学环境，如align、equation等
+\usepackage{amssymb}      % 数学符号，如∈、⊆、∀、∃等
+\usepackage{amsfonts}     % 数学字体，如粗体向量、花体字母等
+\usepackage{bm}           % 加粗数学符号
+
+% 基础功能宏包（elsarticle已包含graphicx）
+\usepackage{booktabs}     % 制作专业表格（\toprule、\midrule、\bottomrule）
+\usepackage{multirow}     % 表格跨行合并
+\usepackage{longtable}    % 跨页长表格
+\usepackage{threeparttable} % 支持表格注释
+\usepackage{tabularx}     % 自动分配列宽的表格
+\usepackage{caption}      % caption格式控制
+\usepackage{adjustbox}    % 自动调整表格大小
+\usepackage{pdflscape}    % 横向页面（PDF阅读器中自动旋转）
+\usepackage{enumitem}     % 增强列表功能（itemize、enumerate）
+\usepackage{lineno}       % 行号宏包（review格式需要）
+\usepackage{setspace}     % 行距控制
+\doublespacing            % 全文双倍行距
+
+% 页边距调整（草稿阶段使用，投稿时可注释掉）
+\usepackage{geometry}
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm,
+}
+
+\usepackage{hyperref}     % 超链接和PDF书签（应该放在最后导入）
+
+% 移除frontmatter后的双横线
+\makeatletter
+\def\ps@pprintTitle{%
+  \let\@oddhead\@empty
+  \let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}%  % 页脚居中显示页码
+  \let\@evenfoot\@oddfoot}
+% 重新定义pprintMaketitle，移除横线但保留Email显示
+\def\pprintMaketitle{\clearpage
+  \iflongmktitle\if@twocolumn\let\columnwidth=\textwidth\fi\fi
+  \resetTitleCounters
+  \def\baselinestretch{1}%
+  \printFirstPageNotes  % 恢复脚注显示（包含Email和通讯作者信息）
+  \begin{center}%
+   \thispagestyle{pprintTitle}%
+   \def\baselinestretch{1}%
+    \Large\@title\par\vskip18pt
+    \normalsize\elsauthors\par\vskip10pt
+    \normalsize\itshape\elsaddress\par\vskip12pt
+    \ifvoid\absbox\else\unvbox\absbox\par\vskip10pt\fi
+    \ifvoid\keybox\else\unvbox\keybox\par\vskip10pt\fi
+  \end{center}%
+  \gdef\thefootnote{\arabic{footnote}}%
+  }
+\makeatother
+
+% 指定目标期刊（根据实际投稿期刊修改）
+\journal{}
+
+\begin{document}
+
+% 行号设置（审稿格式）
+\modulolinenumbers[1]
+\runninglinenumbers
+\begin{frontmatter}
+
+% 论文标题
+\title{TODO: Paper title here}
+
+% === AUTHOR INFO (uncomment and fill in before submission) ===
+% \author[labela]{First Author}
+% \ead{first.author@example.com}
+% \author[labelb]{Second Author\corref{cor1}}
+% \ead{second.author@example.com}
+% \author[labelc]{Third Author}
+% \ead{third.author@example.com}
+%
+% \cortext[cor1]{Corresponding author.}
+%
+% \affiliation[labela]{organization={School/Department, University},
+%             city={City},
+%             postcode={000000},
+%             country={Country}}
+%
+% \affiliation[labelb]{organization={School/Department, University},
+%             city={City},
+%             postcode={000000},
+%             country={Country}}
+%
+% \affiliation[labelc]{organization={School/Department, University},
+%             city={City},
+%             postcode={000000},
+%             country={Country}}
+% === END AUTHOR INFO ===
+
+\begin{abstract}
+% TODO: Write abstract here
+\end{abstract}
+
+\begin{keyword}
+% TODO: Keyword1 \sep Keyword2 \sep Keyword3
+\end{keyword}
+
+\end{frontmatter}
+
+% ===== 正文各章节 =====
+
+\section{Introduction}
+% TODO: Write content here
+
+\section{Literature review}
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Research gaps and positioning}
+% TODO: Write content here
+
+\section{Methodology}
+% TODO: Add subsections based on method type
+
+\section{Results}
+% TODO: Add subsections based on method type
+
+\section{Discussion}
+\subsection{Discussion on the research questions}
+% TODO: Write content here
+
+\subsection{Theoretical implications}
+% TODO: Write content here
+
+\subsection{Practical implications}
+% TODO: Write content here
+
+
+\section{Conclusion}
+% TODO: Write content here
+
+\section*{Data availability statement}
+% TODO: Write data availability statement here
+
+\section*{Declaration of competing interest}
+% TODO: Write declaration here
+
+% ===== 参考文献 =====
+\bibliographystyle{elsarticle-harv}
+\bibliography{{ID}}
+
+% ===== 表格模板（复制使用） =====
+
+% \begin{table}[!htbp]
+% \centering
+% \captionsetup{font=normalsize, labelsep=period}
+% \setlength{\abovecaptionskip}{5pt}
+% \setlength{\belowcaptionskip}{0pt}
+% \caption{Table title here}
+% \label{tab:label_name}
+% \small
+% \begin{threeparttable}
+% \begin{tabular*}{0.9\textwidth}{@{\extracolsep{\fill}}lccccccc}
+% \toprule
+% \textbf{Column 1} & \textbf{Column 2} & \textbf{Column 3} & \textbf{Column 4} \\
+% \midrule
+% \textit{Row 1} & Data & Data & Data \\
+% \textit{Row 2} & Data & Data & Data \\
+% \textit{Row 3} & Data & Data & Data \\
+% \bottomrule
+% \end{tabular*}
+% \begin{tablenotes}[flushleft]
+% \small\linespread{1}\selectfont
+% \item \textit{Note}: Table notes here.
+% \end{tablenotes}
+% \end{threeparttable}
+% \end{table}
+% \vspace{-15pt}
+
+\end{document}

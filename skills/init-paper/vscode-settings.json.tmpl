@@ -1,0 +1,36 @@
+{
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.rootFile.doNotPrompt": true,
+  "latex-workshop.latex.rootFile.useSubFile": false,
+  "latex-workshop.latex.search.rootFiles.include": [],
+  "latex-workshop.latex.recipe.default": "latexmk",
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk",
+      "command": "latexmk",
+      "args": ["%DOC%"],
+      "env": {}
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk",
+      "tools": ["latexmk"]
+    }
+  ],
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux", "*.bbl", "*.blg", "*.idx", "*.ind", "*.lof", "*.lot",
+    "*.out", "*.toc", "*.acn", "*.acr", "*.alg", "*.glg", "*.glo",
+    "*.gls", "*.ist", "*.fls", "*.log", "*.fdb_latexmk", "*.synctex.gz"
+  ],
+  "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.message.badbox.show": false,
+  "window.autoDetectColorScheme": false,
+  "workbench.colorTheme": "Default Light Modern",
+  "files.exclude": {
+    "*.aux": true, "*.bbl": true, "*.blg": true,
+    "*.fdb_latexmk": true, "*.fls": true, "*.log": true,
+    "*.out": true, "*.synctex.gz": true, "*.spl": true, "*.run.xml": true
+  }
+}

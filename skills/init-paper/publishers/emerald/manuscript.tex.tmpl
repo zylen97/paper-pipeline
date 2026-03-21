@@ -1,0 +1,106 @@
+% !TEX program = pdflatex
+% Emerald journal format (e.g., ECAM)
+% Standard article class + natbib, double-blind submission
+\documentclass[12pt, a4paper]{article}
+
+% ===== Page layout & spacing =====
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, left=2cm, right=2cm, top=2.5cm, bottom=2.5cm}
+\usepackage{setspace}
+\doublespacing
+
+% ===== Font (Times style) =====
+\usepackage{newtxtext,newtxmath}
+
+% ===== Line numbers (for review) =====
+\usepackage{lineno}
+\linenumbers
+
+% ===== Math packages =====
+\usepackage{amsmath}
+\let\Bbbk\relax
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}
+
+% ===== Figure & table packages =====
+\usepackage{graphicx}
+\usepackage{booktabs}
+  \setlength\heavyrulewidth{1.5pt}
+  \setlength\lightrulewidth{1.0pt}
+\usepackage{threeparttable}
+\usepackage{caption}
+\usepackage{adjustbox}
+\usepackage{enumitem}
+\usepackage{multirow}
+
+% ===== Citations (natbib, authoryear round brackets) =====
+\usepackage[authoryear, round]{natbib}
+
+% ===== Author info =====
+\usepackage{authblk}
+
+% ===== Hyperlinks =====
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+% Paper title (double-blind: author info in separate title-page.tex)
+\title{TODO: Fill in paper title}
+\author{} % Double-blind review, no author info
+\date{}
+
+\maketitle
+
+% Abstract (Emerald structured format)
+\begin{abstract}
+\noindent\textbf{Purpose} -- TODO: State the purpose of this paper.
+
+\noindent\textbf{Design/methodology/approach} -- TODO: Describe the methodology.
+
+\noindent\textbf{Findings} -- TODO: Summarize the key findings.
+
+\noindent\textbf{Originality/value} -- TODO: Explain the contribution.
+
+\medskip
+\noindent\textbf{Keywords:} TODO: keyword 1, keyword 2, keyword 3
+
+\noindent\textbf{Paper type:} Research paper
+\end{abstract}
+
+% ===== Main body =====
+
+\section{Introduction}
+
+TODO
+
+\section{Literature review}
+
+TODO
+
+\section{Methodology}
+% TODO: Add subsections based on method type
+
+\section{Results}
+% TODO: Add subsections based on method type
+
+\section{Discussion}
+\subsection{Discussion on the research questions}
+% TODO: Write content here
+
+\subsection{Theoretical implications}
+% TODO: Write content here
+
+\subsection{Practical implications}
+% TODO: Write content here
+
+
+\section{Conclusion}
+% TODO: Write content here
+
+\bibliographystyle{plainnat}
+\bibliography{{ID}}
+
+\end{document}
