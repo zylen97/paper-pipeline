@@ -1,12 +1,15 @@
 ---
-description: "从章节大纲自动读取素材，生成论文初稿（2-Agent Pipeline：journal-scout → sci-writer）"
+description: "从章节大纲自动读取素材，生成论文初稿（Pipeline：journal-scout → 并行 sci-writer）"
 ---
 
 # Draft Workflow — 从 structure/ 素材生成初稿
 
-自动读取 `structure/` 下的章节 md、citation pool 和 idea.md，调用 sci-writer 生成初稿。后续审稿润色由 `/polish` 完成。
+自动读取 `structure/` 下的章节 md、citation pool 和 idea.md，调用 sci-writer 生成初稿。后续审稿润色由 `/pen-polish` 完成。
 
-**执行模式**：Form 1（单节）直接运行；Form 2（有子节的 section）自动拆分，逐个子节运行。
+**执行模式**：
+- Form 1（单节，无隐性结构）：直接运行
+- Form 2（有子节的 section）：自动拆分，逐个子节运行
+- **Form 3（单节，有隐性结构）**：md 中有 `### ` 子标题但 tex 中无 `\subsection` → 并行写各隐性结构 → review 合并
 
 **输入** `$ARGUMENTS`：`section=XXX`（必须），可选 `words=500`。`words` 支持全局（`words=500`）、按节（`words=Measures:300,Model:500`）、自然语言（`Measures 300字`）。
 
@@ -35,7 +38,9 @@ description: "从章节大纲自动读取素材，生成论文初稿（2-Agent P
 
 - **匹配规则**：先精确匹配，后模糊匹配（忽略大小写、"and"/"&"互换、冠词省略）
 - **有子 section** → `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = 子 section 列表
-- **无子 section** → `{INPUT_FORM}` = "single"
+- **无子 section** → 进一步检查章节 md：
+  - md 的 `## 大纲` 下有 `### ` 子标题（隐性结构）且有字数分配表 → `{INPUT_FORM}` = "implicit-multi"，`{SPLIT_SEGMENTS}` = md 中 `### ` 子标题列表
+  - 否则 → `{INPUT_FORM}` = "single"
 - **匹配失败** → 列出 `{SECTION_TREE}` 中所有可用 section，AskUserQuestion 让用户选择
 
 ### 0.5 构建层级路径
@@ -114,6 +119,7 @@ Form 1 直接生成 `{STRUCTURAL_CONTEXT}`；Form 2 在循环中为每个 child 
 ## 步骤 1.5：Form 2 调度控制
 
 `{INPUT_FORM}` = "single" → 跳过，直接执行步骤 2-4。
+`{INPUT_FORM}` = "implicit-multi" → 跳过步骤 1.5，执行步骤 1.6（隐性结构并行调度）。
 
 **1.5a 确认**：AskUserQuestion 显示：
 - Parent section / Hierarchy
@@ -143,9 +149,59 @@ END FOR
 ```
 完成后跳转步骤 4 汇总。
 
+## 步骤 1.6：Form 3 隐性结构并行调度
+
+`{INPUT_FORM}` = "implicit-multi" 时执行。
+
+**1.6a 解析隐性结构**：
+
+从 `{CHAPTER_MD_PATH}` 的 `## 大纲` 区块中提取：
+- 字数分配表（目标总字数、各子节目标字数、写作说明）
+- 各 `### ` 子标题及其下的 intent 和要点
+
+**1.6b 确认**：AskUserQuestion 显示：
+- Section 名称
+- 隐性结构列表（含字数分配）
+- 预计 agent 调用次数：N 次并行 sci-writer
+- 将读取的源文件
+
+等待用户确认。
+
+**1.6c 并行写作**：
+
+读取 `{IDEA_PATH}`、`{CITATION_POOL_PATHS}` 等共享上下文后，按**槽位制**调用 N 个 sci-writer agent（同时不超过 8 个，完成一个补一个）：
+
+```
+FOR EACH implicit_segment IN {SPLIT_SEGMENTS} (PARALLEL):
+  调用 sci-writer，prompt 包含：
+  - 子节名称、intent、要点、目标字数、写作说明
+  - 位置信息："你正在写 {section title} 的第 {i}/{N} 个逻辑段落，前面是 {prev}，后面是 {next}"
+  - Writing Brief（期刊风格）
+  - idea.md（全局上下文）
+  - citation pool
+  - 引用密度要求（见步骤 3 的 Constraints）
+END FOR
+```
+
+**1.6d 拼接保存**：
+
+收集 N 个 agent 的输出后，按顺序拼接，保存到 `{WORK_DIR}/final.md`。
+
+**1.6e 更新 bib 文件**：
+
+1. 扫描 `{WORK_DIR}/final.md` 中所有 `\citep{}` 和 `\citet{}` 引用的 citation key
+2. 读取 `structure/2_literature/citation_pool/master.bib`（由 `/lit-pool` 生成的完整文献库）
+3. 读取项目 bib 文件（如 `{ID}.bib`），找出哪些 key 尚未收录
+4. 从 master.bib 中提取新增 key 对应的条目，追加到项目 bib 文件
+5. 去掉 `\citep{key1, key2}` 中逗号后的空格（BibTeX 要求无空格）
+6. 质量检测：逐条验证 key 中的年份与 bib 条目的 year 字段是否一致
+7. 报告：新增 N 条 bib 条目，M 个 key 在 master.bib 中未找到（需手动补充）
+
+跳转步骤 4。
+
 ## 步骤 2：读取并组装源材料
 
-> 步骤 2-3 = 单 section 流水线（Form 1 执行一次，Form 2 每个子 section 重复）
+> 步骤 2-3 = 单 section 流水线（Form 1 执行一次，Form 2 每个子 section 重复。Form 3 在步骤 1.6 中已完成，跳过步骤 2-3）
 
 **动作**：
 
@@ -215,6 +271,12 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 - Do NOT invent citations — only use keys from the outline or citation pool
 - Ensure every outline point is covered; do not add arguments not in the outline or idea.md
 
+## Citation Density Requirement
+- Every factual claim or literature-based argument MUST have at least one citation
+- Maximum 2 citations per claim (hard limit 3), prefer 1-2
+- Only transition sentences and the author's own arguments may be uncited
+- When in doubt, ADD a citation — the author will remove excess ones
+
 ## Output
 1. Complete LaTeX content in a ```latex``` code block
 2. Actual word count
@@ -228,7 +290,7 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 ```markdown
 # {Section Title} — First Draft
 
-> Ready to copy · Run `/polish` to review and refine
+> Ready to copy · Run `/pen-polish` to review and refine
 
 ```latex
 {LaTeX content from sci-writer}
@@ -253,12 +315,12 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 - 工作目录路径 / 便捷入口路径
 - 字数统计
 - Key point coverage
-- 提示：运行 `/polish` 进行审稿和润色
+- 提示：运行 `/pen-polish` 进行审稿和润色
 
 ### Form 2
 显示：
 - 全部 {N} 个子 section 完成
 - 基础目录 `{MULTI_BASE_DIR}`
 - 汇总表：子 Section / 工作目录 / 便捷入口 / 字数 / Key point coverage
-- 提示：逐个或整体运行 `/polish` 进行审稿和润色
+- 提示：逐个或整体运行 `/pen-polish` 进行审稿和润色
 - 提醒手动合并到 manuscript.tex

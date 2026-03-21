@@ -24,15 +24,12 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 单个subAgent处理的文献条目数不得超过30篇。超过时必须拆分。
 
-### 分批启动规则
-**MAX_CONCURRENT_AGENTS = 6**
+### 槽位制并发控制
+**MAX_CONCURRENT_AGENTS = 8**
 
-```
-if 总agent数 ≤ 6: 一次性全部并行启动
-else: 分为 ⌈总数/6⌉ 批，每批 ≤ 6个，第N批完成后启动第N+1批
-```
+同时运行的 subAgent 数**不超过 8 个**，每当 1 个 subAgent 完成（或失败重试后仍失败），立即从队列中取下一个启动，直到所有 subAgent 处理完毕。不等整批完成再启动下一批。
 
-失败重试：失败agent加入下一批重试（最多1次），仍失败则报告用户。
+失败重试：subAgent 失败 → 自动重试一次 → 仍失败则报告用户。
 
 ### 质量验证（三层保障）
 
@@ -86,7 +83,7 @@ else: 分为 ⌈总数/6⌉ 批，每批 ≤ 6个，第N批完成后启动第N+1
 - **N ≤ AGENT_ITEM_LIMIT (30)**：该方向分配1个subAgent
 - **N > AGENT_ITEM_LIMIT**：拆为 ⌈N/30⌉ 个subAgent
 
-**所有subAgent同时并行启动**。
+所有 subAgent 按**槽位制**启动（同时不超过 8 个，完成一个补一个）。
 
 ### 每个SubAgent的Prompt模板
 

@@ -1,0 +1,135 @@
+% !TEX program = xelatex
+% Wiley NJD v5 模板 — 必须使用 XeLaTeX 编译（TeX Live 2022 推荐）
+
+% APA 引用风格，Times 字体，单栏排版，双倍行距
+% cls 自动加载：geometry, hyperref, graphicx, multirow, tabularx, xcolor, natbib/apacite 等
+% cls 自动设置 \bibliographystyle{WileyNJD-APA}（APA 选项触发），无需手动指定
+\documentclass[APA,Times1COL,doublespace]{WileyNJDv5}
+
+% ===== 宏包导入部分（仅加载 cls 未内置的） =====
+% 数学相关宏包
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}
+
+% 基础功能宏包（cls 已含 multirow, tabularx, hyperref, geometry，不要重复加载）
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{threeparttable}
+\usepackage{caption}
+\usepackage{adjustbox}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{lineno}
+
+% 期刊元数据
+\jname{TODO: Journal Name}
+\articletype{Research Article}
+
+\begin{document}
+
+% 行号设置（审稿格式）
+\modulolinenumbers[1]
+\runninglinenumbers
+
+% 论文标题
+\title{TODO: Paper title here}
+
+% === AUTHOR INFO (uncomment and fill in before submission) ===
+% 注意：BSE 等期刊要求双盲/三盲审稿，主文档中不应包含作者信息
+% 作者信息放在 submission/titlepage.tex 中单独上传
+%
+% \author[1]{First Author}
+% \author[2]{Second Author}
+% \authormark{AUTHOR1 \textsc{et al}}
+% \address[1]{\orgdiv{School/Department}, \orgname{University}, \orgaddress{\state{Province}, \country{Country}}}
+% \address[2]{\orgdiv{School/Department}, \orgname{University}, \orgaddress{\state{Province}, \country{Country}}}
+% \corres{*First Author, School/Department, University. \email{author@example.com}}
+% === END AUTHOR INFO ===
+
+% 摘要（WileyNJDv5 使用命令而非环境）
+\abstract[Abstract]{%
+TODO: Write abstract here (max 150 words for BSE)
+}
+
+\keywords{TODO: keyword1, keyword2, keyword3 (max 6 keywords)}
+
+\maketitle
+
+% ===== 正文各章节 =====
+
+\section{Introduction}
+% TODO: Write content here
+
+\section{Literature review}
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Subsection title}
+% TODO: Write content here
+
+\subsection{Research gaps and positioning}
+% TODO: Write content here
+
+\section{Methodology}
+% TODO: Add subsections based on method type
+
+\section{Results}
+% TODO: Add subsections based on method type
+
+\section{Discussion}
+\subsection{Discussion on the research questions}
+% TODO: Write content here
+
+\subsection{Theoretical implications}
+% TODO: Write content here
+
+\subsection{Practical implications}
+% TODO: Write content here
+
+\section{Conclusion}
+% TODO: Write content here
+
+\section*{Data availability statement}
+% TODO: Write data availability statement here
+
+\section*{Declaration of competing interest}
+% TODO: Write declaration here
+
+% ===== 参考文献 =====
+% \bibliographystyle 由 cls 自动设置为 WileyNJD-APA，无需手动指定
+\bibliography{{ID}}
+
+% ===== 表格模板（复制使用） =====
+
+% \begin{table}[!htbp]
+% \centering
+% \captionsetup{font=normalsize, labelsep=period}
+% \setlength{\abovecaptionskip}{5pt}
+% \setlength{\belowcaptionskip}{0pt}
+% \caption{Table title here}
+% \label{tab:label_name}
+% \small
+% \begin{threeparttable}
+% \begin{tabular*}{0.9\textwidth}{@{\extracolsep{\fill}}lccccccc}
+% \toprule
+% \textbf{Column 1} & \textbf{Column 2} & \textbf{Column 3} & \textbf{Column 4} \\
+% \midrule
+% \textit{Row 1} & Data & Data & Data \\
+% \textit{Row 2} & Data & Data & Data \\
+% \textit{Row 3} & Data & Data & Data \\
+% \bottomrule
+% \end{tabular*}
+% \begin{tablenotes}[flushleft]
+% \small\linespread{1}\selectfont
+% \item \textit{Note}: Table notes here.
+% \end{tablenotes}
+% \end{threeparttable}
+% \end{table}
+% \vspace{-15pt}
+
+\end{document}

@@ -1,5 +1,5 @@
 ---
-description: "从direction reports生成按标签汇总的引用池（Citation Pool），含引用场景、分级排序和引用偏好"
+description: "从direction reports生成按标签汇总的引用池（Citation Pool），含引用场景、分级排序和引用偏好，并生成 master.bib"
 ---
 
 # Lit-Pool — 引用池生成
@@ -22,15 +22,12 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 单个subAgent处理的文献条目数不得超过30篇。超过时必须拆分。
 
-### 分批启动规则
-**MAX_CONCURRENT_AGENTS = 6**
+### 槽位制并发控制
+**MAX_CONCURRENT_AGENTS = 8**
 
-```
-if 总agent数 ≤ 6: 一次性全部并行启动
-else: 分为 ⌈总数/6⌉ 批，每批 ≤ 6个，第N批完成后启动第N+1批
-```
+同时运行的 subAgent 数**不超过 8 个**，每当 1 个 subAgent 完成（或失败重试后仍失败），立即从队列中取下一个启动，直到所有 subAgent 处理完毕。不等整批完成再启动下一批。
 
-失败重试：失败agent加入下一批重试（最多1次），仍失败则报告用户。
+失败重试：subAgent 失败 → 自动重试一次 → 仍失败则报告用户。
 
 ---
 
@@ -86,7 +83,17 @@ else: 分为 ⌈总数/6⌉ 批，每批 ≤ 6个，第N批完成后启动第N+1
 
 ### 1.3 预生成citation key映射表
 
-主Agent按全局规则（`auth.lower + year + shorttitle(1,1)`，见`~/.claude/CLAUDE.md`）为每篇去重文献统一生成citation key。将映射表传给所有subAgent，subAgent必须使用映射表中的key，不可自行生成。
+主Agent按全局规则（`auth.lower + year + shorttitle(1,1)`，见`~/.claude/CLAUDE.md`）为每篇去重文献统一生成citation key。
+
+**生成规则**：
+- 格式：`{第一作者姓氏小写}{四位年份}{标题首个实词首字母小写}`
+- 示例：Akcomak (2023) "What drives network evolution?" → `akcomak2023w`
+- 冲突处理：同 key 追加 b/c 后缀 → `akcomak2023wb`
+- **禁止**：key 中出现两次年份（如 `akcomak2023w2023a`），这是错误格式
+
+**传递方式**：映射表以 `(序号, citation key, 作者, 年份, 标题)` 格式传给 subAgent。subAgent 必须**原样使用**映射表中的 key，**严禁**自行生成、修改或追加任何后缀。
+
+**验证**：主Agent在收到subAgent输出后，检查所有 citation key 是否与映射表一致。如发现不一致（如多了后缀、格式错误），主Agent直接替换为映射表中的正确 key。
 
 ---
 
@@ -133,14 +140,14 @@ Agent任务分配：
 | 14 | LR (D3) | 30 | 拆分3/5 |
 | 15 | LR (D4+D5) | 30 | 拆分4/5 |
 | 16 | LR (D6) | 30 | 拆分5/5 |
-共 16 个agent，分3批（每批≤6个）
+共 16 个agent，按槽位制启动（同时不超过8个，完成一个补一个）
 ```
 
 ---
 
 ## 步骤 3：并行启动SubAgent
 
-**按步骤2的分批计划启动subAgent。每批≤6个，第N批完成后启动第N+1批。**
+按**槽位制**启动所有 subAgent（同时不超过 8 个，完成一个补一个）。
 
 ### 每个SubAgent的Prompt模板
 
@@ -158,7 +165,7 @@ Agent任务分配：
 {主Agent传入的文献列表，含：作者、年份、标题、期刊、功能标签、分级、入选理由}
 
 ## 对每篇文献执行：
-1. **使用 citation key**：使用主Agent传入的 citation key 映射表，不可自行生成或修改
+1. **使用 citation key**：必须**原样复制**主Agent传入的 citation key，不可自行生成、修改或追加任何后缀。正确示例：`akcomak2023w`。错误示例：`akcomak2023w2023a`（多了重复的年份+字母）
 2. **排序**：每个标签组内，按分级（核心→重要→备选）+ 年份降序
 3. **生成引用场景**：基于入选理由 + 研究上下文，改写为写作视角
    - 入选理由 = "为什么留下这篇"（筛选视角）
@@ -407,6 +414,36 @@ mkdir -p structure/2_literature/citation_pool/
 4. 引用池充足性（按标签）
 5. 补检建议（如有）
 6. **下一步建议**：用户审阅 master_report.md → 确认/调整 idea.md → 进入步骤③ idea定稿 → 步骤④ 填充各章节md
+
+## 步骤 8：生成 master.bib
+
+在所有引用池和总报告生成完毕后，自动生成 `structure/2_literature/citation_pool/master.bib`——将所有入选文献的 RIS 条目转为 BibTeX 格式，供 `/pen-draft` 后续按需提取。
+
+**流程**：
+1. 提取所有引用池 md 文件中的 citation key（格式 `auth+year+letter`）
+2. 解析 `structure/2_literature/*.ris` 中的全部 RIS 条目
+3. 建立索引：按首作者姓氏+年份查找 RIS 条目，用标题首字母区分同名
+4. 将匹配到的 RIS 条目转为 BibTeX 格式（@article），citation key 使用引用池中定义的格式
+5. 保存到 `structure/2_literature/citation_pool/master.bib`
+6. 报告：成功转换 N 条，M 个 key 未在 RIS 中找到（需后续手动补充）
+
+**RIS → BibTeX 字段映射**：
+```
+TY=JOUR → @article
+AU → author（多个用 " and " 连接）
+TI → title
+T2 → journal
+PY → year
+VL → volume
+IS → number
+SP/EP → pages（SP--EP）
+DO → doi
+```
+
+**注意**：
+- master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
+- `/pen-draft` 在写完每个 section 后，从 master.bib 中提取用到的条目追加到项目 bib
+- 读取RIS文件时须使用 `utf-8-sig` 编码（处理可能存在的UTF-8 BOM头），否则首条条目可能因BOM前缀而解析失败
 
 ---
 

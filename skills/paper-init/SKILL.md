@@ -4,7 +4,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ## 核心使命
 
-从零搭建一个标准化的 LaTeX 论文项目，支持多出版社（Elsevier/ASCE/Emerald/SAGE/IEEE）和多研究方法类型（建模/问卷/面板回归），复用经过验证的最佳实践：structure/ 三层文档系统、版本化 idea 管理、编译自动化。
+从零搭建一个标准化的 LaTeX 论文项目，支持多出版社（Elsevier/ASCE/Emerald/SAGE/IEEE/Wiley）和多研究方法类型（建模/问卷/面板回归），复用经过验证的最佳实践：structure/ 三层文档系统、版本化 idea 管理、编译自动化。
 
 ## 参数解析
 
@@ -32,9 +32,10 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
   [3] emerald — Emerald期刊（ECAM等）· standard article + natbib · 双盲
   [4] sage — SAGE期刊（Urban Studies, PMJ等）· sagej · 双盲
   [5] ieee — IEEE期刊（IEEE TEM等）· IEEEtran · 双盲
+  [6] wiley — Wiley期刊（BSE等）· WileyNJDv5 · 双盲/三盲
 ```
 
-记录用户选择为 `{PUBLISHER}`（elsevier / asce / emerald / sage / ieee）。
+记录用户选择为 `{PUBLISHER}`（elsevier / asce / emerald / sage / ieee / wiley）。
 
 出版社决定：
 - manuscript.tex 的文档类和格式
@@ -62,7 +63,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ## 模板目录
 
 ```
-~/.claude/skills/init-paper/
+~/.claude/skills/paper-init/
 ├── common/              # 通用章节模板（所有方法共享）
 │   ├── introduction.md.tmpl
 │   ├── literature.md.tmpl
@@ -97,12 +98,14 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
    - emerald → `Standard article + natbib`
    - sage → `sagej (Harvard)`
    - ieee → `IEEEtran (journal, onecolumn)`
+   - wiley → `WileyNJDv5 (APA, Times1COL)`
 6. 将 CLAUDE.md.tmpl 中的 `{SUBMISSION_FILES}` 替换为对应出版社的投稿附件列表：
    - elsevier → `coverletter.tex, declaration.tex, highlights.tex, titlepage.tex`
    - asce → `coverletter.tex`
    - emerald → `coverletter.tex, titlepage.tex`
    - sage → `coverletter.tex`
    - ieee → `coverletter.tex`
+   - wiley → `coverletter.tex, titlepage.tex`
 7. 将 CLAUDE.md.tmpl 中的 `{TECHNICAL_SECTIONS}` 替换为对应方法类型的技术型章节列表：
    - modeling → `Methodology, Results, Simulation`
    - survey-sem → `Methodology, Results`
@@ -285,7 +288,7 @@ manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHO
 \section{Discussion}
 ```
 
-即：用上面的对应块**整体替换** manuscript.tex 中从 `\section{Methodology}` 到 `\section{Discussion}`（不含）的内容。三个出版社模板均使用 `\section{Methodology}` 作为统一锚点。
+即：用上面的对应块**整体替换** manuscript.tex 中从 `\section{Methodology}` 到 `\section{Discussion}`（不含）的内容。所有出版社模板均使用 `\section{Methodology}` 作为统一锚点。
 
 #### submission/ 投稿附件（根据 {PUBLISHER} 选择）
 
@@ -322,6 +325,13 @@ manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHO
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
 | 9 | `publishers/ieee/coverletter.tex.tmpl` | `submission/coverletter.tex` |
+
+**wiley**：
+
+| # | 模板文件 | 目标路径 |
+|---|---------|---------|
+| 9 | `publishers/wiley/coverletter.tex.tmpl` | `submission/coverletter.tex` |
+| 10 | `publishers/wiley/titlepage.tex.tmpl` | `submission/titlepage.tex` |
 
 #### cls/bst 文件（根据 {PUBLISHER} 复制）
 
@@ -376,6 +386,21 @@ fi
 if [ ! -f IEEEtran.cls ]; then
   TEXLIVE_CLS=$(kpsewhich IEEEtran.cls 2>/dev/null)
   TEXLIVE_BST=$(kpsewhich IEEEtran.bst 2>/dev/null)
+  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
+  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
+fi
+```
+
+**wiley**：
+```bash
+EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "WileyNJDv5.cls" -maxdepth 8 -print -quit 2>/dev/null)
+if [ -n "$EXISTING" ]; then
+  cp "$EXISTING" .
+  cp "$(dirname "$EXISTING")/wileyNJD-APA.bst" . 2>/dev/null
+fi
+if [ ! -f WileyNJDv5.cls ]; then
+  TEXLIVE_CLS=$(kpsewhich WileyNJDv5.cls 2>/dev/null)
+  TEXLIVE_BST=$(kpsewhich wileyNJD-APA.bst 2>/dev/null)
   [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
   [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
 fi
@@ -462,6 +487,11 @@ git add .gitignore CLAUDE.md manuscript.tex {ID}.bib sagej.cls SageH.bst structu
 **ieee**：
 ```bash
 git add .gitignore CLAUDE.md manuscript.tex {ID}.bib IEEEtran.cls IEEEtran.bst structure/ submission/ .vscode/ .claude/
+```
+
+**wiley**：
+```bash
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .vscode/ .claude/
 ```
 
 ```bash

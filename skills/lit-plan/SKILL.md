@@ -86,6 +86,23 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 - 预估检索量：50-500篇为理想范围。< 50 → 放宽条件；> 500 → 收紧条件
 - 合并逻辑相近的子方向（属于同一学术社群的文献）以减少方向总数
 
+### 建筑工程领域术语规范（Construction/AEC domain）
+当研究涉及建筑工程管理领域时，检索式中**禁止**单独使用 `"construction"` 或 `"building*"`，因为这两个词歧义极大（如 "construction of a model"、"building a framework"），会捞到大量无关文献，增加不必要的筛选工作。
+
+**必须使用以下限定短语替代：**
+
+| 禁用 | 替代为（OR 连接） |
+|:-----|:-----------------|
+| `"construction"` | `"construction industry"` OR `"construction project*"` OR `"construction sector"` OR `"construction firm*"` OR `"construction company"` |
+| `"building*"` | `"built environment"` OR `"building sector"` OR `"building industry"` |
+
+**补充推荐词（视情况加入）：**
+- `"AEC"`（Architecture, Engineering and Construction）
+- `"civil engineering"`
+- `"infrastructure project*"`
+
+**例外**：当 "construction" 与其他限定词组成固定短语时（如 `"modular construction"`、`"off-site construction"`、`"prefabricated construction"`），语义已经明确，无需替换。
+
 ### 方向覆盖性检查
 设计完成后自检：以下每个标签至少被1个方向覆盖
 
