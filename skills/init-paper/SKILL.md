@@ -4,7 +4,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ## 核心使命
 
-从零搭建一个标准化的 LaTeX 论文项目，支持多出版社（Elsevier/ASCE/Emerald）和多研究方法类型（博弈论/问卷/面板回归），复用经过验证的最佳实践：structure/ 三层文档系统、版本化 idea 管理、编译自动化。
+从零搭建一个标准化的 LaTeX 论文项目，支持多出版社（Elsevier/ASCE/Emerald/SAGE/IEEE）和多研究方法类型（建模/问卷/面板回归），复用经过验证的最佳实践：structure/ 三层文档系统、版本化 idea 管理、编译自动化。
 
 ## 参数解析
 
