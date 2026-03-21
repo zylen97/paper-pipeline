@@ -467,7 +467,7 @@ description: "从一组中文/英文论文PDF中挖掘可迁移的研究idea，�
 在当前工作目录下创建文件夹，每个 idea 一个独立 md 文件：
 
 ```
-idea-mine-output_{DIRECTION}_{DATE}/
+idea-output_{DIRECTION}_{DATE}/
 ├── 00_排名总览.md              ← 排名表 + 论文摘要表 + 方法论分布 + 期刊画像
 ├── 01_idea_{标题简称}.md       ← idea 1 的完整评估报告（结构见阶段三）
 ├── 02_idea_{标题简称}.md       ← idea 2 的完整评估报告
@@ -520,7 +520,7 @@ idea-mine-output_{DIRECTION}_{DATE}/
 Pipeline 完成后，在当前工作目录下创建文件夹：
 
 ```
-idea-mine-output_{DIRECTION}_{DATE}/
+idea-output_{DIRECTION}_{DATE}/
 ├── 00_排名总览.md              ← 排名表 + 论文摘要表 + 方法论分布 + 期刊画像
 ├── 01_idea_{标题简称}.md       ← idea 1 的完整评估报告
 ├── 02_idea_{标题简称}.md
