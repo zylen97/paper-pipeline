@@ -27,12 +27,14 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ```
 目标出版社？
-  [1] elsevier — Elsevier期刊（AiC, IJPM, JCP等）· elsarticle · 双盲
+  [1] elsevier — Elsevier期刊（AiC, IJPM, JCP, SCS等）· elsarticle · 双盲
   [2] asce — ASCE期刊（JME, JCEM等）· ascelike · 单盲
   [3] emerald — Emerald期刊（ECAM等）· standard article + natbib · 双盲
+  [4] sage — SAGE期刊（Urban Studies, PMJ等）· sagej · 双盲
+  [5] ieee — IEEE期刊（IEEE TEM等）· IEEEtran · 双盲
 ```
 
-记录用户选择为 `{PUBLISHER}`（elsevier / asce / emerald）。
+记录用户选择为 `{PUBLISHER}`（elsevier / asce / emerald / sage / ieee）。
 
 出版社决定：
 - manuscript.tex 的文档类和格式
@@ -45,15 +47,15 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ```
 研究方法类型？
-  [1] game-theory — 博弈论建模+数值仿真
+  [1] modeling — 建模类方法（博弈论/网络分析/AI/仿真等）
   [2] survey-sem — 问卷调查+SEM/回归
   [3] panel-regression — 二手数据+面板回归
 ```
 
-记录用户选择为 `{METHOD_TYPE}`（game-theory / survey-sem / panel-regression）。
+记录用户选择为 `{METHOD_TYPE}`（modeling / survey-sem / panel-regression）。
 
 方法类型决定：
-- 是否创建 `structure/5_simulation/` 目录（仅 game-theory）
+- 是否创建 `structure/5_simulation/` 目录（仅 modeling）
 - 使用哪套 methodology/results 模板
 - CLAUDE.md 中 structure 表格的内容
 
@@ -65,7 +67,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 │   ├── introduction.md.tmpl
 │   ├── literature.md.tmpl
 │   └── discussion.md.tmpl
-├── game-theory/         # 博弈论专用模板
+├── modeling/            # 建模类方法专用模板
 │   ├── methodology.md.tmpl
 │   ├── results.md.tmpl
 │   └── simulation.md.tmpl
@@ -78,7 +80,9 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 ├── publishers/          # 出版社专用模板
 │   ├── elsevier/        # manuscript + submission files
 │   ├── asce/
-│   └── emerald/
+│   ├── emerald/
+│   ├── sage/
+│   └── ieee/
 └── *.tmpl               # 其他通用模板（CLAUDE.md, bib, gitignore 等）
 ```
 
@@ -91,19 +95,23 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
    - elsevier → `Elsarticle (preprint)`
    - asce → `ascelike (Journal)`
    - emerald → `Standard article + natbib`
+   - sage → `sagej (Harvard)`
+   - ieee → `IEEEtran (journal, onecolumn)`
 6. 将 CLAUDE.md.tmpl 中的 `{SUBMISSION_FILES}` 替换为对应出版社的投稿附件列表：
    - elsevier → `coverletter.tex, declaration.tex, highlights.tex, titlepage.tex`
    - asce → `coverletter.tex`
    - emerald → `coverletter.tex, titlepage.tex`
+   - sage → `coverletter.tex`
+   - ieee → `coverletter.tex`
 7. 将 CLAUDE.md.tmpl 中的 `{TECHNICAL_SECTIONS}` 替换为对应方法类型的技术型章节列表：
-   - game-theory → `Methodology, Results, Simulation`
+   - modeling → `Methodology, Results, Simulation`
    - survey-sem → `Methodology, Results`
    - panel-regression → `Methodology, Results`
 8. 写入目标路径
 
 ### {STRUCTURE_TABLE} 替换内容
 
-**game-theory**：
+**modeling**：
 ```
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
@@ -157,7 +165,7 @@ gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 
 ### Step 2: 创建目录结构
 
-**game-theory**：
+**modeling**：
 ```bash
 mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation/figures structure/6_discussion submission .vscode .claude/hooks
 ```
@@ -195,7 +203,7 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 
 manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHOD_TYPE}` 替换 section 名称和 subsection 结构：
 
-**game-theory**：
+**modeling**：
 ```latex
 \section{Research method and modeling process}
 \subsection{Research method}
@@ -303,6 +311,18 @@ manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHO
 | 9 | `publishers/emerald/coverletter.tex.tmpl` | `submission/coverletter.tex` |
 | 10 | `publishers/emerald/titlepage.tex.tmpl` | `submission/titlepage.tex` |
 
+**sage**：
+
+| # | 模板文件 | 目标路径 |
+|---|---------|---------|
+| 9 | `publishers/sage/coverletter.tex.tmpl` | `submission/coverletter.tex` |
+
+**ieee**：
+
+| # | 模板文件 | 目标路径 |
+|---|---------|---------|
+| 9 | `publishers/ieee/coverletter.tex.tmpl` | `submission/coverletter.tex` |
+
 #### cls/bst 文件（根据 {PUBLISHER} 复制）
 
 **elsevier**：
@@ -331,6 +351,36 @@ fi
 
 **emerald**：无专用 cls/bst，不复制。
 
+**sage**：
+```bash
+EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "sagej.cls" -maxdepth 8 -print -quit 2>/dev/null)
+if [ -n "$EXISTING" ]; then
+  cp "$EXISTING" .
+  cp "$(dirname "$EXISTING")/SageH.bst" . 2>/dev/null
+fi
+if [ ! -f sagej.cls ]; then
+  TEXLIVE_CLS=$(kpsewhich sagej.cls 2>/dev/null)
+  TEXLIVE_BST=$(kpsewhich SageH.bst 2>/dev/null)
+  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
+  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
+fi
+```
+
+**ieee**：
+```bash
+EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "IEEEtran.cls" -maxdepth 8 -print -quit 2>/dev/null)
+if [ -n "$EXISTING" ]; then
+  cp "$EXISTING" .
+  cp "$(dirname "$EXISTING")/IEEEtran.bst" . 2>/dev/null
+fi
+if [ ! -f IEEEtran.cls ]; then
+  TEXLIVE_CLS=$(kpsewhich IEEEtran.cls 2>/dev/null)
+  TEXLIVE_BST=$(kpsewhich IEEEtran.bst 2>/dev/null)
+  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
+  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
+fi
+```
+
 #### structure/ 通用文件
 
 | # | 模板文件 | 目标路径 |
@@ -347,17 +397,17 @@ fi
 | 17 | `{METHOD_TYPE}/methodology.md.tmpl` | `structure/3_methodology/methodology.md` |
 | 18 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
 
-**仅 game-theory**：
+**仅 modeling**：
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 19 | `game-theory/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
+| 19 | `modeling/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
 
 #### Discussion（目录编号因方法类型而异）
 
 | 方法类型 | 模板文件 | 目标路径 |
 |---------|---------|---------|
-| game-theory | `common/discussion.md.tmpl` | `structure/6_discussion/discussion.md` |
+| modeling | `common/discussion.md.tmpl` | `structure/6_discussion/discussion.md` |
 | survey-sem | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
 | panel-regression | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
 
@@ -367,7 +417,7 @@ fi
 chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
 ```
 
-#### 空目录占位（仅 game-theory）
+#### 空目录占位（仅 modeling）
 
 ```bash
 touch structure/5_simulation/figures/.gitkeep
@@ -402,6 +452,16 @@ git add .gitignore CLAUDE.md manuscript.tex {ID}.bib ascelike.cls ascelike.bst s
 **emerald**：
 ```bash
 git add .gitignore CLAUDE.md manuscript.tex {ID}.bib structure/ submission/ .vscode/ .claude/
+```
+
+**sage**：
+```bash
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib sagej.cls SageH.bst structure/ submission/ .vscode/ .claude/
+```
+
+**ieee**：
+```bash
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib IEEEtran.cls IEEEtran.bst structure/ submission/ .vscode/ .claude/
 ```
 
 ```bash
