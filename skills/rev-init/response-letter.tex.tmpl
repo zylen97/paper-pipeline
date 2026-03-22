@@ -1,0 +1,276 @@
+% !TEX program = pdflatex
+% =============================================================================
+% 回复信模板 (RESPONSE LETTER TEMPLATE)
+% =============================================================================
+% 用法: 复制此文件到项目根目录并自定义内容
+% 编译: latexmk -pvc- -pv- response-letter.tex
+%
+% 核心宏:
+%   \response{text}         - 蓝色作者回复文本
+%   \manuscriptquote{text}  - 绿色斜体缩进稿件引用
+%   \lineref{Lines X--Y}    - 红色行号引用
+%   \smref{Section SN}      - 红色补充材料引用
+%   \reviewercomment{text}  - 粗体审稿意见标题
+%   \responseheader         - 蓝色 "- Response:" 标题
+%
+% 格式规则:
+%   - \response{}, \manuscriptquote{}, \lineref{} 不可嵌套
+%   - \response{} 内不能有空行（会导致 \par 错误）
+%   - \lineref{} 放在 \manuscriptquote{} 内容的末尾
+%   - 所有引用使用纯文本格式（不用 natbib）: (Author et al., Year)
+%   - \manuscriptquote{} 中引用的稿件文本包含数学公式时，必须保留 $...$ 包裹
+%   - 特殊字符需转义: \%, \#, \&
+% =============================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+% ===== 基本宏包 =====
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}            % Times New Roman (pdfLaTeX)
+\usepackage{geometry}
+\geometry{left=2cm, right=2cm, top=2cm, bottom=2cm}
+
+% ===== 颜色定义 =====
+\usepackage{xcolor}
+\definecolor{responseblue}{RGB}{0, 51, 102}       % 深蓝：作者回复
+\definecolor{quotegreen}{RGB}{85, 107, 47}        % 橄榄绿：稿件引用
+\definecolor{linerefred}{RGB}{178, 34, 34}        % 砖红：行号引用
+
+% ===== 自定义命令 =====
+% 作者回复文本
+\newcommand{\response}[1]{\textcolor{responseblue}{#1}}
+
+% 稿件引用（绿色斜体缩进块）
+\newcommand{\manuscriptquote}[1]{%
+  \par
+  {\leftskip=2em\noindent\textcolor{quotegreen}{\textit{#1}}\par}%
+}
+
+% 行号引用（红色，放在 \manuscriptquote{} 内容末尾）
+\newcommand{\lineref}[1]{%
+  \textup{\textcolor{linerefred}{ (Please see #1 in the revised manuscript)}}%
+}
+
+% 补充材料引用
+\newcommand{\smref}[1]{%
+  \textup{\textcolor{linerefred}{ (Please see #1 in the Supplemental Materials)}}%
+}
+
+% 审稿意见标题
+\newcommand{\reviewercomment}[1]{\noindent\textbf{#1}\par\medskip}
+
+% 回复标题
+\newcommand{\responseheader}{\noindent\textbf{\textcolor{responseblue}{- Response:}}\par\medskip}
+
+% ===== 其他宏包 =====
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=responseblue,
+  urlcolor=responseblue
+}
+\usepackage{amsmath,amssymb}
+
+% ===== 段落设置 =====
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+\linespread{1.2}
+
+% ===== 页码 =====
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\cfoot{\thepage}
+
+\begin{document}
+
+% ==========================================
+% 标题
+% ==========================================
+\begin{center}
+\Large\textbf{RESPONSE FOR MANUSCRIPT [MANUSCRIPT-ID]}
+\end{center}
+
+\bigskip
+
+\response{We thank the Editor, the Associate Editor, and [N] anonymous reviewers for their constructive comments and suggestions. We have carefully considered all feedback and revised the manuscript accordingly. In the following pages, the authors' responses and actions are shown \textbf{in blue}, while specific revisions to the manuscript are displayed \textcolor{quotegreen}{\textit{in green italicized font}}.}
+% 如无 AE，删除 "the Associate Editor, and"。
+% [N] 替换为实际审稿人数量（如 two, three）。
+
+\bigskip
+
+% ===== 目录 =====
+% 根据实际审稿人数量和编号调整以下条目。
+% 如果没有 AE，删除 AE 行。
+% 如果审稿人编号不连续（如 #2, #3, #4），直接使用原始编号。
+\noindent\textbf{\large Table of Contents}
+\vspace{6pt}
+
+\noindent
+\hyperlink{sec:editor}{Response to Editor} \dotfill \pageref{sec:editor:page} \\[4pt]
+\hyperlink{sec:ae}{Response to Associate Editor} \dotfill \pageref{sec:ae:page} \\[4pt]
+\hyperlink{sec:r1}{Response to Reviewer \#1} \dotfill \pageref{sec:r1:page} \\[4pt]
+\hyperlink{sec:r2}{Response to Reviewer \#2} \dotfill \pageref{sec:r2:page} \\[4pt]
+\hyperlink{sec:r3}{Response to Reviewer \#3} \dotfill \pageref{sec:r3:page}
+% 如需更多审稿人，在此添加
+
+% ==========================================
+% EDITOR
+% ==========================================
+\newpage
+\hypertarget{sec:editor}{}
+\section*{Editor:}
+\label{sec:editor:page}
+
+[粘贴 Editor 决定信原文]
+
+\responseheader
+
+\response{[对 Editor 意见的概括性回复。处理任何具体要求，如引用期刊近期文献、阐明对读者群的贡献等。]}
+
+\response{[如需更多段落。使用单独的 \response{} 块分隔段落。]}
+
+% ==========================================
+% ASSOCIATE EDITOR
+% (可选 — 如果决定信中没有 AE，删除此 section 及目录中的对应行)
+% ==========================================
+\hypertarget{sec:ae}{}
+\section*{Associate Editor:}
+\label{sec:ae:page}
+
+[粘贴 Associate Editor 意见原文]
+
+\responseheader
+
+\response{[对 AE 总结和建议的概括性回复。]}
+
+% ==========================================
+% REVIEWER SECTIONS
+% 注意：审稿人编号应与期刊系统一致。
+% 如果期刊编号为 #2, #3, #4（无 #1），则直接使用 Reviewer \#2, \#3, \#4。
+% 不要重新编号为 #1, #2, #3——这会导致编辑无法匹配审稿意见。
+% ==========================================
+
+% ==========================================
+% REVIEWER #1
+% ==========================================
+\newpage
+\hypertarget{sec:r1}{}
+\section*{Reviewer \#1:}
+\label{sec:r1:page}
+
+% --- General Assessment ---
+\reviewercomment{Comment \#1-0. General assessment.}
+
+[粘贴审稿人总体评价原文]
+
+\responseheader
+
+\response{[感谢审稿人，简要说明如何处理其意见。]}
+
+\bigskip
+
+% --- Major Comments ---
+\reviewercomment{Comment \#1-1. [简要主题描述]}
+
+[粘贴审稿意见原文]
+
+\responseheader
+
+\response{[感谢/认同审稿人的观点。First, [描述回复的第一方面]。[用 2-3 句展开说明]。}
+
+\manuscriptquote{[引用修改后的稿件文本。 \lineref{Lines XXX--YYY}}
+
+\response{Second, [描述回复的第二方面]。[展开说明]。}
+
+\manuscriptquote{[如需，引用另一段文本。 \lineref{Lines XXX--YYY}}
+
+\response{[总结句，说明这些修改如何回应审稿人的关切。]}
+
+\bigskip
+
+\reviewercomment{Comment \#1-2. [简要主题描述]}
+
+[粘贴审稿意见原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+\bigskip
+
+% --- Minor Comments ---
+\reviewercomment{Comment \#1-m1. [简要主题描述]}
+
+[粘贴审稿意见原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+\bigskip
+
+% ==========================================
+% REVIEWER #2
+% ==========================================
+\newpage
+\hypertarget{sec:r2}{}
+\section*{Reviewer \#2:}
+\label{sec:r2:page}
+
+% --- General Assessment ---
+\reviewercomment{Comment \#2-0. General assessment.}
+
+[粘贴审稿人总体评价原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+\bigskip
+
+\reviewercomment{Comment \#2-1. [简要主题描述]}
+
+[粘贴审稿意见原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+\bigskip
+
+% ==========================================
+% REVIEWER #3
+% ==========================================
+\newpage
+\hypertarget{sec:r3}{}
+\section*{Reviewer \#3:}
+\label{sec:r3:page}
+
+% --- General Assessment ---
+\reviewercomment{Comment \#3-0. General assessment.}
+
+[粘贴审稿人总体评价原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+\bigskip
+
+\reviewercomment{Comment \#3-1. [简要主题描述]}
+
+[粘贴审稿意见原文]
+
+\responseheader
+
+\response{[TO BE FILLED]}
+
+% ==========================================
+% 回复信结束
+% ==========================================
+\end{document}

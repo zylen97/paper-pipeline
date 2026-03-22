@@ -1,0 +1,177 @@
+# [JOURNAL_NAME] 修改策略指南 — [MANUSCRIPT_ID]
+
+> **用途**: 修改工作的完整上下文——策略、思路、涉及文件。进度追踪见同目录下其他文件。
+> **最后更新**: [DATE]
+
+---
+
+## 1. 论文基本信息
+
+- **标题**: [完整论文标题]
+- **稿件编号**: [ID]
+- **期刊**: [期刊名称]
+- **决定**: [Major Revision / Minor Revision]
+- **截止日期**: [DATE]
+- **作者**: [作者姓名，标注通讯作者]
+- **模板**: [模板名称和版本]
+- **编译**: [引擎，如 pdfLaTeX + BibTeX, latexmk]
+
+## 2. 项目文件结构
+
+```
+project-root/
+├── manuscript.tex              # 工作文件（修改在此进行）
+├── manuscript-original.tex     # FROZEN 基准 — 禁止修改！
+├── response-letter.tex         # 回复信
+├── supplemental-materials.tex  # 补充材料（可选）
+├── [BIB_FILE].bib             # 参考文献
+├── [TEMPLATE].cls             # 期刊模板
+├── latexmkrc                  # 编译配置
+├── CLAUDE.md                  # Claude Code 指令
+├── figures/                   # 图片
+├── tools/
+│   ├── make-diff.sh           # Diff 脚本
+│   └── latexdiff-preamble.tex # Diff 样式
+├── revision/
+│   ├── comment-letter.md        # 原始决定信（用户粘贴）
+│   ├── comment-letter-clean.md  # 规范化意见列表（/rev-init 生成）
+│   ├── revision-guide.md      # 策略指南（本文件）
+│   ├── cluster-progress.md    # Cluster 追踪
+│   ├── response-progress.md   # 回复追踪
+│   └── drafts/                # Agent 输出
+│       ├── Proposal_*.md      # 策略提案（/rev-respond Round 1）
+│       └── Comment_*.md       # 完整草稿（/rev-respond Round 2）
+└── .claude/                   # 项目配置
+```
+
+## 3. Manuscript 结构
+
+| 行号 | 层级 | 标题 |
+|------|-------|-------|
+| [XX] | section | [标题] |
+| [XX] | subsection | [标题] |
+| ... | ... | ... |
+
+**关键方程/表格位置**:
+- Eq.(1) [描述]: 行 [XX]
+- Table 1 [描述]: 行 [XX]
+
+---
+
+## 4. 意见清单
+
+### 4.1 Editor
+> [Editor 关键要点摘要]
+
+### 4.2 Associate Editor
+> [AE 关键要点摘要]
+
+### 4.3 Reviewer #1 ([N] Major + [M] Minor = [总计] 条)
+
+#### Major Comments:
+| ID | 核心问题 | Cluster |
+|----|-----------|---------|
+| **R1-1** | [5-8 词描述底层关切] | [CX] |
+| **R1-2** | [...] | [CX] |
+
+#### Minor Comments:
+| ID | 核心问题 | Cluster |
+|----|-----------|---------|
+| **R1-m1** | [...] | [CX] |
+
+### 4.4 Reviewer #2 ([N] 条)
+
+| ID | 核心问题 | Cluster |
+|----|-----------|---------|
+| **R2-1** | [...] | [CX] |
+
+### 4.5 Reviewer #3 ([N] 条)
+
+| ID | 核心问题 | Cluster |
+|----|-----------|---------|
+| **R3-1** | [...] | [CX] |
+
+---
+
+## 5. Cluster 分析
+
+> 进度状态见 `cluster-progress.md`。本节记录策略和修改要点。
+
+### C1: [Cluster 名称] ([优先级])
+**涉及**: [Comment IDs，如 R1-1, R2-1, R3-1]
+**锚点回复**: [Comment ID]（选择理由：[1句话]）
+**核心问题**: [底层关切的提炼——不是转述审稿人原话，而是分析后的本质]
+**影响 Section**: [具体到 section 名称 + 行号范围]
+**修改计划**:
+- [关键修改 1: 具体到做什么、在哪里做]
+- [关键修改 2]
+**依赖**: 无 / [列出依赖的 Cluster ID 和原因]
+**备注**: [任何特殊注意事项]
+
+### C2: [Cluster 名称] ([优先级])
+**涉及**: [Comment IDs]
+**锚点回复**: [Comment ID]（选择理由：[1句话]）
+**核心问题**: [...]
+**影响 Section**: [...]
+**修改计划**:
+- [...]
+**依赖**: [...]
+**备注**: [...]
+
+[继续所有 Cluster...]
+
+---
+
+## 6. Response Letter 风格指南
+
+### General Comments 回复风格
+- 简短感谢（2-3 句）
+- 概述总体改进方向
+- 不需要引用具体修改内容和行号
+
+### Detailed Comments 回复风格
+- **开头**: 感谢/认同审稿人观点（1-2 句）
+- **具体修改**: 用 First/Second/Third 编号列出每项修改措施
+- **引用修改稿**: 绿色斜体缩进块引用修改后的原文
+- **行号引用**: 红色标注 "(Please see Lines XXX-YYY)"
+- **总结**: 说明这些修改如何回应了审稿人的关切
+
+### LaTeX 格式规则
+- `\response{}`, `\manuscriptquote{}`, `\lineref{}` 不可嵌套
+- `\response{}` 内不能有空行（会导致 `\par` 错误）
+- `\lineref{}` 放在 `\manuscriptquote{}` 的内容末尾
+- 引用格式: 纯文本 `(Author et al., Year)` — 不用 natbib
+
+### 跨审稿人引用原则
+- **同审稿人内引用**: 可以直接引用（如 R1-4 → R1-3）
+- **跨审稿人引用**: 必须自含式（审稿人只阅读自己那部分）
+  - 包含完整的论证内容
+  - 可引用相同的稿件修改文本
+  - 根据该审稿人的具体提问角度重新组织论证
+
+---
+
+## 7. 交付物
+
+| 交付物 | 文件 | 说明 |
+|--------|------|-------|
+| Response Letter | `response-letter.tex` | 框架已创建，回复待填写 |
+| Revised Manuscript | `manuscript.tex` | 在此文件上修改 |
+| Tracked Changes | `manuscript-track-changes.pdf` | 通过 `latexdiff` 生成 |
+
+## 8. 分工
+
+| 角色 | 职责 |
+|------|------|
+| **用户** | 每条 Comment 的策略确认、内容审阅、最终决策 |
+| **AI (`/rev-respond`)** | 策略提案、内容起草、执行确认后的机械操作 |
+
+**工作流**：`/rev-respond {Comment ID}` → 策略对齐 → 内容起草 → 用户确认后执行
+
+## 9. 期刊特定要求
+
+- [引用格式要求]
+- [图片要求: 分辨率、格式]
+- [字数/页数限制]
+- [Data Availability Statement 要求]
+- [任何特殊章节要求]

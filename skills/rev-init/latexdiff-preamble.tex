@@ -1,0 +1,32 @@
+%DIF CUSTOM PREAMBLE - Blue Text for Additions, Red Strikethrough for Deletions
+%DIF Designed for ascelike + pdfLaTeX workflow
+%DIF Note: soul's \hl{} is incompatible with latexdiff's \mbox{}\hskip0pt
+%DIF constructs and long paragraph-spanning additions. Using colored text instead.
+
+\RequirePackage[normalem]{ulem}
+\RequirePackage{xcolor}
+
+% Color definitions
+\definecolor{addcolor}{RGB}{0,0,200}      % Blue for additions
+\definecolor{delcolor}{RGB}{200,50,50}    % Red for deletions
+
+% Additions -> blue text
+\providecommand{\DIFadd}[1]{{\color{addcolor}#1}}
+% Deletions -> red strikethrough
+\providecommand{\DIFdel}[1]{{\color{delcolor}\sout{#1}}}
+
+% Paragraph-level markers (begin/end pairs)
+\providecommand{\DIFaddbegin}{}
+\providecommand{\DIFaddend}{}
+\providecommand{\DIFdelbegin}{}
+\providecommand{\DIFdelend}{}
+\providecommand{\DIFmodbegin}{}
+\providecommand{\DIFmodend}{}
+
+% Float-safe versions (inside tables/figures)
+\providecommand{\DIFaddFL}[1]{\DIFadd{#1}}
+\providecommand{\DIFdelFL}[1]{\DIFdel{#1}}
+\providecommand{\DIFaddbeginFL}{}
+\providecommand{\DIFaddendFL}{}
+\providecommand{\DIFdelbeginFL}{}
+\providecommand{\DIFdelendFL}{}
