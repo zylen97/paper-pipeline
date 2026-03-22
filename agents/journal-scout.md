@@ -50,6 +50,18 @@ The main agent has already performed web search. Use the provided search results
 - Fall back to your training knowledge
 - Record "Knowledge base only" in Journal info source
 
+## Step 3.5: Generate Journal Profile
+
+Based on the target journal identified in Step 2, generate a 4-dimension journal profile.
+
+**Source rules**:
+- **Aims & Scope**: Extract from web search results (Step 3). If not available, use model knowledge and mark source.
+- **Research Topic Hotspots**: Based on model knowledge of this journal's recent publication trends. Do NOT web search for this — model knowledge is more reliable than potentially inaccurate search results.
+- **Methodology Acceptance Range**: Based on model knowledge. What methods does this journal typically accept? What methods are rare/unwelcome?
+- **Journal Aesthetic Preferences**: Based on model knowledge. What does this journal particularly value? What do its reviewers care most about?
+
+**Cache check**: Before generating, check if `~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/_Zylen idea/_journal-spec/{journal full name}.md` exists. If it exists and its `updated` date is ≤ 30 days old, read and reuse its content for this section (skip generation). If it doesn't exist or is outdated, generate fresh content.
+
 ## Step 4: Generate Research Context Knowledge
 
 Based on the identified industry/domain context, compile:
@@ -85,6 +97,12 @@ Output the Writing Brief in EXACTLY the following structure. The main session wi
 - **Publisher**: {publisher name}
 - **Impact Factor**: {approximate IF, year}
 - **Field/Scope**: {journal's scope description}
+
+### Journal Profile
+- **Aims & Scope**: {detailed aims & scope, source: Web / Knowledge base / Cached from _journal-spec/}
+- **Research Topic Hotspots**: {what research topics are currently hot in this journal; source: Model knowledge}
+- **Methodology Acceptance Range**: {what methods this journal typically accepts and what's rare/unwelcome; source: Model knowledge}
+- **Journal Aesthetic Preferences**: {what this journal particularly values, what reviewers care most about; source: Model knowledge. E.g., IEEE TEM values generalizable theoretical contributions validated in specific contexts; JCEM requires construction industry specificity; JCLP emphasizes policy relevance}
 
 ## Format Requirements
 - **Abstract format**: {structured/unstructured; required sections; word limit}
