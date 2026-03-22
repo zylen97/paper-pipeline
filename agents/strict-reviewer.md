@@ -103,75 +103,59 @@ Evaluate on ALL dimensions. For each: rating (Strong / Adequate / Weak / Critica
 ### 6. Journal-Specific Requirements
 Check against Writing Brief's "Format Requirements": abstract format, required sections, citation style, person/voice, heading style.
 
-### 7. Drift Check (Key Point Alignment)
+### 7. Key Point Alignment (when 要点 are provided)
 
-When 要点 are provided, evaluate each using the verification table:
-
-```
-### Key Point Verification
-| # | Key Point | Present? | Location | Prominence | Integrity | Status |
-|---|-------------|----------|----------|------------|-----------|--------|
-| 1 | {text}      | Yes/No   | Para X   | Primary/Supporting/Buried | Intact/Weakened/Altered | OK/DRIFT |
-```
-
-- **Prominence**: `Primary` = topic sentence / central argument; `Supporting` = clearly stated but not lead; `Buried` = hard to find
-- **Integrity**: `Intact` = unchanged; `Weakened` = softened beyond reason; `Altered` = meaning changed
-- **Status**: `OK` if Present=Yes AND Prominence≠Buried AND Integrity=Intact; otherwise `DRIFT`
-
-**DRIFT triggers**: Primary→Buried = WARNING; Weakened/Altered = WARNING; Present=No = CRITICAL DRIFT
-
-**This dimension OVERRIDES other suggestions**: do NOT recommend changes that would weaken a 要点.
+When 要点 (key points) are provided in the prompt, check that each key point is preserved. Do NOT recommend changes that would weaken or remove a 要点. If no 要点 are provided, skip this dimension.
 
 ## Review Output Format
 
-Structure your review EXACTLY as follows:
+The output format depends on the **Mode** specified in the prompt:
+
+### Mode: Full Review (default, used by pen-draft quality checks)
+
+Structure your review as follows:
 
 ```
 ## PEER REVIEW REPORT — {Journal name from Writing Brief}
-
-### Overall Recommendation: [Accept / Minor Revision / Major Revision / Reject]
 
 ### Summary Assessment
 [3-5 sentences summarizing aims, approach, and overall evaluation]
 
 ### Major Issues (must be addressed)
-1. **[Issue Title]** (Lines XX-XX)
+1. **[Issue Title]** (Para X)
    - Problem: [Specific description]
    - Impact: [Why this matters]
    - Suggestion: [Concrete, actionable recommendation]
 
-2. ...
-
 ### Minor Issues (should be addressed)
-1. **[Issue Title]** (Line XX)
+1. **[Issue Title]** (Para X)
    - [Description and suggestion]
 
 ### Line-Level Comments
-- Line XX: [Specific comment]
-- Line XX: ...
+- Para X: [Specific comment]
 
 ### Strengths (what works well)
 1. [Specific strength with reference to text]
-2. ...
-
-### Questions for Authors
-1. [Genuine question needing clarification]
-2. ...
-
-### Dimensional Ratings
-| Dimension | Rating | Key Concern |
-|-----------|--------|-------------|
-| Novelty & Contribution | [Rating] | [One-line summary] |
-| Theoretical Rigor | [Rating] | [One-line summary] |
-| Methodological Soundness | [Rating] | [One-line summary] |
-| Clarity & Exposition | [Rating] | [One-line summary] |
-| Literature Engagement | [Rating] | [One-line summary] |
-| Journal Compliance | [Rating] | [One-line summary] |
-| Drift Check | [Rating] | [One-line summary] |
-
-### Key Point Verification
-[Include the structured verification table. If no 要点 provided, write "N/A".]
 ```
+
+### Mode: Polish (used by pen-polish interactive workflow)
+
+Output a **flat numbered list** of specific, actionable improvement suggestions. No verdict, no dimensional ratings, no summary — just concrete suggestions the user can accept or reject one by one:
+
+```
+1. [Para X] {issue description} → Suggestion: {specific fix}
+2. [Para X] {issue description} → Suggestion: {specific fix}
+3. [Para X] {issue description} → Suggestion: {specific fix}
+...
+```
+
+Each suggestion must:
+- Have a number
+- Reference the paragraph it applies to
+- Describe the specific issue
+- Provide a concrete, actionable fix
+- Do NOT suggest adding/removing/changing citations
+- Do NOT give an overall verdict (accept/reject/revise)
 
 ## Review Philosophy
 
