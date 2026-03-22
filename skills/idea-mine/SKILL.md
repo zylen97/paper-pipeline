@@ -236,7 +236,7 @@ updated: {YYYY-MM-DD}
 
 **目标**：从论文池中识别具有跨领域迁移价值的 idea 内核，经排序筛选后取 **top 8** 进入阶段四。
 
-> **执行方式**：Step 1 由主 agent 执行，Step 2 由 subagent 并行执行，Step 3 由主 agent 汇总。不使用 WebSearch 做前置检索——WebSearch 能搜到的主要是开源期刊（Frontiers、MDPI、PLOS ONE 等），质量远低于目标期刊；闭源高质量期刊的全文和摘要无法通过 WebSearch 获取。直接**依赖模型知识**判断各 idea 在英文学术圈的研究密度和新颖性。阶段二已获取的期刊画像（Aims & Scope、研究主题热点、方法论接收范围、审美偏好）提供了充分的期刊定位信息。
+> **执行方式**：Step 1-3 全部由主 agent 执行，不使用 subagent。不使用 WebSearch 做前置检索——直接**依赖模型知识**判断各 idea 在英文学术圈的研究密度和新颖性。
 
 #### Step 1：逐篇迁移价值评估（主 agent 执行）
 
@@ -263,8 +263,8 @@ updated: {YYYY-MM-DD}
 ```
 
 **各状态在 Step 2 中的处理**：
-- ✅ 值得迁移 → 启动 subagent 进入 Step 2
-- ⚠️ 存疑 → **也启动 subagent**（通过评分来验证——如果评分低则自然被 Step 3 淘汰，不需要提前排除）
+- ✅ 值得迁移 → 进入 Step 2 评分
+- ⚠️ 存疑 → **也进入 Step 2**（通过评分来验证——如果评分低则自然被 Step 3 淘汰，不需要提前排除）
 - ❌ 不值得迁移 → 不进入 Step 2
 - 📚 综述 → 不进入 Step 2
 
