@@ -6,19 +6,19 @@ description: "从章节大纲自动读取素材，生成论文初稿（Pipeline�
 
 自动读取 `structure/` 下的章节 md、citation pool 和 idea.md，调用 sci-writer 生成初稿。后续审稿润色由 `/pen-polish` 完成。
 
-**执行模式**：
-- Form 1（单节，无隐性结构）：直接运行
-- Form 2（有子节的 section）：自动拆分，逐个子节运行
-- **Form 3（单节，有隐性结构）**：md 中有 `### ` 子标题但 tex 中无 `\subsection` → 并行写各隐性结构 → review 合并
+**架构**：
 
-**输入** `$ARGUMENTS`：`section=XXX`（必须），可选 `words=500`。`words` 支持全局（`words=500`）、按节（`words=Measures:300,Model:500`）、自然语言（`Measures 300字`）。
+- **Form 1**（原子写作单元）：写单个 section / subsection / 隐形段落。被 Form 2 和 Form 3 调用，也可独立运行。
+- **Form 2**（调度器-真实 subsection）：tex 中有 `\subsection` → 从 md 读字数 → **并行**调 Form 1 → 输出带 `\subsection{}` 标题
+- **Form 3**（调度器-隐形结构）：tex 中无 `\subsection`，md 中有 `###` 隐形段落 → 从 md 读字数 → **并行**调 Form 1 → 拼接为连续文本
+
+**输入** `$ARGUMENTS`：`section=XXX`（必须）。
 
 ## 步骤 0：前置准备
 
 ### 0.1 解析 `$ARGUMENTS`
 
-- 提取 `section` 和 `words` 参数
-- `words` 解析：纯数字→`{"_global": N}`，键值对/自然语言→`{"SectionName": N, ...}`，未指定→`{}`。键名匹配忽略大小写和下划线/空格差异
+- 提取 `section` 参数
 - 无 `section` → AskUserQuestion 询问要写哪个 section
 
 ### 0.2 获取项目文件路径
@@ -32,33 +32,20 @@ description: "从章节大纲自动读取素材，生成论文初稿（Pipeline�
 - 正则 `\\(section|subsection|subsubsection)\{([^}]+)\}` 提取所有 section 命令（忽略 `*` 变体）
 - 记录级别、标题、行号，构建父子关系树，记录 parent/children/siblings/preceding/following
 
-### 0.4 Section 匹配与 Form 判定
+### 0.4 匹配 section + 判定 Form
 
 将 `section=XXX` 在 `{SECTION_TREE}` 中匹配：
 
 - **匹配规则**：先精确匹配，后模糊匹配（忽略大小写、"and"/"&"互换、冠词省略）
-- **有子 section** → `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = 子 section 列表
+- **有子 section** → `{INPUT_FORM}` = "multi"（Form 2），`{SPLIT_SEGMENTS}` = 子 section 列表
 - **无子 section** → 进一步检查章节 md：
-  - md 的 `## 大纲` 下有 `### ` 子标题（隐性结构）且有字数分配表 → `{INPUT_FORM}` = "implicit-multi"，`{SPLIT_SEGMENTS}` = md 中 `### ` 子标题列表
-  - 否则 → `{INPUT_FORM}` = "single"
+  - md 的 `## 大纲` 下有 `### ` 子标题且有字数分配表 → `{INPUT_FORM}` = "implicit-multi"（Form 3），`{SPLIT_SEGMENTS}` = md 中 `### ` 子标题列表
+  - 否则 → `{INPUT_FORM}` = "single"（Form 1）
 - **匹配失败** → 列出 `{SECTION_TREE}` 中所有可用 section，AskUserQuestion 让用户选择
 
-### 0.5 构建层级路径
+### 0.5 定位源文件
 
-**`normalize(title)`**：空格→下划线，Capitalized_Words 风格，> 40 字符在最后完整单词边界截断。示例："Research methods" → `Research_methods`
-
-**Form 1**：`{SECTION_NAME}` = normalize(标题)。`{HIERARCHY_PREFIX}` = 祖先标题 normalize 后 "/" 连接（顶级为空，二级=parent，三级=grandparent/parent）
-
-**Form 2**：`{HIERARCHY_PREFIX}` 同 Form 1 规则。`{PARENT_HIERARCHY}` = `{HIERARCHY_PREFIX}/{normalize(parent)}`（parent 为顶级时 = normalize(parent)）
-
-### 0.6 自动解析源文件 `{SOURCE_FILES}`
-
-从匹配到的 section 自动定位需要读取的素材文件：
-
-**a. 定位章节 md 文件**：
-
-1. 找到匹配 section 的**顶层父 section**（如 "Platform economics..." → 父 "Literature review"）
-2. 扫描 `structure/` 子目录，用关键词匹配目录名：
+- **章节 md 文件**：找到匹配 section 的顶层父 section，扫描 `structure/` 子目录用关键词匹配目录名：
 
 ```
 section 关键词        → 目录
@@ -71,27 +58,103 @@ discussion           → Glob("structure/*discussion*/discussion.md") 动态匹�
 conclusion           → 无对应 md，停止并提示用户
 ```
 
-3. 记录 `{CHAPTER_MD_PATH}`
+记录 `{CHAPTER_MD_PATH}`
 
-**b. 定位 citation pool 文件**：
+- **citation pool 文件**：读取 `{CHAPTER_MD_PATH}`，查找底部 `## 引用池` 区块，解析列出的文件路径 → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
+- **全局上下文**：固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
 
-1. 读取 `{CHAPTER_MD_PATH}`
-2. 查找底部 `## 引用池` 区块（或 `## Citation Pool`）
-3. 解析该区块中列出的 citation pool 文件路径（格式如 `→ 见 \`2_literature/citation_pool/LR.md\``）
-4. 构建完整路径列表 → `{CITATION_POOL_PATHS}`
-5. 如无引用池区块 → `{CITATION_POOL_PATHS}` = 空列表，不报错
+### 0.6 创建工作目录
 
-**c. 全局上下文**：
+**`normalize(title)`**：空格→下划线，Capitalized_Words 风格，> 40 字符在最后完整单词边界截断。
 
-- 固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
+- **Form 1**：`drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_{序号:03d}/`（HIERARCHY_PREFIX = 祖先标题 normalize 后 "/" 连接，顶级为空）
+- **Form 2/3**：`{MULTI_BASE_DIR}` = `drafts/{PARENT_HIERARCHY}/`，子工作目录在步骤 2 并行调用中创建
 
-### 0.7 创建工作目录
+## 步骤 1：生成 Writing Brief
 
-**Form 1**：父目录 = `drafts/{HIERARCHY_PREFIX}/`（空则 `drafts/`），查找 `{SECTION_NAME}_*` 最大序号，创建 `{SECTION_NAME}_{序号+1:03d}`
+1. **复用检查**：读取 `drafts/writing_brief.md`，检查 `## Metadata` 中的 `Generated` 时间戳（> 24h→重新生成）和 `Manuscript word count`（变化 > 20%→重新生成）。两项通过→复用
+2. **Web 搜索**（主 agent 执行）：从 `\journal{}` 提取期刊名，依次尝试 `mcp__web-search-prime__webSearchPrime`→`mcp__MiniMax__web_search`→"Knowledge base only"
+3. **调用 journal-scout**（`subagent_type: "journal-scout"`）：prompt 含 manuscript 分析 + web 搜索结果
+4. **保存**：提取 `---BEGIN/END WRITING BRIEF---` 之间内容→`drafts/writing_brief.md`
+5. **展示**：期刊名称、研究情境、信息来源
 
-**Form 2**：`{MULTI_BASE_DIR}` = `drafts/{PARENT_HIERARCHY}/`，递归创建。子工作目录在步骤 1.5 循环中创建
+## 步骤 2：调度
 
-### 0.8 生成 Structural Context
+根据 `{INPUT_FORM}` 分派。**三个子步骤互斥，只走一个**。
+
+### 2.1 Form 1（单节）
+
+直接进入步骤 3，传入：
+- `{CHAPTER_MD_CONTENT}` = 章节 md 中对应区块（顶级 section 读全文，子 section 按 heading 提取）
+- `{WORD_TARGET}` = null（由 sci-writer 根据大纲密度自行判断）
+
+### 2.2 Form 2（真实 subsection — 并行调度）
+
+**2.2a 解析段落列表**：
+
+- `{SPLIT_SEGMENTS}` = tex 中的 `\subsection` 列表（步骤 0.4 已解析）
+- 对每个 subsection：从 `{CHAPTER_MD_PATH}` 的 `## 大纲` 按 heading 匹配提取内容（intent + 要点）。匹配规则：忽略编号前缀（如 "### 2.1 "），对标题部分做模糊匹配（忽略大小写）。匹配失败 → 使用章节 md 全文并警告
+- 从 md 的字数分配表匹配每个 subsection 的目标字数 → `{WORD_TARGETS}`
+
+**2.2b 确认**（AskUserQuestion）：
+
+- Parent section 名称
+- Subsection 列表 + 各自目标字数
+- 源文件列表：`{CHAPTER_MD_PATH}` + `{CITATION_POOL_PATHS}`
+- 预计 agent 调用次数：N 次并行 sci-writer
+
+等待用户确认。
+
+**2.2c 并行写作**：
+
+读取 `{IDEA_PATH}`、`{CITATION_POOL_PATHS}` 等共享上下文后，按**槽位制**调用 N 个 sci-writer agent（同时不超过 8 个，完成一个补一个）：
+
+```
+FOR EACH subsection IN {SPLIT_SEGMENTS} (PARALLEL):
+  a. 创建工作目录 {WORK_DIR} = {MULTI_BASE_DIR}/{normalize(subsection.title)}_{序号:03d}/
+  b. 执行步骤 3（传入：subsection 内容 + 字数 + 位置信息）
+END FOR
+```
+
+### 2.3 Form 3（隐形结构 — 并行调度）
+
+**2.3a 解析段落列表**：
+
+从 `{CHAPTER_MD_PATH}` 的 `## 大纲` 区块中提取：
+- 字数分配表（目标总字数、各子节目标字数、写作说明）
+- 各 `### ` 子标题及其下的 intent 和要点
+- `{SPLIT_SEGMENTS}` = md 中 `### ` 子标题列表
+
+**2.3b 确认**（AskUserQuestion）：
+
+- Section 名称
+- 隐形段落列表 + 各自目标字数 + 写作说明
+- 源文件列表
+- 预计 agent 调用次数：N 次并行 sci-writer
+
+等待用户确认。
+
+**2.3c 并行写作**：
+
+读取 `{IDEA_PATH}`、`{CITATION_POOL_PATHS}` 等共享上下文后，按**槽位制**调用 N 个 sci-writer agent（同时不超过 8 个，完成一个补一个）：
+
+```
+FOR EACH implicit_segment IN {SPLIT_SEGMENTS} (PARALLEL):
+  a. 创建工作目录 {WORK_DIR} = {MULTI_BASE_DIR}/{normalize(segment.title)}_{序号:03d}/
+  b. 执行步骤 3（传入：段落内容 + 字数 + 位置信息："你正在写 {section title} 的第 {i}/{N} 个逻辑段落，前面是 {prev}，后面是 {next}"）
+END FOR
+```
+
+## 步骤 3：原子写作单元（Form 1 核心）
+
+被步骤 2.1 / 2.2c / 2.3c 调用。
+
+### 3.1 读取并组装源材料
+
+1. 读取 `{IDEA_PATH}` → `{IDEA_CONTEXT}`（idea.md 全文）
+2. 读取传入的章节 md 内容 → `{CHAPTER_MD_CONTENT}`（由步骤 2 提取好的对应区块）
+3. 读取 `{CITATION_POOL_PATHS}` 中所有文件 → `{CITATION_POOL_CONTENT}`
+4. 生成 Structural Context：
 
 ```
 ### Structural Context
@@ -101,137 +164,10 @@ conclusion           → 无对应 md，停止并提示用户
 - Preceding/Following section: {前/后同级或 "None"}
 - Role in paper: {基于位置推断的角色}
 ```
-Form 1 直接生成 `{STRUCTURAL_CONTEXT}`；Form 2 在循环中为每个 child 分别生成。
 
-## 步骤 1：生成 Writing Brief
+5. 保存 `{WORK_DIR}/00_source_context.md`
 
-**1. 复用检查**：读取 `drafts/writing_brief.md`，检查 `## Metadata` 中的 `Generated` 时间戳（> 24h→重新生成）和 `Manuscript word count`（变化 > 20%→重新生成）。两项通过→复用，跳到步骤 1.5/2
-
-**2. Web 搜索**（主 agent 执行）：从 `\journal{}` 提取期刊名，依次尝试 `mcp__web-search-prime__webSearchPrime`→`mcp__MiniMax__web_search`→"Knowledge base only"
-
-**3. 调用 journal-scout**（`subagent_type: "journal-scout"`）：
-- prompt: `Analyze the manuscript and generate a Writing Brief. ## Web Search Results: {结果} ## Journal Info Source: {来源}. Output the complete Writing Brief.`
-
-**4. 保存**：提取 `---BEGIN/END WRITING BRIEF---` 之间内容→`drafts/writing_brief.md`
-
-**5. 展示**：期刊名称、研究情境、信息来源
-
-## 步骤 1.5：Form 2 调度控制
-
-`{INPUT_FORM}` = "single" → 跳过，直接执行步骤 2-4。
-`{INPUT_FORM}` = "implicit-multi" → 跳过步骤 1.5，执行步骤 1.6（隐性结构并行调度）。
-
-**1.5a 确认**：AskUserQuestion 显示：
-- Parent section / Hierarchy
-- Children 列表
-- 将读取的 md 文件：`{CHAPTER_MD_PATH}`
-- 将读取的 citation pool 文件：`{CITATION_POOL_PATHS}`
-- 预计 agent 调用次数：N 次（每个子 section 1 次 sci-writer）
-- 字数预算（如有）
-
-等待用户确认。
-
-**1.5b 循环处理**：
-```
-FOR i, child IN enumerate({SPLIT_SEGMENTS}):
-  a. 设置变量：{CURRENT_SECTION_NAME} = normalize(child.title)，{CURRENT_TITLE} = child.title
-     解析 {CURRENT_WORD_TARGET}（按节>全局>null）
-  b. 从 {CHAPTER_MD_PATH} 按 heading 提取该子 section 内容：
-     匹配规则：忽略编号前缀（如 "2.1 "），对标题部分做模糊匹配（忽略大小写）
-     即 `### 2.1 Platform economics...` 可匹配 section tree 中的 "Platform economics..."
-     匹配失败 → 使用章节 md 全文并警告
-  c. 创建工作目录 {WORK_DIR} = {MULTI_BASE_DIR}/{CURRENT_SECTION_NAME}_{序号:03d}/
-  d. 生成该子 section 的 Structural Context
-  e. 显示 "▶ [{i+1}/{total}]: {CURRENT_TITLE}"
-  f. 执行步骤 2-3（单 section 流水线，复用 Writing Brief）
-  g. 显示 "✓ [{i+1}/{total}] done: {WORK_DIR}"
-END FOR
-```
-完成后跳转步骤 4 汇总。
-
-## 步骤 1.6：Form 3 隐性结构并行调度
-
-`{INPUT_FORM}` = "implicit-multi" 时执行。
-
-**1.6a 解析隐性结构**：
-
-从 `{CHAPTER_MD_PATH}` 的 `## 大纲` 区块中提取：
-- 字数分配表（目标总字数、各子节目标字数、写作说明）
-- 各 `### ` 子标题及其下的 intent 和要点
-
-**1.6b 确认**：AskUserQuestion 显示：
-- Section 名称
-- 隐性结构列表（含字数分配）
-- 预计 agent 调用次数：N 次并行 sci-writer
-- 将读取的源文件
-
-等待用户确认。
-
-**1.6c 并行写作**：
-
-读取 `{IDEA_PATH}`、`{CITATION_POOL_PATHS}` 等共享上下文后，按**槽位制**调用 N 个 sci-writer agent（同时不超过 8 个，完成一个补一个）：
-
-```
-FOR EACH implicit_segment IN {SPLIT_SEGMENTS} (PARALLEL):
-  调用 sci-writer，prompt 包含：
-  - 子节名称、intent、要点、目标字数、写作说明
-  - 位置信息："你正在写 {section title} 的第 {i}/{N} 个逻辑段落，前面是 {prev}，后面是 {next}"
-  - Writing Brief（期刊风格）
-  - idea.md（全局上下文）
-  - citation pool
-  - 引用密度要求（见步骤 3 的 Constraints）
-END FOR
-```
-
-**1.6d 拼接保存**：
-
-收集 N 个 agent 的输出后，按顺序拼接，保存到 `{WORK_DIR}/final.md`。
-
-**1.6e 更新 bib 文件**：
-
-1. 扫描 `{WORK_DIR}/final.md` 中所有 `\citep{}` 和 `\citet{}` 引用的 citation key
-2. 读取 `structure/2_literature/citation_pool/master.bib`（由 `/lit-pool` 生成的完整文献库）
-3. 读取项目 bib 文件（如 `{ID}.bib`），找出哪些 key 尚未收录
-4. 从 master.bib 中提取新增 key 对应的条目，追加到项目 bib 文件
-5. 去掉 `\citep{key1, key2}` 中逗号后的空格（BibTeX 要求无空格）
-6. 质量检测：逐条验证 key 中的年份与 bib 条目的 year 字段是否一致
-7. 报告：新增 N 条 bib 条目，M 个 key 在 master.bib 中未找到（需手动补充）
-
-跳转步骤 4。
-
-## 步骤 2：读取并组装源材料
-
-> 步骤 2-3 = 单 section 流水线（Form 1 执行一次，Form 2 每个子 section 重复。Form 3 在步骤 1.6 中已完成，跳过步骤 2-3）
-
-**动作**：
-
-1. 读取 `{IDEA_PATH}` → `{IDEA_CONTEXT}`（idea.md 全文）
-2. 读取章节 md → `{CHAPTER_MD_CONTENT}`：
-   - Form 1 且顶级 section：读取 md 全文
-   - Form 1 且子 section：按 heading 提取对应区块
-   - Form 2：在步骤 1.5b 中已提取
-3. 读取 `{CITATION_POOL_PATHS}` 中所有文件 → `{CITATION_POOL_CONTENT}`
-4. 保存 `{WORK_DIR}/00_source_context.md`：
-
-```markdown
-# Source Context — {Section Title}
-Generated: {date}
-
-## Files Read
-- **Global**: structure/0_global/idea.md
-- **Chapter md**: {CHAPTER_MD_PATH} (全文 / subsection "{title}")
-- **Citation pools**: {逐行列出文件路径}
-
-## Chapter MD Content
-{CHAPTER_MD_CONTENT}
-
-## Citation Pool Content
-{CITATION_POOL_CONTENT}
-```
-
-5. 自动继续步骤 3
-
-## 步骤 3：调用 sci-writer 撰写初稿
+### 3.2 调用 sci-writer 撰写初稿
 
 调用 sci-writer（`subagent_type: "sci-writer"`），prompt 要素：
 
@@ -261,12 +197,17 @@ key points — do not omit, weaken, or reinterpret any point.
 ## Available Citations
 {CITATION_POOL_CONTENT}
 
-Use these citation keys with \citet{} or \citep{} as appropriate.
+Use these citation keys following the outline's citation markers:
+- `\citet{key}` = author as subject: "Smith (2020) found that..." — use when highlighting a specific study's findings
+- `\citep{key}` = parenthetical: "...recent findings (Smith, 2020)" — use for general claims supported by multiple sources
+- `\citep{key1, key2}` = multiple parenthetical: "...observed across industries (Smith, 2020; Jones, 2021)"
+If the outline specifies `\citet{}` for a point, the author MUST appear as subject in the sentence.
+If the outline specifies `\citep{}`, use parenthetical citation.
 Only use keys that appear in the outline above or in this citation pool.
 Where a citation is clearly needed but no key is available, mark with (ref).
 
 ## Constraints
-- Word target: {words}±10% (if unspecified, judge based on outline density and note actual count)
+- Word target: {WORD_TARGET}±10% (if unspecified, judge based on outline density and note actual count)
 - Do NOT use \textbf{}
 - Do NOT invent citations — only use keys from the outline or citation pool
 - Ensure every outline point is covered; do not add arguments not in the outline or idea.md
@@ -283,9 +224,9 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 3. Key Point Verification table confirming every outline point is covered
 ```
 
-**输出**：`{WORK_DIR}/final.md`
+### 3.3 保存输出
 
-从 sci-writer 返回中提取 ```latex``` code block，包裹为：
+从 sci-writer 返回中提取 ` ```latex``` ` code block，包裹为：
 
 ```markdown
 # {Section Title} — First Draft
@@ -301,26 +242,65 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 **Key point coverage**: {X}/{Y} points covered
 ```
 
+保存到 `{WORK_DIR}/final.md`。
+
 **便捷入口** `_latest_final.md`：
-- Form 1: `drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_latest_final.md`（顶级 section 省略 prefix）
-- Form 2: `drafts/{PARENT_HIERARCHY}/{CURRENT_SECTION_NAME}_latest_final.md`
+- Form 1: `drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_latest_final.md`
+- Form 2: `drafts/{PARENT_HIERARCHY}/{normalize(subsection.title)}_latest_final.md`
+- Form 3: `drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_latest_final.md`（指向拼接后的完整文件）
 - 复制 `final.md` 内容，已存在则覆盖
 
-## 步骤 4：完成提示
+## 步骤 4：后处理
+
+### 4.1 拼接（仅 Form 3）
+
+收集 N 个 agent 的输出后，按顺序拼接，保存到 `{MULTI_BASE_DIR}/final.md`。拼接时不加 `\subsection{}` 标题（隐形结构→连续文本）。
+
+Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
+
+### 4.2 更新 bib 文件
+
+适用于所有 Form：
+
+1. 扫描输出文件中所有 `\citep{}` 和 `\citet{}` 引用的 citation key
+   - Form 1：扫描 `{WORK_DIR}/final.md`
+   - Form 2：扫描所有子节 `{WORK_DIR}/final.md`
+   - Form 3：扫描拼接后的 `{MULTI_BASE_DIR}/final.md`
+2. 读取 `structure/2_literature/citation_pool/master.bib`（由 `/lit-pool` 生成的完整文献库）
+3. 读取项目 bib 文件（如 `{ID}.bib`），找出哪些 key 尚未收录
+4. 从 master.bib 中提取新增 key 对应的条目，追加到项目 bib 文件
+5. 去掉 `\citep{key1, key2}` 中逗号后的空格（BibTeX 要求无空格）
+6. 质量检测：逐条验证 key 中的年份与 bib 条目的 year 字段是否一致
+7. 报告：新增 N 条 bib 条目，M 个 key 在 master.bib 中未找到（需手动补充）
+
+## 步骤 5：完成提示
 
 ### Form 1
 显示：
-- 完成状态
-- 读取的源文件列表
+- ✅ 完成状态
+- 📂 读取的源文件列表
 - 工作目录路径 / 便捷入口路径
 - 字数统计
 - Key point coverage
-- 提示：运行 `/pen-polish` 进行审稿和润色
+- Bib 更新报告：新增 N 条，M 个未找到
+- 💡 提示：运行 `/pen-polish` 进行审稿和润色
 
 ### Form 2
 显示：
-- 全部 {N} 个子 section 完成
+- ✅ 全部 {N} 个 subsection 完成
 - 基础目录 `{MULTI_BASE_DIR}`
-- 汇总表：子 Section / 工作目录 / 便捷入口 / 字数 / Key point coverage
-- 提示：逐个或整体运行 `/pen-polish` 进行审稿和润色
-- 提醒手动合并到 manuscript.tex
+- 汇总表：Subsection / 工作目录 / 便捷入口 / 字数 / Key point coverage
+- Bib 更新报告：新增 N 条，M 个未找到（列出未找到的 key）
+- 💡 提示：逐个或整体运行 `/pen-polish` 进行审稿和润色
+- ⚠️ 提醒手动合并到 manuscript.tex
+
+### Form 3
+显示：
+- ✅ 全部 {N} 个隐形段落完成并拼接
+- 工作目录 `{MULTI_BASE_DIR}`
+- 便捷入口路径
+- 汇总表：段落名称 / 字数
+- 总字数
+- Bib 更新报告：新增 N 条，M 个未找到（列出未找到的 key）
+- 💡 提示：运行 `/pen-polish` 进行审稿和润色
+- ⚠️ 提醒手动合并到 manuscript.tex

@@ -7,10 +7,8 @@ description: "交互式构建叙述型章节的要点（论点 + citations），
 为叙述型章节（Introduction, Literature Review, Discussion）逐子节构建要点（核心论点 + citation key），经用户确认后写入章节 md 文件。技术型章节不适用本技能。
 
 **三个章节的流程差异**：
-- **Introduction / Discussion**：子节骨架由必备元素固定（RQ数量确定 → 子节确定），直接进入要点填充
-- **Literature Review**：子节骨架（N个方向）不确定，需先交互确定方向和写作蓝图，再填充要点
-
-**执行模式**：Form 1（单节）直接运行；Form 2（有子节的 section）逐个子节交互。
+- **Introduction / Discussion**：子节骨架由必备元素固定（RQ数量确定 → 子节确定），跳过步骤 1-2，直接进入要点填充
+- **Literature Review**：子节骨架（N个方向）不确定，需先交互确定方向（步骤 1）和写作蓝图（步骤 2），再填充要点
 
 **输入** `$ARGUMENTS`：`section=XXX`（必须）。
 
@@ -66,14 +64,9 @@ description: "交互式构建叙述型章节的要点（论点 + citations），
 - Literature review → `{SECTION_TYPE}` = `"litrev"`
 - Discussion → `{SECTION_TYPE}` = `"discussion"`
 
-### 0.6 自动解析源文件 `{SOURCE_FILES}`
+### 0.6 定位源文件
 
-从匹配到的 section 自动定位需要读取的素材文件：
-
-**a. 定位章节 md 文件**：
-
-1. 找到匹配 section 的**顶层父 section**（如 "Platform economics..." → 父 "Literature review"）
-2. 扫描 `structure/` 子目录，用关键词匹配目录名：
+- **章节 md 文件**：找到匹配 section 的顶层父 section，扫描 `structure/` 子目录用关键词匹配目录名：
 
 ```
 section 关键词        → 目录
@@ -82,48 +75,29 @@ literature           → structure/2_literature/literature.md
 discussion           → Glob("structure/*discussion*/discussion.md") 动态匹配
 ```
 
-3. 记录 `{CHAPTER_MD_PATH}`
+记录 `{CHAPTER_MD_PATH}`
 
-**b. 定位 citation pool 文件**：
+- **citation pool 文件**：读取 `{CHAPTER_MD_PATH}`，查找底部 `## 引用池` 区块，解析列出的文件路径 → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
+- **全局上下文**：固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
+- **其他章节 md 扫描**（交叉参考）：扫描 `structure/` 下所有章节 md 文件（排除当前章节），检查有实质内容的 → `{OTHER_MD_PATHS}` 列表。读取时仅提取标题和要点摘要
+- **LR 额外源文件**（仅 `{SECTION_TYPE}` == `"litrev"` 时）：
+  - Glob `structure/2_literature/direction*report*.md` → `{DIRECTION_REPORT_PATHS}`
+  - Glob `structure/2_literature/*search_plan*.md` → `{SEARCH_PLAN_PATH}`
+  - Glob `structure/2_literature/master_report.md` → `{MASTER_REPORT_PATH}`
+  - 任一 Glob 无匹配结果 → 对应变量设为空，不报错
 
-1. 读取 `{CHAPTER_MD_PATH}`
-2. 查找底部 `## 引用池` 区块（或 `## Citation Pool`）
-3. 解析该区块中列出的 citation pool 文件路径（格式如 `→ 见 \`2_literature/citation_pool/LR.md\``）
-4. 构建完整路径列表 → `{CITATION_POOL_PATHS}`
-5. 如无引用池区块 → `{CITATION_POOL_PATHS}` = 空列表，不报错
-
-**c. 全局上下文**：
-
-- 固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
-
-**d. 其他章节 md 扫描**（交叉参考）：
-
-- 扫描 `structure/` 下所有章节 md 文件（排除当前章节）
-- 对每个文件：检查 `## 大纲` 或 `## 完整素材` 下是否有实质内容（非 TODO/空）
-- 有实质内容的文件 → `{OTHER_MD_PATHS}` 列表
-- 读取时仅提取标题和要点（不读全文），避免上下文过长
-
-**e. LR 额外源文件**（仅 `{SECTION_TYPE}` == `"litrev"` 时执行）：
-
-- Glob `structure/2_literature/direction*report*.md` → `{DIRECTION_REPORT_PATHS}`
-- Glob `structure/2_literature/*search_plan*.md` → `{SEARCH_PLAN_PATH}`
-- Glob `structure/2_literature/master_report.md` → `{MASTER_REPORT_PATH}`
-- 任一 Glob 无匹配结果 → 对应变量设为空（空列表或空字符串），不报错。步骤 0.7a 读取时跳过空变量。
-
-**f. 路由判定**：
+**路由判定**：
 
 ```
-IF {SECTION_TYPE} == "litrev" → 执行步骤 0.7-0.8，然后步骤 1
-ELSE → 跳过步骤 0.7-0.8，直接进入步骤 1
+IF {SECTION_TYPE} == "litrev" → 执行步骤 1-2，然后步骤 3
+ELSE → 跳过步骤 1-2，直接进入步骤 3
 ```
 
----
-
-## 步骤 0.7：Literature Review 方向确定（仅 litrev）
+## 步骤 1：LR 方向确定（仅 litrev）
 
 > Introduction 和 Discussion 跳过此步骤。
 
-### 0.7a 读取 LR 专用素材
+### 1.1 读取 LR 专用素材
 
 读取以下文件（摘要级别，避免上下文过长）：
 1. `{DIRECTION_REPORT_PATHS}` 中所有方向报告 → `{DIRECTION_REPORTS_CONTEXT}`（每篇提取标题、关键发现、筛选后文献列表）
@@ -146,7 +120,7 @@ ELSE → 跳过步骤 0.7-0.8，直接进入步骤 1
 
 > 如无方向报告/检索方案/总报告，方向提议将主要基于 idea.md 和引用池。
 
-### 0.7b 自动提议方向
+### 1.2 自动提议方向
 
 基于所有素材，提议 N 个 LR 方向（subsection）。
 
@@ -191,13 +165,11 @@ AskUserQuestion 等待用户确认。
 
 **循环**：用户不满意 → 修改方向 → 再次展示 → 直到用户确认。确认后记录 `{LR_DIRECTIONS}` = 用户确认的方向列表（含标题、核心内容、对应 Gap）。
 
----
-
-## 步骤 0.8：LR 写作蓝图构建（仅 litrev）
+## 步骤 2：LR 写作蓝图构建（仅 litrev）
 
 > Introduction 和 Discussion 跳过此步骤。
 
-### 0.8a 为每个方向构建写作蓝图
+### 2.1 为每个方向构建写作蓝图
 
 LR 方向的内部结构分为两部分，比重固定：
 
@@ -253,22 +225,20 @@ AskUserQuestion 等待用户确认。用户可以：
 
 **循环**：用户不满意 → 修改写作蓝图 → 再次展示 → 直到用户确认。
 
-### 0.8b 记录写入内容
+### 2.2 记录写入内容
 
-记录需要更新到 `{CHAPTER_MD_PATH}`（literature.md）的内容（实际写入延迟到步骤 3 统一执行）：
+记录需要更新到 `{CHAPTER_MD_PATH}`（literature.md）的内容（实际写入延迟到步骤 7 统一执行）：
 
 1. `## 必备元素` 更新内容：方向列表 + 写作蓝图定义 + 定位表说明
 2. `## 大纲` 中需要创建的 `###` heading 列表
 
-### 0.8c 生成子节列表
+### 2.3 生成子节列表
 
 将 `{LR_DIRECTIONS}` + "定位表" 转换为 `{SPLIT_SEGMENTS}` 格式，设 `{INPUT_FORM}` = `"multi"`。
 
-**关键**：对 LR，`{SPLIT_SEGMENTS}` 来自步骤 0.7 的用户确认结果，**而非** manuscript.tex 的 section tree 解析（因为 tex 中 LR 可能还没有 subsection）。步骤 0.4 中对 LR 的 Form 判定结果在此被覆盖。
+**关键**：对 LR，`{SPLIT_SEGMENTS}` 来自步骤 1 的用户确认结果，**而非** manuscript.tex 的 section tree 解析（因为 tex 中 LR 可能还没有 subsection）。步骤 0.4 中对 LR 的 Form 判定结果在此被覆盖。
 
----
-
-## 步骤 1：读取并组装上下文
+## 步骤 3：读取并组装上下文
 
 **动作**：
 
@@ -280,7 +250,7 @@ AskUserQuestion 等待用户确认。用户可以：
 
 **LR 额外读取**（仅 `{SECTION_TYPE}` == `"litrev"` 时）：
 
-步骤 0.7a 已读取方向报告等素材用于方向确定。此处复用已加载的上下文变量（`{DIRECTION_REPORTS_CONTEXT}` 等），不重复读取。
+步骤 1.1 已读取方向报告等素材用于方向确定。此处复用已加载的上下文变量（`{DIRECTION_REPORTS_CONTEXT}` 等），不重复读取。
 
 显示已读取的文件列表：
 ```
@@ -295,42 +265,40 @@ AskUserQuestion 等待用户确认。用户可以：
 - 总报告: {文件名}
 ```
 
-## 步骤 1.5：Form 2 调度确认
+## 步骤 4：调度确认
 
-`{INPUT_FORM}` = "single" → 跳过，直接执行步骤 2。
+`{INPUT_FORM}` = "single" → 跳过，直接对整个 section 执行步骤 5。
 
-**1.5a 确认**：AskUserQuestion 显示：
+**4.1 确认**（AskUserQuestion）：
 - Parent section 名称
 - 子节列表（编号）
 - 将读取的源文件列表
 - 预计交互：每个子节 2 轮确认（intent + 要点）
 
 **LR 特殊说明**（仅 `{SECTION_TYPE}` == `"litrev"`）：
-- `{SPLIT_SEGMENTS}` 来自步骤 0.8c（而非 manuscript.tex 解析）
+- `{SPLIT_SEGMENTS}` 来自步骤 2.3（而非 manuscript.tex 解析）
 - 子节列表末尾含"定位表"（特殊子节，走独立流程）
 - 预计交互说明中注明：各方向子节 2 轮（intent + 要点），定位表 1 轮（文献选择 + 维度确认）
 
 等待用户确认后开始循环。
 
-**1.5b 循环处理**：
+**4.2 循环处理**：
 ```
 FOR i, child IN enumerate({SPLIT_SEGMENTS}):
   a. 设置 {CURRENT_TITLE} = child.title
   b. 从 {CHAPTER_MD_CONTENT} 按 heading 提取该子节已有内容：
      匹配规则：忽略编号前缀（如 "### 2.1 "），对标题部分做模糊匹配
   c. 显示 "▶ [{i+1}/{total}]: {CURRENT_TITLE}"
-  d. 执行步骤 2（单子节交互流程）
+  d. 执行步骤 5（单子节交互流程）
   e. 显示 "✓ [{i+1}/{total}] done"
 END FOR
 ```
 
-完成后跳转步骤 3 汇总写入。
+## 步骤 5：单子节交互流程
 
-## 步骤 2：单子节交互流程
+Form 1（single）执行一次，Form 2（multi）每个子节重复。
 
-> Form 1 执行一次，Form 2 每个子 section 重复。
-
-### 2.1 检查已有要点
+### 5.1 检查已有要点
 
 从 `{CHAPTER_MD_CONTENT}` 中提取当前子节对应 heading 下的内容：
 
@@ -345,12 +313,12 @@ END FOR
   (3) 重新构建（覆盖）
   ```
   用户选 (1) → 跳过此子节，进入下一个
-  用户选 (2) → 将已有要点作为起点，进入 2.2
-  用户选 (3) → 忽略已有要点，进入 2.2
+  用户选 (2) → 将已有要点作为起点，进入 5.2
+  用户选 (3) → 忽略已有要点，进入 5.2
 
-- **无要点或仅 TODO** → 直接进入 2.2
+- **无要点或仅 TODO** → 直接进入 5.2
 
-### 2.2 Intent 确认
+### 5.2 Intent 确认
 
 基于以下信息生成该子节的一句话意图（概括这个子节要达成的论证目的）：
 
@@ -362,7 +330,7 @@ END FOR
 
 **LR 方向子节的 intent 格式**（仅 `{SECTION_TYPE}` == `"litrev"` 且非定位表）：
 
-intent 展示完整写作蓝图摘要（来自步骤 0.8a 的确认结果）：
+intent 展示完整写作蓝图摘要（来自步骤 2.1 的确认结果）：
 
 ```
 💡 子节 intent：
@@ -382,9 +350,9 @@ AskUserQuestion：确认 intent 或提出修改意见。
 
 **循环**：用户不满意 → 修改 intent → 再次展示 → 直到用户确认。
 
-### 2.3 要点构建
+### 5.3 要点构建
 
-**分支判定**：如果 `{SECTION_TYPE}` == `"litrev"` 且当前子节为"定位表" → 跳转 2.3-LR-table。否则执行以下通用流程。
+**分支判定**：如果 `{SECTION_TYPE}` == `"litrev"` 且当前子节为"定位表" → 执行 5.3 的定位表专用流程（见下方）。否则执行以下通用流程。
 
 基于已确认的 intent，结合所有上下文，生成要点列表：
 
@@ -407,7 +375,7 @@ AskUserQuestion：确认 intent 或提出修改意见。
 
 **LR 方向子节的要点组织**（仅 `{SECTION_TYPE}` == `"litrev"` 且非定位表）：
 
-要点按写作蓝图的**子主题**分组组织，citations 使用步骤 0.8a 预分配的文献。在交互输出中用子主题标记辅助用户审阅（写入 md 时去掉标记）：
+要点按写作蓝图的**子主题**分组组织，citations 使用步骤 2.1 预分配的文献。在交互输出中用子主题标记辅助用户审阅（写入 md 时去掉标记）：
 
 ```
 ### {subsection title}
@@ -436,7 +404,7 @@ AskUserQuestion：确认 intent 或提出修改意见。
 | ... | ... | ... |
 ```
 
-**与 Introduction/Discussion 的差异**：LR 要点的 citations 已在步骤 0.8a 预分配，步骤 2.3 主要任务是**围绕预分配的 citations 撰写要点文本**。用户仍可在此阶段增删改 citations。
+**与 Introduction/Discussion 的差异**：LR 要点的 citations 已在步骤 2.1 预分配，步骤 5.3 主要任务是**围绕预分配的 citations 撰写要点文本**。用户仍可在此阶段增删改 citations。
 
 **通用输出格式**（Introduction / Discussion）：
 
@@ -460,25 +428,13 @@ AskUserQuestion：确认要点或提出修改意见（可以要求增删改某�
 
 **循环**：用户不满意 → 修改要点和引用理由表 → 再次展示 → 直到用户确认。
 
-### 2.3-LR-table：定位表专用流程（仅 litrev）
-
-> 仅当 `{SECTION_TYPE}` == `"litrev"` 且当前子节为"定位表"时执行。
+**定位表专用流程**（仅 `{SECTION_TYPE}` == `"litrev"` 且当前子节为"定位表"时）：
 
 定位表不走正常的 intent → 要点流程，而是：
 
-**a. 筛选候选文献**：
+**a. 筛选候选文献**：从 citation pool、direction reports 中筛选 5-8 篇与本文最具可比性的文献（标准：研究主题相似、方法可对比、发现可对照）。如果 manuscript.tex 中已有文献对比表（如 `Tab:lit_comparison`），以该表为基础进行调整，而非从零开始。
 
-从 citation pool、direction reports 中筛选 5-8 篇与本文**最具可比性**的文献（标准：研究主题相似、方法可对比、发现可对照）。如果 manuscript.tex 中已有文献对比表（如 `Tab:lit_comparison`），以该表为基础进行调整，而非从零开始。
-
-**b. 确定对比维度**：
-
-默认维度（可根据具体论文调整）：
-- 研究方法（Method）
-- 数据情境（Context/Industry）
-- 网络层级（Level：项目/行业/区域）
-- 节点类型（Node type：同质/异质）
-- 关键变量（Key variables）
-- 主要发现（Key findings）
+**b. 确定对比维度**：默认维度（可根据具体论文调整）：研究方法（Method）、数据情境（Context/Industry）、网络层级（Level）、节点类型（Node type）、关键变量（Key variables）、主要发现（Key findings）
 
 **c. 展示候选方案**：
 
@@ -497,29 +453,25 @@ AskUserQuestion：确认要点或提出修改意见（可以要求增删改某�
 确认文献选择和对比维度？可以增删文献或调整维度。
 ```
 
-AskUserQuestion 等待用户确认。
+AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文献/维度 → 再次展示 → 直到用户确认。
 
-**循环**：用户不满意 → 修改文献/维度 → 再次展示 → 直到用户确认。
+**d. 生成定位表骨架**：用户确认后，生成完整的 markdown 定位表暂存（含每篇文献在各维度的填充内容）。bib 文件验证所有 citation key。
 
-**d. 生成定位表骨架**：
+### 5.4 记录确认结果
 
-用户确认后，生成完整的 markdown 定位表暂存（含每篇文献在各维度的填充内容）。bib 文件验证所有 citation key。
-
-### 2.4 记录确认结果
-
-将用户确认的要点（不含引用理由表、不含子主题标记 `[A][B][落脚][不足][Gap]` 等）暂存，等待步骤 2.5 字数分配。
+将用户确认的要点（不含引用理由表、不含子主题标记 `[A][B][落脚][不足][Gap]` 等）暂存，等待步骤 6 字数分配。
 
 定位表以完整表格形式暂存。
 
-## 步骤 2.5：字数分配表
+## 步骤 6：字数分配表
 
 所有子节的要点确认完毕后，生成字数分配表供用户确认。
 
-**a. 确定总字数**：
-- 从参数 `words=N` 获取，或使用默认值
-- 默认值按 section 类型：Introduction=1200, Literature Review=1600, Discussion=1500
+**6.1 确定总字数**：
+- 使用默认值：Introduction=1200, Literature Review=1600, Discussion=1500
+- 用户可在确认时修改
 
-**b. 自动分配各子节字数**：
+**6.2 自动分配各子节字数**：
 - 基础分配 = 总字数 × (该子节要点数 / 全部要点数)
 - 角色调整（按 `{SECTION_TYPE}` 分别处理）：
 
@@ -540,9 +492,9 @@ AskUserQuestion 等待用户确认。
 
 - 取整到最近的 50
 
-**c. 生成默认写作说明**：每个子节一句话风格指导
+**6.3 生成默认写作说明**：每个子节一句话风格指导
 
-**d. 输出字数分配表**，AskUserQuestion 让用户确认/修改：
+**6.4 输出字数分配表**（AskUserQuestion 让用户确认/修改）：
 
 ```
 📊 字数分配方案（总目标: {N} words）
@@ -559,7 +511,7 @@ AskUserQuestion 等待用户确认。
 
 **循环**：用户不满意 → 修改字数/说明 → 再次展示 → 直到用户确认。
 
-## 步骤 3：写入章节 md 文件
+## 步骤 7：写入
 
 所有子节和字数分配确认后，将要点和字数分配表写入 `{CHAPTER_MD_PATH}`。
 
@@ -569,20 +521,22 @@ AskUserQuestion 等待用户确认。
 
 2. **LR 额外写入**（仅 `{SECTION_TYPE}` == `"litrev"`）：
 
-   a. 更新 `## 必备元素` 区块——将步骤 0.7-0.8 确认的方向列表和隐形结构写入：
+   a. 更新 `## 必备元素` 区块——将步骤 1-2 确认的方向列表和写作蓝图写入：
    ```markdown
    ## 必备元素
 
-   1. **{N}个方向**（步骤 0.7 确认）:
+   1. **{N}个方向**（步骤 1 确认）:
       - 方向1: {title} → G{x}
       - 方向2: {title} → G{y}
       - ...
    2. **每个方向末尾点明 Gap**: Gap 编号与 Introduction 一致
    3. **定位表**: 本文 vs {M} 篇最相关文献的多维对比表（{列出维度}）
-   4. **各方向写作蓝图**（步骤 0.8 确认）: 每个方向内部按子主题展开（综述主体 ~85% + 指出不足+连接Gap ~15%），含 citation 预分配和引用形式标注
+   4. **各方向写作蓝图**（步骤 2 确认）: 每个方向内部按子主题展开（综述主体 ~85% + 指出不足+连接Gap ~15%），含 citation 预分配和引用形式标注
    ```
 
    b. 在 `## 大纲` 中为每个方向创建 `###` heading（如不存在）
+
+   c. **同步更新 manuscript.tex**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
 
 3. 在 `## 大纲` 区块开头插入字数分配表：
    ```markdown
@@ -615,7 +569,8 @@ AskUserQuestion 等待用户确认。
 ```
 📝 即将写入 {CHAPTER_MD_PATH}：
 
-[仅 litrev]: **必备元素更新**: {N} 个方向 + 隐形结构定义
+[仅 litrev]: **必备元素更新**: {N} 个方向 + 写作蓝图定义
+[仅 litrev]: **manuscript.tex 更新**: 插入 {N} 个 \subsection{}
 **字数分配表**: {N} words 分配到 {M} 个子节
 
 ### {subsection1}
@@ -634,7 +589,7 @@ AskUserQuestion 等待用户确认。
 
 用户确认 → 执行写入。用户拒绝 → 结束，不写入。
 
-## 步骤 4：完成提示
+## 步骤 8：完成提示
 
 显示：
 - ✅ 完成状态
@@ -642,4 +597,3 @@ AskUserQuestion 等待用户确认。
 - 📊 各子节要点数量 + 字数分配汇总
 - ⚠️ 标记 `(ref)` 的数量（提醒用户后续补充文献）
 - 💡 提示：要点就绪后可运行 `/pen-draft section=XXX` 生成初稿
-- [仅 litrev] ⚠️ 如果 manuscript.tex 中已有 LR subsection 结构，运行 `/pen-draft` 前请先确认 tex 结构与 md 大纲一致
