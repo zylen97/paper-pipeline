@@ -49,7 +49,7 @@ idea{NN}_{源论文研究领域}/
 ├── idea-review/                         ← 【中间产物】阶段五审稿人评审结果（自动生成，每期刊一个文件）
 │   ├── review_{期刊缩写}.md
 │   └── ...
-└── final.md                             ← 【输出】Pipeline 闭环总结（基本信息+排名表）
+└── final_{期刊缩写1}_{期刊缩写2}.md     ← 【输出】Pipeline 闭环总结（基本信息+排名表，文件名含本轮所有期刊缩写）
 ```
 
 **命名说明**：
@@ -493,11 +493,11 @@ TODO（阶段五审稿人 challenge 产出后回填）
 
 ---
 
-### 阶段五收尾：生成 final.md（主 agent 执行）
+### 阶段五收尾：生成 final（主 agent 执行）
 
-阶段五审稿人全部完成后，主 agent 从 `idea-review/review_*.md` 汇总评分，计算综合分，生成 `final.md` 写入项目根目录。**这是整个 pipeline 的闭环文档。**
+阶段五审稿人全部完成后，主 agent 从 `idea-review/review_*.md` 汇总评分，计算综合分，生成 `final_{期刊缩写1}_{期刊缩写2}...md` 写入项目根目录（文件名包含本轮所有目标期刊的缩写，用下划线连接）。**这是整个 pipeline 的闭环文档。**
 
-`final.md` 格式：
+`final_{期刊缩写1}_{期刊缩写2}...md` 格式：
 
 ```markdown
 # Idea Mine 总结报告
@@ -550,7 +550,7 @@ TODO（阶段五审稿人 challenge 产出后回填）
 
 ## 输出文件
 
-- `final.md` — Pipeline 闭环总结（基本信息 + 排名表）
+- `final_{期刊缩写1}_{期刊缩写2}...md` — Pipeline 闭环总结（基本信息 + 排名表，文件名含本轮期刊缩写）
 - `ideas/` — 最终 idea 方案（每个 idea × 每个期刊 × 2 版本）
 - `idea-review/` — 每个期刊审稿人的评审报告
 - `paper-notes/` — 论文精读报告（可缓存复用）
