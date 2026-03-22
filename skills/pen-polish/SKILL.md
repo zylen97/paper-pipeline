@@ -1,5 +1,5 @@
 ---
-description: "交互式打磨已有论文段落（Pipeline：journal-scout → strict-reviewer → 用户确认 → sci-writer → language-polisher）"
+description: "交互式打磨已有论文段落（Pipeline：journal-scout → strict-reviewer → 用户确认 → 主agent直接修改 → language-polisher）"
 ---
 
 # Polish Workflow — 交互式打磨已有文本
@@ -77,7 +77,11 @@ Read `{WORK_DIR}/01_original_text.md`
 ## Review Instructions
 - Output a NUMBERED list of specific, actionable improvement suggestions
 - Each suggestion must reference the specific paragraph it applies to
-- Focus on: language clarity, argument flow, sentence structure, academic tone, domain grounding
+- Focus on:
+  - **Language**: clarity, sentence structure, academic tone, word choice precision
+  - **Logic coherence**: paragraph-to-paragraph transitions, argument progression, no logical jumps between claims, no missing intermediate steps in reasoning chains
+  - **Cross-subsection coherence**: whether subsections connect naturally, whether the overall narrative has a clear arc from beginning to end
+  - **Domain grounding**: arguments grounded in the specific industry context, not generic theory that could apply to any field
 - Do NOT suggest adding, removing, or changing any citations
 - Do NOT give an overall verdict (accept/reject/revise) — just list concrete suggestions
 - Word count reference: {ORIGINAL_WORD_COUNT} (target ± 10%)
@@ -109,40 +113,32 @@ Read `{WORK_DIR}/01_original_text.md`
 
 用户确认后，生成确认清单。保存 → `{WORK_DIR}/02_confirmed_r1.md`
 
-### 2.3 sci-writer 执行修改
+### 2.3 生成具体修改方案
 
-调用 sci-writer（`subagent_type: "sci-writer"`），prompt 要素：
+基于用户确认的意见和偏好，主 agent 生成**具体修改方案**——逐条列出"把哪句话改成什么"：
 
 ```
-Read `drafts/writing_brief.md` for journal conventions and style guidance.
+📝 修改方案（共 M 条）：
 
-## Section: {SECTION_TITLE}
-## Mode: Polish — Execute confirmed review comments ONLY
+1. [对应意见#1]
+   原文: "originated from descriptive social network analysis"
+   改为: "has its roots in descriptive social network analysis, which..."
 
-## Current Version
-Read `{WORK_DIR}/01_original_text.md`
+2. [对应意见#3]
+   原文: "Despite these advances, a gap remains between the two streams"
+   改为: "Despite these advances, a gap remains between project-level SAOM studies and industry-level cross-sectional analyses"
 
-## Confirmed Changes to Execute
-Read `{WORK_DIR}/02_confirmed_r1.md`
-
-ONLY execute the changes listed above. Do NOT make additional changes beyond what is confirmed.
-
-## Citation Protection (CRITICAL)
-- Do NOT add, remove, or change any citation key in \citet{} or \citep{} commands
-- Do NOT change citation form (\citet → \citep or vice versa)
-- Do NOT reorder, merge, or split citation groups
-- The ONLY allowed changes are to the surrounding prose text, not the citations themselves
-
-## Constraints
-- Word target: {ORIGINAL_WORD_COUNT} ± 10%
-- Do NOT use \textbf{}
-- Preserve all data, numbers, and factual claims exactly
-
-## Output
-1. Complete revised LaTeX content in a ```latex``` code block
-2. Change log: for each confirmed change, state what was done
-3. Actual word count
+...
 ```
+
+AskUserQuestion：确认修改方案，或调整某条的具体措辞。
+
+### 2.4 执行修改
+
+用户确认方案后，主 agent 直接使用 Edit 工具逐条执行修改（不调用 sci-writer agent）。修改时严格遵守：
+- **只改方案中列出的内容**，不做额外改动
+- **不动任何 citation key 和引用形式**
+- 保留所有数据、数字和事实性表述
 
 保存修改版 → `{WORK_DIR}/03_revision_r1.md`
 
@@ -167,7 +163,9 @@ AskUserQuestion：
 
 **3.2b 用户确认**：同步骤 2.2。保存 → `{WORK_DIR}/04_confirmed_r2.md`
 
-**3.2c sci-writer 修改**：同步骤 2.3，当前版本改为 `03_revision_r1.md`，确认清单改为 `04_confirmed_r2.md`。保存 → `{WORK_DIR}/05_revision_r2.md`
+**3.2c 生成修改方案 + 用户确认**：同步骤 2.3，基于用户确认的第2轮意见生成具体修改方案，用户确认后执行。
+
+**3.2d 执行修改**：同步骤 2.4，主 agent 直接修改 `03_revision_r1.md` 的内容。保存 → `{WORK_DIR}/05_revision_r2.md`
 
 ## 步骤 4：language-polisher 最终润色
 
