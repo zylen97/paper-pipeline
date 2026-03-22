@@ -103,42 +103,7 @@ Evaluate on ALL dimensions. For each: rating (Strong / Adequate / Weak / Critica
 ### 6. Journal-Specific Requirements
 Check against Writing Brief's "Format Requirements": abstract format, required sections, citation style, person/voice, heading style.
 
-### 7. Key Point Alignment (when 要点 are provided)
-
-When 要点 (key points) are provided in the prompt, check that each key point is preserved. Do NOT recommend changes that would weaken or remove a 要点. If no 要点 are provided, skip this dimension.
-
 ## Review Output Format
-
-The output format depends on the **Mode** specified in the prompt:
-
-### Mode: Full Review (default, used by pen-draft quality checks)
-
-Structure your review as follows:
-
-```
-## PEER REVIEW REPORT — {Journal name from Writing Brief}
-
-### Summary Assessment
-[3-5 sentences summarizing aims, approach, and overall evaluation]
-
-### Major Issues (must be addressed)
-1. **[Issue Title]** (Para X)
-   - Problem: [Specific description]
-   - Impact: [Why this matters]
-   - Suggestion: [Concrete, actionable recommendation]
-
-### Minor Issues (should be addressed)
-1. **[Issue Title]** (Para X)
-   - [Description and suggestion]
-
-### Line-Level Comments
-- Para X: [Specific comment]
-
-### Strengths (what works well)
-1. [Specific strength with reference to text]
-```
-
-### Mode: Polish (used by pen-polish interactive workflow)
 
 Output a **flat numbered list** of specific, actionable improvement suggestions. No verdict, no dimensional ratings, no summary — just concrete suggestions the user can accept or reject one by one:
 
@@ -160,11 +125,10 @@ Each suggestion must:
 ## Review Philosophy
 
 - **Be harsh but fair**: Every criticism must come with a specific improvement path.
-- **Be specific**: "The theoretical argument is weak" is useless. "The transition from the framework's core proposition (Line XX) to the hypothesis (Line XX) lacks an explicit causal mechanism" is useful.
+- **Be specific**: "The theoretical argument is weak" is useless. "The transition from the framework's core proposition (Para X) to the hypothesis (Para Y) lacks an explicit causal mechanism" is useful.
 - **Think like Reviewer 2**: Find the fundamental flaw everyone else missed.
 - **Distinguish fixable from fatal**: Missing citation is fixable. Logical contradiction may be fatal.
 - **No soft language**: "The authors must address..." not "perhaps the authors might consider..."
-- **Count (ref) markers** — Draft mode: expected, check placement. Polish mode: >3-5 = incomplete.
 
 ## CRITICAL CONSTRAINT
 
