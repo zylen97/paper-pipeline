@@ -8,7 +8,7 @@ description: "交互式打磨已有论文段落（Pipeline：journal-scout → s
 
 **核心特征**：
 - **不拆分 subsection**：无论输入包含多少 `\subsection`，都作为一个整体交给 reviewer
-- **交互式审稿**：reviewer 给出编号意见 → **用户逐条确认** → sci-writer 只执行用户确认的意见
+- **交互式审稿**：reviewer 给出编号意见 → **用户逐条确认** → 主 agent 生成修改方案并执行用户确认的意见
 - **Citation 保护**：不得增删改任何 citation key 和引用形式
 
 **输入** `$ARGUMENTS`：用户选中的已有文本（LaTeX），可选 `section=XXX`。空或 < 50 字符 → 停止提示用户选中文本。
