@@ -335,10 +335,14 @@ def parse_letter(text: str) -> dict:
             minor = [c for c in comments if c["type"] == "minor"]
             general = [c for c in comments if c["type"] == "general"]
 
+            # 检测该审稿人是否明确区分了 Major/Minor
+            has_major_minor_split = len(major) > 0 and len(minor) > 0
+
             reviewer = {
                 "number": num,
                 "raw_content": sec["content"].strip(),
                 "comments": comments,
+                "has_major_minor_split": has_major_minor_split,
                 "major_count": len(major),
                 "minor_count": len(minor),
                 "general_count": len(general),
