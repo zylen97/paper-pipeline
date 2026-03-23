@@ -25,19 +25,29 @@ description: "交互式构建叙述型章节的要点（论点 + citations），
 - Fallback：Glob("*.tex") 查找含 `\documentclass` 的文件（排除 supplementary/appendix/*.cls）
 - 读取主文件了解论文结构
 
-### 0.3 构建 Section Tree `{SECTION_TREE}`
+### 0.3 构建 Section Tree `{SECTION_TREE}`（Python 脚本）
 
-- 正则 `\\(section|subsection|subsubsection)\{([^}]+)\}` 提取所有 section 命令（忽略 `*` 变体）
-- 记录级别、标题、行号，构建父子关系树，记录 parent/children/siblings/preceding/following
+**由 Python 脚本自动完成**，替代主 Agent 手动正则解析。
 
-### 0.4 Section 匹配与 Form 判定
+```bash
+python3 ~/.claude/skills/shared/tex_section.py section-tree --tex {主文件路径}
+```
 
-将 `section=XXX` 在 `{SECTION_TREE}` 中匹配：
+输出 `_section_tree.json`。VERIFY 必须为 PASS。
 
-- **匹配规则**：先精确匹配，后模糊匹配（忽略大小写、"and"/"&"互换、冠词省略）
-- **有子 section** → `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = 子 section 列表
-- **无子 section** → `{INPUT_FORM}` = "single"
-- **匹配失败** → 列出 `{SECTION_TREE}` 中所有可用 section，AskUserQuestion 让用户选择
+### 0.4 Section 匹配与 Form 判定（Python 脚本 + 主 Agent 判定）
+
+**匹配由 Python 脚本完成**：
+
+```bash
+python3 ~/.claude/skills/shared/tex_section.py match-section \
+  --tree _section_tree.json --query "{section参数}"
+```
+
+输出 `_section_match.json`。主 Agent 从中读取：
+- `has_children` = true → `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = children 列表
+- `has_children` = false → `{INPUT_FORM}` = "single"
+- **匹配失败**（VERIFY: FAIL）→ AskUserQuestion 让用户从列出的 section 中选择
 
 ### 0.5 叙述型章节检查 + 章节类型判定
 
@@ -77,7 +87,11 @@ discussion           → Glob("structure/*discussion*/discussion.md") 动态匹�
 
 记录 `{CHAPTER_MD_PATH}`
 
-- **citation pool 文件**：读取 `{CHAPTER_MD_PATH}`，查找底部 `## 引用池` 区块，解析列出的文件路径 → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
+- **citation pool 文件**（Python 脚本）：
+```bash
+python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAPTER_MD_PATH}
+```
+从 `_citation_paths.json` 读取 `citation_pool_paths` → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
 - **全局上下文**：固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
 - **其他章节 md 扫描**（交叉参考）：扫描 `structure/` 下所有章节 md 文件（排除当前章节），检查有实质内容的 → `{OTHER_MD_PATHS}` 列表。读取时仅提取标题和要点摘要
 - **LR 额外源文件**（仅 `{SECTION_TYPE}` == `"litrev"` 时）：

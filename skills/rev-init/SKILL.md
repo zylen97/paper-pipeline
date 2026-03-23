@@ -76,41 +76,34 @@ AskUserQuestion：
 
 ---
 
-## Step 4: 解析决定信
+## Step 4: 解析决定信（Python 脚本 + 主 Agent 模板填充）
 
-### 4a. 识别结构
+### 4a-4c. 结构识别 + 编号 + 清理（Python 脚本）
 
-读取 `revision/comment-letter.md`，自动检测：
+**由 Python 脚本自动完成**，替代主 Agent 手动关键词扫描和编号转换。
 
-**角色边界**：
-- **Editor**：检测 "Decision"、"Editor's comments" 等关键词
-- **Associate Editor**：检测 "Associate Editor"、"AE" 等关键词
-- **Reviewer #N**：检测 "Reviewer #1"、"Reviewer 2" 等模式
+```bash
+python3 ~/.claude/skills/rev-init/parse_decision_letter.py \
+  --input revision/comment-letter.md
+```
 
-**意见结构**（每位 Reviewer）：
-- 是否已分 Major/Minor
-- 是否已编号
-- 是否为连续段落（无编号）
+**脚本职责**（`parse_decision_letter.py`）：
+1. 清理邮件头、系统页脚、日历附件说明（行过滤）
+2. 检测决定类型（Major/Minor Revision, Reject 等）
+3. 按角色关键词分段（Editor / AE / Reviewer #N）
+4. 保留审稿人原始编号（#2, #3, #5 不重编）
+5. 已分 Major/Minor → `RN-K` / `RN-mK`；未分 → 连续编号 `RN-1, RN-2, ...`
+6. 检测标准化 Q&A 区域（ASCE EM、Elsevier EES 等）
+7. 校验：每审稿人至少 1 条 comment、ID 全局唯一、格式合规
+8. 输出 `_parsed_letter.json` + stdout 摘要 + `VERIFY: PASS|FAIL`
 
-**Q&A 区域**：
-- 检测标准化问答（ASCE EM、Elsevier EES 的 Q&A 表格）
-- 包含实质性回答 → 提取为独立 Comment，标注 "(from Q&A)"
+**主 Agent 校验**：VERIFY 必须为 PASS。将统计摘要展示给用户。
 
-### 4b. 编号处理
+### 4d. 生成输出（主 Agent 基于 JSON 填充模板）
 
-- 保留审稿人原始编号（#2, #3, #5 不重编为 #1, #2, #3）
-- 已分 Major/Minor → `RN-K` / `RN-mK`
-- 未分 Major/Minor → 连续编号 `RN-1, RN-2, ...`
-- 一条评论含多个独立问题 → 拆分为独立 Comments
+主 Agent 从 `_parsed_letter.json` 读取结构化数据，按 `comment-letter-clean.md.tmpl` 模板格式生成 `revision/comment-letter-clean.md`。
 
-### 4c. 清理
-
-- 删除邮件头、系统页脚、日历附件说明
-- 保留所有实质性内容（包括审稿人原始措辞和拼写错误）
-
-### 4d. 生成输出
-
-读取 `~/.claude/skills/rev-init/comment-letter-clean.md.tmpl`，按模板格式生成 `revision/comment-letter-clean.md`。
+> **为什么模板填充不放 Python**：模板的"初步分类工作区"表格需要主 Agent 后续在 Step 5 中填写分类建议，紧耦合。
 
 ### 4e. 展示并确认
 

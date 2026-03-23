@@ -27,21 +27,33 @@ description: "从章节大纲自动读取素材，生成论文初稿（Pipeline�
 - Fallback：Glob("*.tex") 查找含 `\documentclass` 的文件（排除 supplementary/appendix/*.cls）
 - 读取主文件了解论文结构
 
-### 0.3 构建 Section Tree `{SECTION_TREE}`
+### 0.3 构建 Section Tree `{SECTION_TREE}`（Python 脚本）
 
-- 正则 `\\(section|subsection|subsubsection)\{([^}]+)\}` 提取所有 section 命令（忽略 `*` 变体）
-- 记录级别、标题、行号，构建父子关系树，记录 parent/children/siblings/preceding/following
+**由 Python 脚本自动完成**，替代主 Agent 手动正则解析。
 
-### 0.4 匹配 section + 判定 Form
+```bash
+python3 ~/.claude/skills/shared/tex_section.py section-tree --tex {主文件路径}
+```
 
-将 `section=XXX` 在 `{SECTION_TREE}` 中匹配：
+脚本解析所有 `\section{}`/`\subsection{}`/`\subsubsection{}` 命令（忽略 `*` 变体），构建含父子/兄弟/前后关系的树，输出 `_section_tree.json`。VERIFY 必须为 PASS。
 
-- **匹配规则**：先精确匹配，后模糊匹配（忽略大小写、"and"/"&"互换、冠词省略）
-- **有子 section** → `{INPUT_FORM}` = "multi"（Form 2），`{SPLIT_SEGMENTS}` = 子 section 列表
-- **无子 section** → 进一步检查章节 md：
-  - md 的 `## 大纲` 下有 `### ` 子标题且有字数分配表 → `{INPUT_FORM}` = "implicit-multi"（Form 3），`{SPLIT_SEGMENTS}` = md 中 `### ` 子标题列表
+### 0.4 匹配 section + 判定 Form（Python 脚本 + 主 Agent 判定 Form）
+
+**匹配由 Python 脚本完成**：
+
+```bash
+python3 ~/.claude/skills/shared/tex_section.py match-section \
+  --tree _section_tree.json --query "{section参数}"
+```
+
+脚本输出 `_section_match.json`，含匹配结果、子节点列表、父子关系。VERIFY 为 PASS 表示匹配成功，FAIL 表示未找到（列出所有可用 section 供用户选择）。
+
+**主 Agent 基于匹配结果判定 Form**：
+- `has_children` = true → `{INPUT_FORM}` = "multi"（Form 2），`{SPLIT_SEGMENTS}` = children 列表
+- `has_children` = false → 进一步检查章节 md：
+  - md 的 `## 大纲` 下有 `### ` 子标题且有字数分配表 → `{INPUT_FORM}` = "implicit-multi"（Form 3）
   - 否则 → `{INPUT_FORM}` = "single"（Form 1）
-- **匹配失败** → 列出 `{SECTION_TREE}` 中所有可用 section，AskUserQuestion 让用户选择
+- **匹配失败** → AskUserQuestion 让用户从脚本列出的 section 中选择
 
 ### 0.5 定位源文件
 
@@ -60,7 +72,11 @@ conclusion           → 无对应 md，停止并提示用户
 
 记录 `{CHAPTER_MD_PATH}`
 
-- **citation pool 文件**：读取 `{CHAPTER_MD_PATH}`，查找底部 `## 引用池` 区块，解析列出的文件路径 → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
+- **citation pool 文件**（Python 脚本）：
+```bash
+python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAPTER_MD_PATH}
+```
+从 `_citation_paths.json` 读取 `citation_pool_paths` → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
 - **全局上下文**：固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
 
 ### 0.6 创建工作目录
@@ -258,20 +274,40 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 
 Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
 
-### 4.2 更新 bib 文件
+### 4.2 更新 bib 文件（Python 脚本）
 
-适用于所有 Form：
+**由 Python 脚本自动完成**，替代主 Agent 手动扫描 cite key 和 BibTeX 操作。
 
-1. 扫描输出文件中所有 `\citep{}` 和 `\citet{}` 引用的 citation key
-   - Form 1：扫描 `{WORK_DIR}/final.md`
-   - Form 2：扫描所有子节 `{WORK_DIR}/final.md`
-   - Form 3：扫描拼接后的 `{MULTI_BASE_DIR}/final.md`
-2. 读取 `structure/2_literature/citation_pool/master.bib`（由 `/lit-pool` 生成的完整文献库）
-3. 读取项目 bib 文件（如 `{ID}.bib`），找出哪些 key 尚未收录
-4. 从 master.bib 中提取新增 key 对应的条目，追加到项目 bib 文件
-5. 去掉 `\citep{key1, key2}` 中逗号后的空格（BibTeX 要求无空格）
-6. 质量检测：逐条验证 key 中的年份与 bib 条目的 year 字段是否一致
-7. 报告：新增 N 条 bib 条目，M 个 key 在 master.bib 中未找到（需手动补充）
+适用于所有 Form。确定要扫描的 draft 文件后调用：
+
+```bash
+# 先预览
+python3 ~/.claude/skills/shared/tex_section.py update-bib \
+  --draft-files {要扫描的 final.md 文件路径...} \
+  --master-bib structure/2_literature/citation_pool/master.bib \
+  --project-bib {项目bib路径} \
+  --dry-run
+
+# 确认后正式执行（去掉 --dry-run）
+python3 ~/.claude/skills/shared/tex_section.py update-bib \
+  --draft-files {文件路径...} \
+  --master-bib structure/2_literature/citation_pool/master.bib \
+  --project-bib {项目bib路径}
+```
+
+**脚本职责**：
+1. 扫描 draft 文件中所有 `\citep{}`/`\citet{}` 的 citation key
+2. 与项目 bib 对比，找出未收录的新 key
+3. 从 master.bib 提取新 key 条目，追加到项目 bib
+4. 质量检测：key 中的年份与 bib 条目 year 字段是否一致
+5. stdout 输出统计 + `VERIFY: PASS|FAIL`
+
+**draft 文件选择规则**：
+- Form 1：`{WORK_DIR}/final.md`
+- Form 2：所有子节的 `final.md`
+- Form 3：拼接后的 `{MULTI_BASE_DIR}/final.md`
+
+VERIFY 为 PASS 才继续。如有年份不一致（YEAR_MISMATCH），展示给用户确认。
 
 ## 步骤 5：完成提示
 

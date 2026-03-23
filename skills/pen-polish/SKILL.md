@@ -26,18 +26,26 @@ description: "交互式打磨已有论文段落（Pipeline：journal-scout → s
 - Fallback：Glob("*.tex") 查找含 `\documentclass` 的文件（排除 supplementary/appendix/*.cls）
 - 读取主文件了解论文结构
 
-### 0.3 构建 Section Tree
+### 0.3 构建 Section Tree（Python 脚本）
 
-- 正则 `\\(section|subsection|subsubsection)\{([^}]+)\}` 提取所有 section 命令（忽略 `*` 变体）
-- 记录级别、标题、行号，构建父子关系树
+**由 Python 脚本自动完成**：
 
-### 0.4 定位 Section
+```bash
+python3 ~/.claude/skills/shared/tex_section.py section-tree --tex {主文件路径}
+```
 
-扫描输入文本中的 section 命令，在 Section Tree 中定位：
-- **无 section 命令**：用户指定 `section=XXX` 则使用，否则推断或询问
-- **有 section 命令**：提取最高级别 section 标题，在 Section Tree 中查找
+输出 `_section_tree.json`。VERIFY 必须为 PASS。
 
-记录 `{SECTION_TITLE}` 和一句话位置描述。**不拆分**——整体处理。
+### 0.4 定位 Section（Python 脚本 + 主 Agent）
+
+从输入文本中提取 section 命令，或使用 `section=XXX` 参数：
+
+```bash
+python3 ~/.claude/skills/shared/tex_section.py match-section \
+  --tree _section_tree.json --query "{section标题}"
+```
+
+从 `_section_match.json` 读取匹配结果。记录 `{SECTION_TITLE}` 和位置信息。**不拆分**——整体处理。
 
 ### 0.5 字数基准
 
