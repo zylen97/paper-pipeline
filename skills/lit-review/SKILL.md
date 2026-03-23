@@ -67,6 +67,9 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 
 ## 全局约束
 
+### 模型选择
+**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku——格式遵从性下降会导致批次文件解析失败。如无特殊指定，不传 `model` 参数即可自动继承。
+
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：入选理由、淘汰理由、方向小结、补检建议、Gap评估、竞品差异说明。文献的标题、期刊名、作者名保持原文（通常为英文）。SubAgent的Prompt中须明确传达此语言要求。
 
@@ -140,116 +143,72 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 5. 按配额筛选：核心≤{x}篇，重要≤{y}篇，备选≤{z}篇
 6. 如果高相关文献超出配额，优先保留：高被引 > 近5年 > 顶刊 > 方法论对标
 
-## 输出格式
+## 输出格式（两阶段：Agent 自由输出 → Python 标准化）
 
-严格按以下Markdown格式输出，不要遗漏任何字段：
+> **设计原理**：LLM 擅长分析判断，但不擅长产出精确的 markdown 表格格式。因此 Agent 只需输出 key-value 块（几乎不可能出格式错误），后续由 Python 脚本 `format_batches.py` 自动转换为标准 markdown 表格。
+
+**用 Write 工具将筛选结果写入** `structure/2_literature/_batch/d{方向编号}_batch{批次编号}_raw.md`（注意 `_raw` 后缀；确保 `_batch/` 目录存在）。
+
+严格按以下 **key-value 块**格式，每篇入选文献一个块：
 
 ```markdown
-# 方向{N}：{方向名称} 文献筛选报告
+# 方向{N} Batch{M} 筛选结果
 
-> **日期**: {YYYY-MM-DD}
-> **检索平台**: Web of Science Core Collection
-> **检索式**: `{检索式}`
-> **检索结果**: {总条目数}篇
-> **筛选方法**: Agent自动分析
-> **最终入选**: {入选总数}篇（核心{a}篇 + 重要{b}篇 + 备选{c}篇）
-> **淘汰**: {淘汰数}篇
+> direction: {N}
+> direction_name: {方向名称}
+> batch_id: d{N}_batch{M}
+> total_items: {本batch分配的条目数}
 
----
+## 核心文献（Core）
 
-## 筛选标准
-{列出该方向的具体筛选标准}
+### 入选1
+- 作者: Han, Yanhu
+- 标题: An overall review of research on construction innovation
+- 年份: 2023
+- 期刊: Engineering Construction and Architectural Management
+- 理由: 建筑业创新研究综述，梳理合作创新的研究脉络，为Introduction提供背景
 
----
+### 入选2
+- 作者: Liu, Bingsheng
+- 标题: Evolution of innovation collaboration networks...
+- 年份: 2025
+- 期刊: Buildings
+- 理由: SAOM分析建筑业合作网络演化，方法论直接先例
 
-## 核心文献（Core）— {a}篇
+## 重要文献（Important）
 
-### {子类别名称}（{n}篇）
+### 入选3
+- 作者: ...
+- 标题: ...
+- 年份: ...
+- 期刊: ...
+- 理由: ...
 
-| # | 作者 | 标题 | 年份 | 期刊 | 入选理由 |
-|:--|:-----|:-----|:----:|:-----|:---------|
-| 1 | ... | ... | ... | ... | ... |
+## 备选文献（Backup）
 
-{按子类别分组，每组一个表格}
-
----
-
-## 重要文献（Important）— {b}篇
-
-| # | 作者 | 标题 | 年份 | 期刊 | 入选理由 |
-|:--|:-----|:-----|:----:|:-----|:---------|
-| 1 | ... | ... | ... | ... | ... |
-
-{可按子类别分组，每组一个表格，但每个表格必须保持上述完整6列格式}
-
----
-
-## 备选文献（Backup）— {c}篇
-
-| # | 作者 | 标题 | 年份 | 期刊 | 入选理由 |
-|:--|:-----|:-----|:----:|:-----|:---------|
-| 1 | ... | ... | ... | ... | ... |
-
-{入选理由可简短，但6列结构不可省略。禁止使用压缩格式（如省略标题列、用段落文字代替表格）}
-
----
+### 入选4
+- 作者: ...
+- 标题: ...
+- 年份: ...
+- 期刊: ...
+- 理由: ...
 
 ## 淘汰文献摘要
 
 淘汰{淘汰数}篇，主要原因：
-- {原因1}：约{n}篇（如：纯技术实现，无战略/管理视角）
+- {原因1}：约{n}篇
 - {原因2}：约{n}篇
-- ...
-
----
-
-## 方向小结
-
-- **该方向对论文的核心价值**: {1-2句话}
-- **分级分布**: 核心{n}篇, 重要{n}篇, 备选{n}篇
-- **潜在竞品**: {列出与本研究高度相似的文献，如无则写"未发现直接竞品"}
-- **补检建议**: {该方向是否有遗漏，是否需要补充检索}
-
----
-
-## 机器可读数据
-
-**最后，将以下 JSON 写入文件** `structure/2_literature/_batch/d{方向编号}_batch{批次编号}.json`：
-
-（以下为 JSON 结构示例，subAgent 须生成实际数据）
-
-    {
-      "direction": 1,
-      "direction_name": "装配式建筑供应链管理",
-      "batch_id": "d1_batch1",
-      "total_items": 30,
-      "selected": [
-        {
-          "title": "An overall review of research on prefabricated construction supply chain management",
-          "first_author": "Han, Yanhu",
-          "year": 2023,
-          "journal": "Engineering Construction and Architectural Management",
-          "tier": "core",
-          "reason": "2000-2022年PCSCM领域最全面综述，覆盖131篇文献"
-        }
-      ],
-      "rejected_count": 25
-    }
 ```
 
-**语言要求**：所有描述性文本（入选理由、淘汰理由、方向小结、补检建议）必须使用中文。文献标题、期刊名、作者名保持英文原文。
+**格式要求**：
+- 元数据（`> key: value`）必须完整（direction, direction_name, batch_id, total_items）
+- 三个分级标题（`## 核心文献（Core）`、`## 重要文献（Important）`、`## 备选文献（Backup）`）**必须存在**，即使某分级无入选文献
+- 每篇入选文献用 `### 入选N` 开头，后跟 5 行 `- key: value`（作者/标题/年份/期刊/理由），**每行一个字段，不要合并**
+- **年份必须是独立的4位数字**（如 `2024`），不要写成 `2024a` 或与期刊合并
+- **语言**：理由用中文，文献标题/期刊名/作者名保持英文原文
+- **不要写 JSON 文件或 markdown 表格**——只写上述 key-value 块格式
 
-**格式强制约束**：
-- 核心、重要、备选三个分级的文献列表**必须**使用完整的6列表格（`| # | 作者 | 标题 | 年份 | 期刊 | 入选理由 |`）。禁止省略标题列、用段落替代表格、多篇合并为一行
-- JSON 块中的 `selected` 数组必须包含**该 Agent 所有入选文献**（核心+重要+备选），每篇一个对象
-- `tier` 字段仅限 `"core"` / `"important"` / `"backup"` 三个值
-- `title` 必须与 markdown 表格中的标题**完全一致**。JSON 与 markdown 不一致时，以 JSON 为准
-- **必须调用 Write 工具将 JSON 写入** `structure/2_literature/_batch/d{N}_batch{M}.json`（确保 `_batch/` 目录存在，不存在则先创建）
-
-**不要将 markdown 输出保存为 direction report 文件**（方向报告由步骤 2 的 Python 脚本统一生成）。只需：
-1. 在对话中返回 markdown 筛选结果
-2. 将 JSON 写入 `structure/2_literature/_batch/d{N}_batch{M}.json`
-```
+此外，在对话中返回简要汇报（入选数、淘汰数、亮点说明），供主 Agent 校验。**不要将 markdown 保存为 direction report 文件**（方向报告由步骤 2 的 Python 脚本统一生成）。
 
 ### SubAgent的RIS读取策略
 
@@ -265,11 +224,30 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 
 ### 2.1 验证批次文件完整性
 ```bash
-ls structure/2_literature/_batch/d*_batch*.json | wc -l
+ls structure/2_literature/_batch/d*_batch*_raw.md | wc -l
 ```
 输出的文件数必须等于 subAgent 总数。不一致 → 停止，报告哪些 batch 缺失。
 
-### 2.2 调用合并脚本
+### 2.2 格式标准化（Python 脚本）
+
+将 Agent 输出的 key-value 块格式（`*_raw.md`）转换为 `merge_screening.py` 所需的标准 markdown 表格格式（`*.md`）。
+
+```bash
+python3 ~/.claude/skills/lit-review/format_batches.py \
+  --batch-dir structure/2_literature/_batch/
+```
+
+**脚本职责**（`format_batches.py`）：
+1. 读取所有 `d*_batch*_raw.md` 文件
+2. 解析 key-value 块（`- 作者:` / `- 标题:` / `- 年份:` / `- 期刊:` / `- 理由:`）
+3. 转换为标准 6 列 markdown 表格
+4. 校验：每篇文献必须有 5 个字段完整、年份为 4 位数字
+5. 输出标准化的 `d*_batch*.md`（去掉 `_raw` 后缀）
+6. stdout 输出每个文件的解析结果 + `VERIFY: PASS|FAIL`
+
+**主 Agent 校验**：VERIFY 必须为 PASS。FAIL 时展示具体错误给用户。
+
+### 2.3 调用合并脚本
 ```bash
 python3 ~/.claude/skills/lit-review/merge_screening.py \
   --batch-dir structure/2_literature/_batch/ \
@@ -279,7 +257,7 @@ python3 ~/.claude/skills/lit-review/merge_screening.py \
 ```
 
 **脚本职责**（`merge_screening.py`）：
-1. 读取 `_batch/*.json`，按 `direction` 分组
+1. 读取 `_batch/*.md`（或旧版 `*.json`），按 `direction` 分组
 2. 同方向合并 `selected` 数组，去重（key = `first_author + year + title[:40]`）
 3. 按方向配额截断（从 plan 文件提取配额）：core ≤ 25%, important ≤ 40%, backup ≤ 35%
 4. 跨方向去重统计
@@ -288,7 +266,7 @@ python3 ~/.claude/skills/lit-review/merge_screening.py \
 7. 生成 `_screening_merged.json`（全局结构化数据，供步骤 5 使用）
 8. stdout 输出校验摘要
 
-### 2.3 主Agent校验脚本输出
+### 2.4 主Agent校验脚本输出
 脚本 stdout 格式：
 ```
 === MERGE SUMMARY ===
@@ -416,7 +394,7 @@ python3 ~/.claude/skills/lit-review/clean_ris.py \
 | 已有方向报告 | 按步骤0.4处理（覆盖/跳过） |
 | 去重后超预算 | 步骤2脚本自动按优先级削减 |
 | idea.md 不存在 | 停止，提示先完善 idea |
-| batch JSON 解析失败 | 报告具体文件名和错误信息，停止合并 |
+| batch 文件解析失败 | 报告具体文件名和错误信息，停止合并 |
 | batch 文件数 ≠ 预期 subAgent 数 | 停止，报告缺失的 batch 文件 |
 | dry-run 显示 unmatched > 0 | 暂停，列出未匹配文献，让用户决定是否继续 |
 | RIS 文件未被 git 跟踪 | 先 `git add` + `git commit` 备份，再清理 |

@@ -142,11 +142,11 @@ def parse_report(filepath: Path) -> list[dict]:
     current_tier = None
 
     for line in content.split("\n"):
-        if re.search(r"核心文献|Core", line, re.IGNORECASE):
+        if re.match(r"^##\s.*(核心文献|Core)", line, re.IGNORECASE):
             current_tier = "core"
-        elif re.search(r"重要文献|Important", line, re.IGNORECASE):
+        elif re.match(r"^##\s.*(重要文献|Important)", line, re.IGNORECASE):
             current_tier = "important"
-        elif re.search(r"备选文献|Backup", line, re.IGNORECASE):
+        elif re.match(r"^##\s.*(备选文献|Backup)", line, re.IGNORECASE):
             current_tier = "backup"
 
         # 7列（带标签）
@@ -162,7 +162,14 @@ def parse_report(filepath: Path) -> list[dict]:
         )
         if m7:
             tags_raw = m7.group(6).strip()
-            tags = [t.strip() for t in re.split(r"[+,、/]", tags_raw) if t.strip()]
+            # 去掉反引号，统一分隔符
+            tags_raw = tags_raw.replace("`", "")
+            tags_raw = tags_raw.replace("\\|", ";")
+            tags_raw = tags_raw.replace("\\", "")
+            if tags_raw.strip() in ("—", "-", "N/A", ""):
+                tags = []
+            else:
+                tags = [t.strip().rstrip("\\").strip() for t in re.split(r"[+,、/;|]", tags_raw) if t.strip().rstrip("\\").strip()]
             papers.append({
                 "direction": direction,
                 "direction_name": direction_name,

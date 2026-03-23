@@ -116,10 +116,13 @@ def parse_tmp_files(tmp_dir: Path) -> dict[str, list[dict]]:
         # 检测当前处理的标签（通过 section header）
         current_tag = None
         for line in content.split("\n"):
-            # 匹配 section header（如 "# BG — Background" 或 "## GAP-RQ1"）
-            tag_match = re.match(r"#{1,3}\s+([A-Z][\w-]*)", line)
+            # 匹配 section header（如 "# BG" "# BG(2024-2026)" "## GAP-RQ1"）
+            tag_match = re.match(r"#{1,3}\s+([A-Z][\w()-]*)", line)
             if tag_match:
                 potential_tag = tag_match.group(1).strip()
+                # 归一化：BG(2024-2026) → BG
+                if potential_tag.startswith("BG"):
+                    potential_tag = "BG"
                 # 验证是否是有效标签
                 if (potential_tag in TAG_FILE_MAP or
                     potential_tag.startswith("GAP-RQ") or
@@ -258,13 +261,27 @@ def verify(tag_rows: dict[str, list[str]], file_counts: dict[str, int],
             errors.append(f"HEADER_COUNT: {filename} has {h1_count} H1 headers (expected 1)")
 
     # 4. 与 prepare JSON 交叉校验（如有）
+    # pool_prepare 的 tag_groups 可能含复合标签组名（如 "LR METHOD-先例"），
+    # 而 subAgent 输出的 section 是拆分后的个体标签（如 "LR"、"METHOD-先例"）。
+    # 验证时需把复合标签拆成个体再比较。
     if prepare_json:
         try:
             with open(prepare_json, encoding="utf-8") as f:
                 prep = json.load(f)
-            expected_tags = {tg["tag"] for tg in prep.get("tag_groups", []) if tg["count"] > 0}
+            # 拆分复合标签为个体标签集合，并归一化
+            expected_individual = set()
+            for tg in prep.get("tag_groups", []):
+                if tg["count"] > 0:
+                    # "LR METHOD-先例" → {"LR", "METHOD-先例"}
+                    for t in re.split(r"\s+", tg["tag"]):
+                        t = t.strip()
+                        if t:
+                            # 归一化：BG(2024-2026) → BG
+                            if t.startswith("BG"):
+                                t = "BG"
+                            expected_individual.add(t)
             actual_tags = set(tag_rows.keys())
-            missing = expected_tags - actual_tags
+            missing = expected_individual - actual_tags
             if missing:
                 errors.append(f"TAGS_MISSING: expected from prepare but not in tmp files: {missing}")
         except Exception:

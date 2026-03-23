@@ -46,12 +46,10 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 依次读取以下文件：
 1. `revision/comment-letter-clean.md` → 定位该 Comment 的完整评论文本
 2. `revision/revision-guide.md` → 找到所属 Cluster、核心问题、修改计划、锚点信息
-3. `revision/cluster-progress.md` → 检查该 Cluster 状态
-4. `revision/response-progress.md` → 检查本条 Comment 状态
-5. `manuscript.tex` → 全文（重点关注与该 Comment 相关的 section）
-6. 项目 `.bib` 文件 → 可用引用（从 CLAUDE.md 或 `manuscript.tex` 的 `\bibliography{}` 确认文件名）
-7. `response-letter.tex` → 定位该 Comment 的填写位置
-8. 如 `supplemental-materials.tex` 存在 → 读取（该 Comment 可能涉及补充材料修改）
+3. `manuscript.tex` → 全文（重点关注与该 Comment 相关的 section）
+4. 项目 `.bib` 文件 → 可用引用（从 CLAUDE.md 或 `manuscript.tex` 的 `\bibliography{}` 确认文件名）
+5. `response-letter.tex` → 定位该 Comment 的填写位置，同时检查哪些 Comment 的 `[TO BE FILLED]` 已被替换（= 已完成）
+6. 如 `supplemental-materials.tex` 存在 → 读取（该 Comment 可能涉及补充材料修改）
 
 ### 0d. 检查同 Cluster 上下文
 
@@ -65,8 +63,8 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 ### 0e. 防护检查
 
 - `revision/drafts/Proposal_{Comment_ID}.md` 或 `Comment_{Comment_ID}.md` 已存在 → AskUserQuestion："该 Comment 已有草稿文件，是否覆盖重做？"
-- Comment 已标记 ✅ → 警告用户，AskUserQuestion："该 Comment 已完成，是否重做？"
-- 该 Cluster 依赖的其他 Cluster 尚未完成 → 警告（非阻断）："⚠️ C2 依赖 C1，但 C1 尚未完成。建议先处理 C1。"
+- `response-letter.tex` 中该 Comment 的 `\response{[TO BE FILLED]}` 已被替换（即已有实质回复内容）→ 警告用户，AskUserQuestion："该 Comment 已有回复内容，是否覆盖重做？"
+- 该 Cluster 依赖的其他 Cluster 尚未完成（检查方法：revision-guide.md 中依赖 Cluster 的 Comments 在 response-letter.tex 中仍有 `[TO BE FILLED]`）→ 警告（非阻断）："⚠️ C2 依赖 C1，但 C1 尚未完成。建议先处理 C1。"
 
 ---
 
@@ -314,25 +312,15 @@ AskUserQuestion：
 
 如果该 Comment 的 `\response{[TO BE FILLED]}` 找不到（可能已被提前填写），告知用户并跳过。
 
-### 3c. 更新进度
+### 3c. 编译验证
 
-- `revision/response-progress.md`：标记该 Comment ✅
-- `revision/cluster-progress.md`：更新回复计数。如 Cluster 内所有 Comment 均已完成，标记 Cluster ✅
+编译由 PostToolUse hook 自动触发（`/rev-init` Step 2 配置）：
+- Edit/Write `.tex` 文件后自动编译
+- 修改 `manuscript.tex` 时额外生成 track changes PDF
 
-### 3d. 编译
+**主 Agent 无需手动执行编译命令。** 如果 hook 报告编译失败，告知用户错误信息，不自动修复。
 
-```bash
-latexmk manuscript.tex
-```
-
-如修改了 supplemental-materials.tex：
-```bash
-latexmk -pvc- -pv- supplemental-materials.tex
-```
-
-编译失败 → 报告错误，不自动修复。
-
-### 3e. Commit 决策
+### 3d. Commit 决策
 
 AskUserQuestion：
 
@@ -340,7 +328,6 @@ AskUserQuestion：
 {Comment ID} 已完成：
   ✅ manuscript.tex 已修改（{N} 处）
   ✅ response-letter.tex 已填写
-  ✅ 进度文件已更新
   ✅ 编译 {通过/失败}
 
 是否提交 Git commit？
@@ -351,18 +338,17 @@ AskUserQuestion：
 如 yes：
 ```bash
 git add manuscript.tex response-letter.tex \
-       revision/response-progress.md revision/cluster-progress.md \
        revision/drafts/
 # 仅在修改了补充材料时才 add
 git add supplemental-materials.tex 2>/dev/null || true
 git commit -m "C{N} {Comment_ID}: {brief description}"
 ```
 
-### 3f. 下一步提示
+### 3e. 下一步提示
 
 展示：
-- 当前 Cluster 进度（N/M comments done）
-- 推荐下一条 Comment（Cluster 内：锚点优先；Cluster 间：按执行顺序）
+- 当前 Cluster 剩余情况（从 revision-guide.md 获取 Cluster 成员列表，grep response-letter.tex 中对应 Comment 的 `[TO BE FILLED]` 计数）
+- 推荐下一条 Comment（Cluster 内：锚点优先；Cluster 间：按 revision-guide.md 执行顺序）
 - 依赖警告（如有）
 
 ---

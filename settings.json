@@ -1,5 +1,7 @@
 {
-  "env": {},
+  "env": {
+    "PATH": "/Library/TeX/texbin:/Users/zylen/.local/bin:/Users/zylen/anaconda3/bin:/Users/zylen/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  },
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "type": "command",

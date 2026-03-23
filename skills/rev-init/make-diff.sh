@@ -9,6 +9,9 @@
 #   - If manuscript uses \input{}, add --flatten flag to latexdiff command
 #   - booktabs \toprule/\midrule/\bottomrule conflicts are handled by post-processing below
 
+# Ensure TeX tools are in PATH (needed when called from hooks/background)
+export PATH="/Library/TeX/texbin:$PATH"
+
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJ_DIR"
 
@@ -29,10 +32,10 @@ echo "[diff] Running latexdiff..."
 latexdiff \
     --preamble="$PREAMBLE" \
     --math-markup=coarse \
-    "$ORIGINAL" "$MODIFIED" > "$DIFF_TEX" 2>build/latexdiff-stderr.log
+    "$ORIGINAL" "$MODIFIED" > "$DIFF_TEX" 2>latexdiff-stderr.log
 
 if [ $? -ne 0 ]; then
-    echo "[diff] ERROR: latexdiff failed. See build/latexdiff-stderr.log for details"
+    echo "[diff] ERROR: latexdiff failed. See latexdiff-stderr.log for details"
     exit 1
 fi
 
@@ -54,12 +57,12 @@ fi
 "${SED_INPLACE[@]}" 's/\\DIFdelbeginFL \\toprule/\\toprule/g' "$DIFF_TEX"
 
 echo "[diff] Compiling diff PDF..."
-latexmk -pvc- -pv- "$DIFF_TEX" 2>build/diff-compile-stderr.log
+latexmk -pvc- -pv- "$DIFF_TEX" 2>diff-compile-stderr.log
 
 if [ $? -eq 0 ]; then
     echo "[diff] SUCCESS: manuscript-track-changes.pdf generated"
 else
-    echo "[diff] WARNING: Compilation had issues. See build/diff-compile-stderr.log for details"
-    echo "[diff] Also check build/manuscript-track-changes.log"
+    echo "[diff] WARNING: Compilation had issues. See diff-compile-stderr.log for details"
+    echo "[diff] Also check manuscript-track-changes.log"
     exit 1
 fi

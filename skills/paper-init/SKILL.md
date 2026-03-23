@@ -170,12 +170,12 @@ gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation/figures structure/6_discussion submission .vscode .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation/figures structure/6_discussion submission .claude/hooks
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion submission .vscode .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion submission .claude/hooks
 ```
 
 ---
@@ -190,10 +190,11 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 |---|---------|---------|
 | 1 | `CLAUDE.md.tmpl` | `CLAUDE.md` |
 | 2 | `gitignore.tmpl` | `.gitignore` |
-| 3 | `vscode-settings.json.tmpl` | `.vscode/settings.json` |
-| 4 | `claude-settings.json.tmpl` | `.claude/settings.local.json` |
-| 5 | `unicode-guard.sh.tmpl` | `.claude/hooks/unicode-guard.sh` |
-| 6 | `latex-compile.sh.tmpl` | `.claude/hooks/latex-compile.sh` |
+| 3 | `claude-settings.json.tmpl` | `.claude/settings.local.json` |
+| 4 | `unicode-guard.sh.tmpl` | `.claude/hooks/unicode-guard.sh` |
+| 5 | `latex-compile.sh.tmpl` | `.claude/hooks/latex-compile.sh` |
+
+> **注意**：不生成 `.vscode/settings.json`。LaTeX Workshop 配置已在 VS Code 全局 User Settings 中统一管理（onSave 编译、latexmk、outDir、files.exclude 等）。各项目编译差异由 `latexmkrc` 控制。
 
 #### LaTeX 文件（根据 {PUBLISHER} 选择）
 
@@ -466,32 +467,32 @@ latexmk manuscript.tex
 
 **elsevier**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib elsarticle.cls elsarticle-harv.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib elsarticle.cls elsarticle-harv.bst structure/ submission/ .claude/
 ```
 
 **asce**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib ascelike.cls ascelike.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib ascelike.cls ascelike.bst structure/ submission/ .claude/
 ```
 
 **emerald**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib structure/ submission/ .claude/
 ```
 
 **sage**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib sagej.cls SageH.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib sagej.cls SageH.bst structure/ submission/ .claude/
 ```
 
 **ieee**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib IEEEtran.cls IEEEtran.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib IEEEtran.cls IEEEtran.bst structure/ submission/ .claude/
 ```
 
 **wiley**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .vscode/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .claude/
 ```
 
 ```bash

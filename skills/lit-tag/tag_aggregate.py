@@ -43,6 +43,8 @@ TAG_POOL_TARGETS = {
 def normalize_tag_group(tag: str) -> str:
     """归一化标签到大组用于达标率计算。"""
     tag = tag.strip()
+    if tag.startswith("BG"):
+        return "BG"
     if tag.startswith("GAP"):
         return "GAP"
     if tag.startswith("DISC"):
@@ -73,12 +75,12 @@ def parse_report(filepath: Path) -> list[dict]:
     current_tier = None
 
     for line in content.split("\n"):
-        # 检测分级区块
-        if re.search(r"核心文献|Core", line, re.IGNORECASE):
+        # 检测分级区块（只匹配 ## 开头的 section header，避免匹配论文标题中的 Core/Important 等词）
+        if re.match(r"^##\s.*(核心文献|Core)", line, re.IGNORECASE):
             current_tier = "core"
-        elif re.search(r"重要文献|Important", line, re.IGNORECASE):
+        elif re.match(r"^##\s.*(重要文献|Important)", line, re.IGNORECASE):
             current_tier = "important"
-        elif re.search(r"备选文献|Backup", line, re.IGNORECASE):
+        elif re.match(r"^##\s.*(备选文献|Backup)", line, re.IGNORECASE):
             current_tier = "backup"
 
         # 解析表格行（| 序号 | 作者 | 标题 | 年份 | 期刊 | 功能标签 | 入选理由 |）
@@ -106,8 +108,17 @@ def parse_report(filepath: Path) -> list[dict]:
 
         if m7:
             tags_raw = m7.group(6).strip()
-            # 解析标签（支持 BG+LR+GAP-RQ1 格式和 BG, LR 格式）
-            tags = [t.strip() for t in re.split(r"[+,、/]", tags_raw) if t.strip()]
+            # 解析标签（支持多种分隔符：+, ,, 、, /, ;, \|, |）
+            # 先去掉反引号包裹
+            tags_raw = tags_raw.replace("`", "")
+            # 统一分隔符：\| → ;
+            tags_raw = tags_raw.replace("\\|", ";")
+            tags_raw = tags_raw.replace("\\", "")  # 去掉残留反斜杠
+            # 过滤占位符
+            if tags_raw.strip() in ("—", "-", "N/A", ""):
+                tags = []
+            else:
+                tags = [t.strip().rstrip("\\").strip() for t in re.split(r"[+,、/;|]", tags_raw) if t.strip().rstrip("\\").strip()]
             papers.append({
                 "direction": direction,
                 "author": m7.group(2).strip(),

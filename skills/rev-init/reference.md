@@ -139,9 +139,8 @@ X 是否与已有 Cluster 的某条意见指向同一原稿位置（同一 Secti
 所有 Cluster 完成后、提交前逐项核对：
 
 ### 完整性
-- [ ] 所有 Cluster 完成（cluster-progress.md 每项 ✅）
-- [ ] 所有回复已填（response-progress.md 每项 ✅）
-- [ ] 无 `[TO BE FILLED]` 或 `[TBD]` 残留：`grep -n "TO BE FILLED\|TBD" response-letter.tex`
+- [ ] 所有回复已填：`grep -c "TO BE FILLED" response-letter.tex` 返回 0
+- [ ] 无 `[TBD]` 残留：`grep -n "TBD" response-letter.tex`
 - [ ] 无 `(ref)` 标记残留：`grep -n "(ref)" manuscript.tex`
 
 ### 编译

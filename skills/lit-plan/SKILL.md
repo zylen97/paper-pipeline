@@ -125,7 +125,7 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 
 ### 2.1 准备输入 JSON
 
-主 Agent 将步骤 1 设计的方向数据写入临时 JSON 文件 `structure/2_literature/directions.json`：
+主 Agent 将步骤 1 设计的方向数据写入临时 JSON 文件 `structure/2_literature/_directions.json`：
 
 ```json
 {
@@ -144,7 +144,7 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 
 ```bash
 python3 ~/.claude/skills/lit-plan/quota_calc.py \
-  --directions structure/2_literature/directions.json \
+  --directions structure/2_literature/_directions.json \
   --budget {TOTAL_BUDGET}
 ```
 
@@ -156,7 +156,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 5. 计算内部分层（核心 ≤25%, 重要 ≤40%, 备选 ≤35%）
 6. 标签覆盖检查
 7. stdout 输出完整计算表 + 校验结果
-8. 写入 `quota_result.json`
+8. 写入 `_quota_result.json`
 
 ### 2.3 主 Agent 校验脚本输出
 
@@ -168,10 +168,10 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 校验规则：
 - VERIFY 必须为 PASS。FAIL 时停止，展示具体错误给用户
 - 将脚本输出的配额计算表展示给用户确认
-- 后续步骤从 `quota_result.json` 读取配额数据填入输出文件
+- 后续步骤从 `_quota_result.json` 读取配额数据填入输出文件
 
 ### 2.4 清理临时文件
-配额写入 `literature_search_plan.md` 后，删除 `directions.json` 和 `quota_result.json`
+配额写入 `literature_search_plan.md` 后，删除 `_directions.json` 和 `_quota_result.json`
 
 ---
 

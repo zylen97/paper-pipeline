@@ -14,6 +14,9 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 ## 全局约束
 
+### 模型选择
+**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku。如无特殊指定，不传 `model` 参数即可自动继承。
+
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：引用场景、与本研究的关键差异、标签文件header/备注。文献的标题、期刊名、作者名保持原文（通常为英文）。
 
@@ -120,11 +123,64 @@ subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严
    - 入选理由 = "为什么留下这篇"（筛选视角）
    - 引用场景 = "这篇可以支撑什么论点"（写作视角）
 
-## 输出格式
-对你负责的每个标签，输出Markdown表格，保存为 `structure/2_literature/_tmp_pool_agent{N}.md`
+## 输出格式（只输出 key-value 块，不写表格）
 
-**语言要求**：所有描述性文本（引用场景）必须使用中文。文献标题、期刊名、作者名保持英文原文。
+> **设计原理**：LLM 不擅长精确 markdown 表格。Agent 只需输出 key-value 块，Python 脚本 `format_pool_agents.py` 自动转换为标准表格。
+
+**用 Write 工具写入** `structure/2_literature/_tmp_pool_agent{N}_raw.md`（注意 `_raw` 后缀）。
+
+每个标签用 `# 标签名` 作为 section 标题，每篇文献用 `### paperN` 开头：
+
+```markdown
+# BG
+
+### paper1
+- citation_key: smith2024b
+- 分级: 核心
+- 作者: Smith et al.
+- 年份: 2024
+- 引用场景: 中文引用场景描述
+- 期刊: Journal Name
+
+### paper2
+- citation_key: lee2023s
+- 分级: 重要
+- 作者: Lee et al.
+- 年份: 2023
+- 引用场景: 中文引用场景描述
+- 期刊: Another Journal
 ```
+
+**格式约束**：
+- Section 标题格式：`# 标签名`（如 `# BG`、`# GAP-RQ1`），不加副标题或篇数
+- 每篇文献 6 行 key-value（citation_key/分级/作者/年份/引用场景/期刊），每行一个字段
+- citation key 必须原样复制，不可修改
+- 分级写中文：核心/重要/备选
+- 引用场景用中文，文献信息保持英文
+- **不要写 markdown 表格**
+```
+
+---
+
+## 步骤 3.5：格式标准化（Python 脚本）
+
+将 Agent 输出的 key-value 块（`*_raw.md`）转换为 `pool_merge.py` 所需的标准表格格式。
+
+```bash
+python3 ~/.claude/skills/lit-pool/format_pool_agents.py \
+  --input-dir structure/2_literature/ \
+  --prepare-json structure/2_literature/_pool_prepare.json
+```
+
+**脚本职责**（`format_pool_agents.py`）：
+1. 读取所有 `_tmp_pool_agent*_raw.md` 文件
+2. 解析 key-value 块（citation_key/分级/作者/年份/引用场景/期刊）
+3. 转换为标准 6 列 markdown 表格
+4. 校验 citation key 存在于 `_pool_prepare.json` 中
+5. 输出标准化的 `_tmp_pool_agent*.md`（去掉 `_raw` 后缀）
+6. stdout 输出 `VERIFY: PASS|FAIL`
+
+**主 Agent 校验**：VERIFY 必须为 PASS。
 
 ---
 
@@ -364,6 +420,27 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 **注意**：
 - master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
 - `/pen-draft` 在写完每个 section 后，从 master.bib 中提取用到的条目追加到项目 bib
+
+---
+
+## 步骤 9：清理 pipeline 中间文件
+
+文献工作流（lit-plan → lit-review → lit-tag → lit-pool）全部完成后，清理所有中间文件。
+
+```bash
+# 按约定：所有以 _ 开头的文件/目录均为 pipeline 中间产物
+rm -rf structure/2_literature/_batch/              # lit-review batch 文件
+rm -rf structure/2_literature/_tags/               # lit-tag 标签列表
+rm -rf structure/2_literature/_tmp_agent_inputs/   # lit-pool agent 输入文件
+rm -f  structure/2_literature/_tmp_pool_agent*_raw.md  # lit-pool agent 原始输出
+rm -f  structure/2_literature/_tmp_pool_agent*.md       # lit-pool agent 标准化输出
+rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _screening_merged.json,
+                                                   # _tag_aggregate.json, _pool_prepare.json 等
+```
+
+> **命名约定**：pipeline 中所有中间文件/目录以 `_` 前缀命名，永久产出不以 `_` 开头。这样清理时用通配符 `_*` 即可，不需要逐个枚举文件名。
+>
+> **永久保留的文件**：direction reports（文献+标签）、screening_summary_report.md（筛选统计）、tag_report.md（标签统计）、citation_pool/（引用池）、master.bib（BibTeX）、literature_search_plan.md（检索方案）。
 
 ---
 

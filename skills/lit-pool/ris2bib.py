@@ -50,20 +50,44 @@ def parse_all_ris(ris_dir: Path) -> list[dict]:
 
             entry = {"_raw": raw, "_source": fp.name}
 
-            # 解析字段
-            for m in re.finditer(r"^([A-Z][A-Z0-9])  - (.+?)$", raw, re.MULTILINE):
-                tag = m.group(1)
-                val = m.group(2).strip()
-                if tag == "AU":
+            # 解析字段（支持 RIS 多行续行：续行以空格开头，无 XX  - 前缀）
+            current_tag = None
+            current_val = None
+            for line in raw.split("\n"):
+                m = re.match(r"^([A-Z][A-Z0-9])  - (.*)$", line)
+                if m:
+                    # 先保存上一个字段
+                    if current_tag is not None:
+                        val = current_val.strip()
+                        if current_tag == "AU":
+                            entry.setdefault("AU", []).append(val)
+                        elif current_tag in entry:
+                            if isinstance(entry[current_tag], list):
+                                entry[current_tag].append(val)
+                            else:
+                                entry[current_tag] = [entry[current_tag], val]
+                        else:
+                            entry[current_tag] = val
+                    current_tag = m.group(1)
+                    current_val = m.group(2)
+                elif current_tag and line.startswith("      "):
+                    # RIS 续行（6个空格缩进）
+                    current_val += " " + line.strip()
+                elif current_tag and line.startswith(" "):
+                    # 宽松续行匹配（任意空格开头）
+                    current_val += " " + line.strip()
+            # 保存最后一个字段
+            if current_tag is not None:
+                val = current_val.strip()
+                if current_tag == "AU":
                     entry.setdefault("AU", []).append(val)
-                elif tag in entry:
-                    # 多值字段追加
-                    if isinstance(entry[tag], list):
-                        entry[tag].append(val)
+                elif current_tag in entry:
+                    if isinstance(entry[current_tag], list):
+                        entry[current_tag].append(val)
                     else:
-                        entry[tag] = [entry[tag], val]
+                        entry[current_tag] = [entry[current_tag], val]
                 else:
-                    entry[tag] = val
+                    entry[current_tag] = val
 
             all_entries.append(entry)
 

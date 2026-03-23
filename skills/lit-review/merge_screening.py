@@ -2,8 +2,12 @@
 """
 merge_screening.py — 文献筛选合并脚本（步骤 2）
 
-从 _batch/ 目录下的 JSON 文件中读取各 subAgent 的筛选结果，
+从 _batch/ 目录下的 markdown（或旧版 JSON）文件中读取各 subAgent 的筛选结果，
 按方向合并、配额截断、跨方向去重，生成方向报告和汇总报告。
+
+支持两种 batch 格式（优先 .md）：
+  - .md：subAgent 输出的 markdown 表格（新格式）
+  - .json：旧版 JSON 格式（向后兼容）
 
 用法:
     python3 merge_screening.py \
@@ -85,26 +89,166 @@ def parse_quotas(plan_path: str) -> dict[int, int]:
 
 
 # ---------------------------------------------------------------------------
-# read batch JSON files
+# parse markdown batch file
+# ---------------------------------------------------------------------------
+
+def parse_batch_md(filepath: Path) -> dict:
+    """Parse a markdown batch file into the same dict structure as JSON batches.
+
+    Expected format:
+        > direction: N
+        > direction_name: ...
+        > batch_id: d{N}_batch{M}
+        > total_items: X
+
+        ## 核心文献（Core）
+        | # | 第一作者 | 标题 | 年份 | 期刊 | 入选理由 |
+        | 1 | Author  | Title | 2024 | J    | Reason   |
+
+        ## 重要文献（Important）
+        ...
+    """
+    text = filepath.read_text(encoding="utf-8")
+
+    # 1. Extract blockquote metadata
+    meta = {}
+    for m in re.finditer(r"^>\s*(\w[\w_]*):\s*(.+)$", text, re.MULTILINE):
+        meta[m.group(1).strip()] = m.group(2).strip()
+
+    direction = int(meta.get("direction", 0))
+    direction_name = meta.get("direction_name", "")
+    batch_id = meta.get("batch_id", filepath.stem)
+    total_items = int(meta.get("total_items", 0))
+
+    # Fallback: bullet format (- key: value)
+    if direction == 0:
+        for m in re.finditer(r"^[-*]\s*(\w[\w_]*):\s*(.+)$", text, re.MULTILINE):
+            key = m.group(1).strip()
+            val = m.group(2).strip()
+            if key not in meta:
+                meta[key] = val
+        direction = int(meta.get("direction", 0))
+        direction_name = meta.get("direction_name", "")
+        batch_id = meta.get("batch_id", filepath.stem)
+        total_items = int(meta.get("total_items", 0))
+
+    # Fallback: infer direction from filename if metadata missing
+    if direction == 0:
+        fname_m = re.match(r"d(\d+)_batch(\d+)", filepath.stem)
+        if fname_m:
+            direction = int(fname_m.group(1))
+
+    # 2. Parse tables with tier state machine
+    current_tier = None
+    selected = []
+
+    for line in text.split("\n"):
+        # Detect tier headings
+        if re.match(r"^##\s.*(核心文献|Core)", line, re.IGNORECASE):
+            current_tier = "core"
+            continue
+        elif re.match(r"^##\s.*(重要文献|Important)", line, re.IGNORECASE):
+            current_tier = "important"
+            continue
+        elif re.match(r"^##\s.*(备选文献|Backup)", line, re.IGNORECASE):
+            current_tier = "backup"
+            continue
+        elif re.match(r"^##\s.*(淘汰文献|方向小结|逐篇处理)", line, re.IGNORECASE):
+            current_tier = None
+            continue
+
+        if current_tier is None:
+            continue
+
+        # Match 6-column table row: | # | author | title | year | journal | reason |
+        m = re.match(
+            r"\|\s*(\d+)\s*\|"   # #
+            r"\s*([^|]+)\|"       # author
+            r"\s*([^|]+)\|"       # title
+            r"\s*(\d{4})\s*\|"    # year
+            r"\s*([^|]+)\|"       # journal
+            r"\s*([^|]+)\|",      # reason
+            line
+        )
+        if m:
+            selected.append({
+                "title": m.group(3).strip(),
+                "first_author": m.group(2).strip(),
+                "year": int(m.group(4)),
+                "journal": m.group(5).strip(),
+                "tier": current_tier,
+                "reason": m.group(6).strip(),
+            })
+
+    rejected_count = max(0, total_items - len(selected))
+
+    return {
+        "direction": direction,
+        "direction_name": direction_name,
+        "batch_id": batch_id,
+        "total_items": total_items,
+        "selected": selected,
+        "rejected_count": rejected_count,
+        "_source_file": filepath.name,
+    }
+
+
+def parse_batch_json(filepath: Path) -> dict:
+    """Parse a legacy JSON batch file with auto-repair for unescaped quotes."""
+    text = filepath.read_text(encoding="utf-8")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        # Auto-repair: fix unescaped quotes inside string values
+        lines = text.split("\n")
+        new_lines = []
+        for line in lines:
+            match = re.match(
+                r'(\s*"(?:reason|title|journal|first_author|direction_name)"\s*:\s*")(.*?)("\s*,?\s*)$',
+                line,
+            )
+            if match:
+                prefix, value, suffix = match.groups()
+                value = value.replace('\\"', '<<<ESC>>>')
+                value = value.replace('"', '\\"')
+                value = value.replace('<<<ESC>>>', '\\"')
+                line = prefix + value + suffix
+            new_lines.append(line)
+        text = "\n".join(new_lines)
+        try:
+            data = json.loads(text)
+            print(f"WARNING: Auto-repaired JSON in {filepath.name}", file=sys.stderr)
+        except json.JSONDecodeError as e:
+            print(f"ERROR: Failed to parse {filepath.name} even after repair: {e}", file=sys.stderr)
+            sys.exit(1)
+    data["_source_file"] = filepath.name
+    return data
+
+
+# ---------------------------------------------------------------------------
+# read batch files (.md preferred, .json as fallback)
 # ---------------------------------------------------------------------------
 
 def read_batches(batch_dir: str) -> list[dict]:
-    """Read all d*_batch*.json files from batch_dir."""
-    batches = []
+    """Read all d*_batch*.{md,json} files from batch_dir.
+    Prefers .md over .json when both exist for the same batch."""
     batch_path = Path(batch_dir)
     if not batch_path.exists():
         print(f"ERROR: Batch directory not found: {batch_dir}", file=sys.stderr)
         sys.exit(1)
 
-    for fp in sorted(batch_path.glob("d*_batch*.json")):
-        try:
-            with open(fp, encoding="utf-8") as f:
-                data = json.load(f)
-            data["_source_file"] = fp.name
-            batches.append(data)
-        except json.JSONDecodeError as e:
-            print(f"ERROR: Failed to parse {fp.name}: {e}", file=sys.stderr)
-            sys.exit(1)
+    md_files = {fp.stem: fp for fp in sorted(batch_path.glob("d*_batch*.md"))}
+    json_files = {fp.stem: fp for fp in sorted(batch_path.glob("d*_batch*.json"))}
+
+    # Merge: .md takes priority
+    all_stems = sorted(set(md_files.keys()) | set(json_files.keys()))
+
+    batches = []
+    for stem in all_stems:
+        if stem in md_files:
+            batches.append(parse_batch_md(md_files[stem]))
+        else:
+            batches.append(parse_batch_json(json_files[stem]))
 
     return batches
 
@@ -244,7 +388,7 @@ def generate_summary(all_papers: dict[int, list[dict]], dup_count: int,
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Merge screening batch JSONs")
+    parser = argparse.ArgumentParser(description="Merge screening batch files (markdown or JSON)")
     parser.add_argument("--batch-dir", required=True, help="Directory containing d*_batch*.json files")
     parser.add_argument("--plan-file", required=True, help="literature_search_plan.md path")
     parser.add_argument("--output-dir", required=True, help="Directory for output reports")

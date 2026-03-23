@@ -47,15 +47,65 @@ git add manuscript-original.tex && git commit -m "Freeze baseline for latexdiff"
 
 ---
 
-## Step 2: 创建目录 + 复制工具
+## Step 2: 创建目录 + 复制工具 + 配置 Hook
 
 ```bash
-mkdir -p tools revision/drafts
+mkdir -p tools revision/drafts .claude/hooks
 ```
 
 从 `~/.claude/skills/rev-init/` 读取以下文件并写入项目：
 - `make-diff.sh` → `tools/make-diff.sh`（`chmod +x`）
 - `latexdiff-preamble.tex` → `tools/latexdiff-preamble.tex`
+
+### Hook 配置
+
+#### 编译 Hook（升级为 diff 版本）
+
+用 `~/.claude/skills/rev-init/latex-compile.sh` **覆盖** `.claude/hooks/latex-compile.sh`（`chmod +x`）。
+
+paper-init 创建的原版只做纯编译。rev-init 的升级版增加：
+- 如果修改的是 `manuscript.tex`，额外运行 `tools/make-diff.sh` 生成 track changes PDF
+- 编译 + diff 均在后台运行，不阻塞工作流
+
+#### Unicode Guard（确保存在）
+
+检查 `.claude/hooks/unicode-guard.sh` 是否存在：
+- 存在（paper-init 已创建）→ 跳过
+- 不存在（旧项目）→ 从 `~/.claude/skills/paper-init/unicode-guard.sh.tmpl` 复制（`chmod +x`）
+
+#### settings.local.json Hook 配置
+
+确保 `.claude/settings.local.json` 同时包含两个 hook（保留已有的 permissions）：
+
+```json
+"hooks": {
+  "PreToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/unicode-guard.sh\""
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/latex-compile.sh\"",
+          "timeout": 120
+        }
+      ]
+    }
+  ]
+}
+```
+
+> hook command 统一使用 `$CLAUDE_PROJECT_DIR` 绝对路径，与 paper-init 模板一致。
 
 ---
 
@@ -76,34 +126,40 @@ AskUserQuestion：
 
 ---
 
-## Step 4: 解析决定信（Python 脚本 + 主 Agent 模板填充）
+## Step 4: 解析决定信（主 Agent）
 
-### 4a-4c. 结构识别 + 编号 + 清理（Python 脚本）
+### 4a. 通读原始决定信
 
-**由 Python 脚本自动完成**，替代主 Agent 手动关键词扫描和编号转换。
+主 Agent 读取 `revision/comment-letter.md` 全文，理解整体结构。不同期刊/投稿系统的格式差异极大，需要 LLM 的语义理解能力来正确识别结构，不可使用硬编码脚本。
 
-```bash
-python3 ~/.claude/skills/rev-init/parse_decision_letter.py \
-  --input revision/comment-letter.md
-```
+### 4b. 结构识别
 
-**脚本职责**（`parse_decision_letter.py`）：
-1. 清理邮件头、系统页脚、日历附件说明（行过滤）
-2. 检测决定类型（Major/Minor Revision, Reject 等）
-3. 按角色关键词分段（Editor / AE / Reviewer #N）
-4. 保留审稿人原始编号（#2, #3, #5 不重编）
-5. 已分 Major/Minor → `RN-K` / `RN-mK`；未分 → 连续编号 `RN-1, RN-2, ...`
-6. 检测标准化 Q&A 区域（ASCE EM、Elsevier EES 等）
-7. 校验：每审稿人至少 1 条 comment、ID 全局唯一、格式合规
-8. 输出 `_parsed_letter.json` + stdout 摘要 + `VERIFY: PASS|FAIL`
+识别并分离以下角色：
+- **Editor / Handling Editor**：决定信正文、编辑要求
+- **Associate Editor**（如有）：AE 综合评价
+- **Reviewer #N**：每位审稿人的意见
 
-**主 Agent 校验**：VERIFY 必须为 PASS。将统计摘要展示给用户。
+注意：
+- 审稿人编号保留原始编号（如 #2, #3, #4，不重编为 #1, #2, #3）
+- 识别 Q&A 区域（如 ASCE EM 的标准化问答表），提取含实质性反馈的回答
 
-### 4d. 生成输出（主 Agent 基于 JSON 填充模板）
+### 4c. 编号处理
 
-主 Agent 从 `_parsed_letter.json` 读取结构化数据，按 `comment-letter-clean.md.tmpl` 模板格式生成 `revision/comment-letter-clean.md`。
+对每位 Reviewer 的意见进行编号：
+- 审稿人已分 Major/Minor → `RN-K` / `RN-mK`
+- 审稿人未分 Major/Minor → 连续编号 `RN-1, RN-2, ...`（不强行分类）
+- 保留原始编号；一个独立关切 = 一条 Comment
+- 同一段落内多个独立问题 → 拆分为独立 Comment
+- 保留完整原始英文文本，不改写不缩减
 
-> **为什么模板填充不放 Python**：模板的"初步分类工作区"表格需要主 Agent 后续在 Step 5 中填写分类建议，紧耦合。
+### 4d. 生成 comment-letter-clean.md
+
+读取 `comment-letter-clean.md.tmpl` 模板格式，生成 `revision/comment-letter-clean.md`，包含：
+- 头部元信息（决定类型、日期、截止日期、编辑姓名）
+- Editor / AE / 每位 Reviewer 各有独立标题
+- 每条意见有 ID 前缀（`**R1-1.**`、`**R1-m1.**`）
+- Q&A 区域提取（如有实质性反馈）
+- 末尾的初步分类工作区表格（供 Step 5 填写）
 
 ### 4e. 展示并确认
 
@@ -220,9 +276,7 @@ AskUserQuestion：
    - Section 4 意见清单：从 comment-letter-clean.md 导入，回填 Cluster 列
    - Section 5 Cluster 分析：从确认的聚类方案填充
 
-2. **`revision/cluster-progress.md`**：读取 `cluster-progress.md.tmpl`，从 revision-guide.md 派生。所有状态 ⬜。
-
-3. **`revision/response-progress.md`**：读取 `response-progress.md.tmpl`，从 revision-guide.md 派生。包含 Proposal 文件列和 Comment 文件列。
+**进度追踪说明**：不单独生成进度文件。回复完成状态直接通过 `response-letter.tex` 中的 `[TO BE FILLED]` 占位符判断——有占位符 = 未完成，无占位符 = 已完成。
 
 ---
 
@@ -266,7 +320,7 @@ AskUserQuestion：
 
 一次性展示所有 general responses → AskUserQuestion 确认。
 
-确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision/drafts/Response_*.md` + 更新 `response-progress.md`。
+确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision/drafts/Response_*.md`。
 
 ---
 

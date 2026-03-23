@@ -23,7 +23,7 @@ quota_calc.py — 文献检索配额计算（lit-plan §2）
 
 输出:
     1. stdout 结构化摘要（供主 Agent 校验）
-    2. 写入 quota_result.json（供后续步骤使用）
+    2. 写入 _quota_result.json（供后续步骤使用）
 """
 
 import argparse
@@ -250,7 +250,7 @@ def main():
     parser.add_argument("--budget", type=int, default=360,
                         help="Total budget (default: 360)")
     parser.add_argument("--output", default=None,
-                        help="Output JSON path (default: same dir as input / quota_result.json)")
+                        help="Output JSON path (default: same dir as input / _quota_result.json)")
     args = parser.parse_args()
 
     # 读取输入
@@ -273,7 +273,7 @@ def main():
     errors = verify(result, directions)
 
     # 输出 JSON
-    output_path = args.output or str(Path(args.directions).parent / "quota_result.json")
+    output_path = args.output or str(Path(args.directions).parent / "_quota_result.json")
     output_data = {
         "total_budget": args.budget,
         "directions": []

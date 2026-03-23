@@ -83,6 +83,14 @@ def match_paper(entry: dict, selected_titles: set[str],
     if au_yr and au_yr in selected_author_year:
         return True
 
+    # Strategy 3: title-only matching for "Unknown" authors
+    if entry["first_author"] in ("unknown", ""):
+        entry_ti = entry["title_norm"][:60]
+        if entry_ti:
+            for sel_ti in selected_titles:
+                if entry_ti == sel_ti[:60]:
+                    return True
+
     return False
 
 

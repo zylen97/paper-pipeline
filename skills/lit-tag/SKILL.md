@@ -16,6 +16,9 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ## 全局约束
 
+### 模型选择
+**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku。如无特殊指定，不传 `model` 参数即可自动继承。
+
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：依据短语、标签锚定说明、处理日志中的备注。文献的标题、期刊名、作者名保持原文。
 
@@ -31,13 +34,11 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 失败重试：subAgent 失败 → 自动重试一次 → 仍失败则报告用户。
 
-### 质量验证（三层保障）
+### 质量验证（两层保障）
 
-**第一层：逐篇处理日志**。subAgent输出必须附逐篇处理日志表（# | 第一作者 | 年份 | 标注的标签 | 依据短语）。主Agent校验日志行数 = 分配条目数。不通过 → 自动重跑该agent（最多1次）→ 仍不通过则报告用户。
+**第一层：数量校验**。`insert_tags.py` 自动校验每个分级内的标签数 == 文献数。不匹配 → 报错停止。
 
-**第二层：标签锚定**。每个标签的标注必须附具体依据（来自入选理由或摘要的信息），不可仅凭标题泛泛标注。
-
-**第三层：主Agent抽检**。随机抽取2-3篇，核对标签是否与入选理由/摘要内容匹配。
+**第二层：主Agent抽检**。`insert_tags.py` 完成后，主Agent随机抽取2-3篇，核对标签是否与入选理由匹配。不匹配则报告用户。
 
 ---
 
@@ -131,25 +132,71 @@ VERIFY 必须为 PASS。
 1. 读取该方向的筛选报告（direction report）
 2. 对每篇入选文献，基于其标题、期刊、入选理由，标注功能标签（可多个）
 3. 每篇文献至少标注1个标签
-4. 在原report的表格中，将"入选理由"列之前插入"功能标签"列
 
-## 输出
-将打标签后的完整report覆写回原文件路径：
-`structure/2_literature/direction{N}_{方向名称简写}_report.md`
+## 输出（只输出标签列表，不修改表格）
 
-表格格式变为：
-| # | 作者 | 标题 | 年份 | 期刊 | 功能标签 | 入选理由 |
+> **设计原理**：表格插列是纯机械操作，交给 Python 脚本（`insert_tags.py`）完成。Agent 只需输出标签判断结果。
 
-**语言要求**：所有描述性文本（依据短语、标签锚定说明）必须使用中文。文献标题、期刊名、作者名保持英文原文。
+**用 Write 工具写入** `structure/2_literature/_tags/d{方向编号}_tags.md`（确保 `_tags/` 目录存在）。
+
+按分级分组，每篇文献一行 `序号: 标签`，严格按 report 中的表格顺序编号：
+
+```markdown
+# 方向{N} 标签标注结果
+
+> direction: {N}
+> direction_name: {方向名称}
+
+## 核心文献（Core）
+1: LR+GAP-RQ1+DISC-RQ1
+2: LR+METHOD-先例+COMP
+3: BG+LR
+
+## 重要文献（Important）
+1: LR+DISC-RQ2
+2: METHOD-基础
+3: LR+GAP-RQ2
+
+## 备选文献（Backup）
+1: LR
+2: LR+DISC-RQ3
+```
+
+**格式约束**：
+- 每行格式：`序号: 标签1+标签2+...`（序号对应该分级表格内的行号，从1开始）
+- 多个标签用 `+` 分隔，禁止用 `|`、`;` 或其他分隔符
+- 每篇至少1个标签，不可留空
+- 标签名称严格匹配定义表（区分大小写），不可自创标签
+- **不要修改 direction report 文件**——标签插入由 Python 脚本完成
+
+**语言要求**：标签列表无需中文说明，只需 `序号: 标签` 即可。
 ```
 
 ---
 
-## 步骤 2：标签聚合统计（Python 脚本）
+## 步骤 2：标签插入 + 聚合统计（Python 脚本）
 
-所有 subAgent 完成后，**由 Python 脚本自动完成标签统计**，替代主 Agent 手动计数和百分比计算。
+所有 subAgent 完成后，先由 Python 脚本将标签插入 direction reports，再做聚合统计。
 
-### 2.1 调用标签聚合脚本
+### 2.1 标签插入（Python 脚本）
+
+```bash
+python3 ~/.claude/skills/lit-tag/insert_tags.py \
+  --tags-dir structure/2_literature/_tags/ \
+  --report-dir structure/2_literature/
+```
+
+**脚本职责**（`insert_tags.py`）：
+1. 读取所有 `_tags/d*_tags.md` 文件，解析 `序号: 标签` 列表
+2. 读取对应的 direction report（6 列表格）
+3. 校验：标签数 == 文献数（每个分级内分别校验）
+4. 在"入选理由"列前插入"功能标签"列，生成 7 列表格
+5. 覆写回 direction report
+6. stdout 输出每个方向的处理结果 + `VERIFY: PASS|FAIL`
+
+**主 Agent 校验**：VERIFY 必须为 PASS。FAIL 时展示错误给用户。
+
+### 2.2 调用标签聚合脚本
 
 ```bash
 python3 ~/.claude/skills/lit-tag/tag_aggregate.py \
@@ -166,7 +213,7 @@ python3 ~/.claude/skills/lit-tag/tag_aggregate.py \
 7. 生成 `tag_report.md` 和 `_tag_aggregate.json`
 8. stdout 输出统计摘要 + `VERIFY: PASS|FAIL`
 
-### 2.2 主 Agent 校验脚本输出
+### 2.3 主 Agent 校验脚本输出
 
 ```
 === VERIFY: PASS|FAIL ===

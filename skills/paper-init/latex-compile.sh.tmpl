@@ -12,6 +12,6 @@ case "$FILE_PATH" in
 esac
 
 # Compile in background to avoid blocking
-(cd "$(dirname "$FILE_PATH")" && latexmk "$(basename "$FILE_PATH")" > /dev/null 2>&1) &
+(cd "$(dirname "$FILE_PATH")" && /Library/TeX/texbin/latexmk "$(basename "$FILE_PATH")" > /dev/null 2>&1) &
 
 exit 0
