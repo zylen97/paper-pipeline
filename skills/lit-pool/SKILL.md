@@ -42,106 +42,55 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 ---
 
-## 步骤 1：提取文献 + 预估标签文献量（主Agent执行）
+## 步骤 1-2：提取 + 去重 + Citation Key + 调度计划（Python 脚本）
 
-### 1.1 提取文献
+**本步骤由 Python 脚本一次性完成**，替代主 Agent 手动读报告、去重、生成 key、拆分 agent。
 
-逐个读取所有 direction reports，从每篇入选文献（核心+重要+备选）提取：
+### 1.1 调用预处理脚本
 
-| 字段 | 来源 |
-|:-----|:-----|
-| 作者 | 表格"作者"列 |
-| 年份 | 表格"年份"列 |
-| 标题 | 表格"标题"列 |
-| 期刊 | 表格"期刊"列 |
-| 功能标签 | 表格"功能标签"列（可多个，如 LR+METHOD） |
-| 分级 | 所在区块标题（核心/重要/备选） |
-| 入选理由 | 表格"入选理由"列 |
-| 来源方向 | 该 direction report 的方向编号和名称 |
-
-**跨方向去重**：
-- 以（第一作者姓氏, 年份, 标题前30字符）为去重键
-- 同一文献出现在多个方向 → 合并功能标签，保留最高分级，合并入选理由
-
-### 1.2 预估每个标签的文献量
-
-去重后，统计每个标签组的文献数量 N_tag（一篇文献有多个标签时，在每个标签下各计一次）。
-
-在对话中展示统计结果：
-
-```
-| 标签 | 去重后文献数 N_tag |
-|:-----|:------------------:|
-| BG   | {n} |
-| LR   | {n} |
-| GAP-RQx | {n} |（按实际RQ数量动态生成行）
-| METHOD-基础 | {n} |
-| METHOD-先例 | {n} |
-| DISC-RQx | {n} |（按实际RQ数量动态生成行）
-| COMP | {n} |
+```bash
+python3 ~/.claude/skills/lit-pool/pool_prepare.py \
+  --report-dir structure/2_literature/ \
+  --output-dir structure/2_literature/ \
+  --agent-limit 30
 ```
 
-### 1.3 预生成citation key映射表
+**脚本职责**（`pool_prepare.py`）：
+1. 解析所有 `direction*_report.md` 的 markdown 表格，提取文献数据
+2. 跨方向去重（key = first_author + year + title[:40]），合并标签和分级
+3. 按全局规则生成 citation key（`auth.lower + year + shorttitle(1,1)`），自动处理冲突（追加 b/c 后缀）
+4. 按标签分组，统计每标签文献量
+5. 大标签按 ⌈N/30⌉ 拆分，小标签（≤15篇）贪心合并
+6. 校验：key 格式合规、全局唯一、每篇至少 1 标签、agent 分配完整
+7. 生成 `_pool_prepare.json`（含：去重后文献清单、citation key 映射表、标签分组、agent 调度计划）
+8. stdout 输出摘要 + `VERIFY: PASS|FAIL`
 
-主Agent按全局规则（`auth.lower + year + shorttitle(1,1)`，见`~/.claude/CLAUDE.md`）为每篇去重文献统一生成citation key。
+### 1.2 主 Agent 校验
 
-**生成规则**：
-- 格式：`{第一作者姓氏小写}{四位年份}{标题首个实词首字母小写}`
-- 示例：Akcomak (2023) "What drives network evolution?" → `akcomak2023w`
-- 冲突处理：同 key 追加 b/c 后缀 → `akcomak2023wb`
-- **禁止**：key 中出现两次年份（如 `akcomak2023w2023a`），这是错误格式
+```
+=== VERIFY: PASS|FAIL ===
+```
 
-**传递方式**：映射表以 `(序号, citation key, 作者, 年份, 标题)` 格式传给 subAgent。subAgent 必须**原样使用**映射表中的 key，**严禁**自行生成、修改或追加任何后缀。
+- VERIFY 必须为 PASS。FAIL 时停止，展示具体错误给用户
+- 将 stdout 的标签统计、key 样本、agent 调度表展示给用户确认
+- 后续步骤从 `_pool_prepare.json` 读取数据构建 subAgent prompt
 
-**验证**：主Agent在收到subAgent输出后，检查所有 citation key 是否与映射表一致。如发现不一致（如多了后缀、格式错误），主Agent直接替换为映射表中的正确 key。
+### 1.3 Citation key 使用规则
+
+subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严禁**自行生成、修改或追加任何后缀。主 Agent 在收到 subAgent 输出后，检查 key 是否一致。
 
 ---
 
-## 步骤 2：动态拆分Agent任务（主Agent执行）
+## 步骤 2：读取调度计划
 
-基于步骤1的文献量统计，严格按 **AGENT_ITEM_LIMIT = 30** 分配subAgent任务。
+从 `_pool_prepare.json` 的 `agents` 字段读取调度信息。拆分和贪心合并已由 Python 脚本完成，主 Agent **不做任何算术**。
 
-### 2.1 按标签分组 + 按篇数切割
+基于步骤1的调度计划，严格按 **AGENT_ITEM_LIMIT = 30** 分配subAgent任务。
 
-```
-for each tag (BG, LR, GAP-RQx, METHOD-基础, METHOD-先例, DISC-RQx, COMP):
-    if N_tag == 0:
-        跳过
-    elif N_tag ≤ 15:
-        标记为"可合并"
-    else:
-        分配 ⌈N_tag / 30⌉ 个agent，按方向来源均匀分割
-        每个agent处理 ≤ 30篇
+### 2.1 展示调度计划
 
-将所有"可合并"标签按 N_tag 降序依次贪心合并，使每个合并agent处理总量 ≤ 30
-```
-
-### 2.2 展示拆分计划（等待用户确认）
-
-示例（以zl14为例）：
-
-```
-Agent任务分配：
-| Agent# | 处理标签 | 文献数 | 备注 |
-|:------:|:---------|:------:|:-----|
-| 1 | BG (D1+D2) | 28 | 拆分1/2 |
-| 2 | BG (D3+D4+D5+D6) | 27 | 拆分2/2 |
-| 3 | GAP (D1+D2) | 26 | 拆分1/2 |
-| 4 | GAP (D3+D4+D5+D6) | 26 | 拆分2/2 |
-| 5 | METHOD-基础 | 19 | 独立 |
-| 6 | METHOD-先例 (D1+D2+D4) | 22 | 拆分1/3 |
-| 7 | METHOD-先例 (D5+D6) | 21 | 拆分2/3 |
-| 8 | METHOD-先例 (D3) | 21 | 拆分3/3 |
-| 9 | DISC-RQ1 (D1+D2) | 28 | 拆分1/2 |
-| 10 | DISC-RQ1 (D3+D4+D5+D6) | 28 | 拆分2/2 |
-| 11 | DISC-RQ2+RQ3+COMP | 27 | 合并 |
-| 12 | LR (D1) | 30 | 拆分1/5 |
-| 13 | LR (D2) | 30 | 拆分2/5 |
-| 14 | LR (D3) | 30 | 拆分3/5 |
-| 15 | LR (D4+D5) | 30 | 拆分4/5 |
-| 16 | LR (D6) | 30 | 拆分5/5 |
-共 16 个agent，按槽位制启动（同时不超过8个，完成一个补一个）
-```
+将 `_pool_prepare.json` 中的 `agents` 调度表展示给用户确认。
+所有拆分和贪心合并已由 Python 脚本完成，主 Agent 直接读取使用。
 
 ---
 
@@ -179,91 +128,61 @@ Agent任务分配：
 
 ---
 
-## 步骤 4：合并组装 `citation_pool/` 目录（主Agent用bash执行，不用subAgent）
+## 步骤 4：合并组装 `citation_pool/` 目录（Python 脚本）
 
-所有subAgent完成后，主Agent用bash拼接临时文件到目录结构：
+所有 subAgent 完成后，**由 Python 脚本自动合并**，替代主 Agent 的 bash 拼接。
 
-### 4.1 创建目录
+### 4.1 调用合并脚本
+
 ```bash
-mkdir -p structure/2_literature/citation_pool/
+python3 ~/.claude/skills/lit-pool/pool_merge.py \
+  --tmp-dir structure/2_literature/ \
+  --output-dir structure/2_literature/citation_pool/ \
+  --prepare-json structure/2_literature/_pool_prepare.json \
+  --clean-tmp
 ```
 
-### 4.2 按标签组装6个文件
+**脚本职责**（`pool_merge.py`）：
+1. 解析所有 `_tmp_pool_agent*.md` 临时文件
+2. 按标签自动识别表格行，分组到对应文件
+3. 组装 BG.md / LR.md / GAP.md / METHOD.md / DISC.md / COMP.md
+4. 自动生成标准 header（篇数、日期、服务章节、引用偏好）
+5. GAP/DISC 按 RQ 分子 section，METHOD 按基础/先例分子 section
+6. 清理临时文件
+7. 与 `_pool_prepare.json` 交叉校验标签覆盖
+8. stdout 输出摘要 + `VERIFY: PASS|FAIL`
 
-| 目标文件 | 组装方式 |
-|:---------|:---------|
-| `BG.md` | 从BG临时文件直接copy |
-| `LR.md` | bash拼接各方向LR临时文件，加总header |
-| `GAP.md` | 合并GAP临时文件，按RQ子section拼接 |
-| `METHOD.md` | 直接copy METHOD临时文件 |
-| `DISC.md` | 合并DISC临时文件，按RQ子section拼接 |
-| `COMP.md` | 从COMP临时文件直接copy |
+### 4.2 主 Agent 校验
 
-> GAP和DISC的合并：同一RQ的内容从多个临时文件追加到同一子section下。
-
-### 4.2b header处理规则
-- 拆分同一agent文件为多个标签时，为每个标签文件补写独立header
-- 拼接同一标签的多个agent文件时，只保留第一个文件的header，去掉后续文件的重复header
-- 每个标签文件的标准header：`# {TAG全名}（{n}篇）\n> 生成日期: {date}\n> 服务章节: {章节}`
-
-### 4.3 清理临时文件
-- 删除所有 `structure/2_literature/_tmp_pool_*.md`
-- 删除旧的 `citation_pool/` 目录（如存在）
+VERIFY 必须为 PASS。将输出文件列表和行数展示给用户。
 
 ---
 
-### 各标签文件格式模板
+## 步骤 5：更新各章节md的引用池（Python 脚本）
 
-每个标签文件独立，格式示例见 `BG.md`：
-```markdown
-# BG — Background（{n}篇）
-> **生成日期**: {YYYY-MM-DD}
-> **引用偏好**: 优先近3年高质量期刊
-> **服务章节**: Introduction [主]
+**由 Python 脚本自动完成**，替代主 Agent 逐文件手动编辑。
 
-| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |
-|:----:|:-----|:----:|:------------|:---------|:-----|
-| ... |
+```bash
+# 先预览
+python3 ~/.claude/skills/lit-pool/update_citation_refs.py \
+  --structure-dir structure/ \
+  --pool-dir structure/2_literature/citation_pool/ \
+  --dry-run
+
+# 确认后正式执行
+python3 ~/.claude/skills/lit-pool/update_citation_refs.py \
+  --structure-dir structure/ \
+  --pool-dir structure/2_literature/citation_pool/
 ```
 
-其他文件同理。GAP.md/DISC.md 内部按RQ分子section，METHOD.md 内部按基础/先例分子section，COMP.md 额外含"与本研究的关键差异"列。
+**脚本职责**（`update_citation_refs.py`）：
+- introduction.md → BG[主] + GAP[主] + LR[次]
+- literature.md → LR[主] + GAP[主] + METHOD[次] + DISC[次]
+- methodology.md → METHOD[主]
+- discussion.md → DISC[主] + COMP[主] + LR[次]
 
----
-
-## 步骤 5：更新各章节md的引用池
-
-自动读取各章节md，将引用池区块更新为指向 `citation_pool/` 目录下的具体文件：
-
-**introduction.md**：
-```
-## 引用池
-- **[主] BG** → 见 `2_literature/citation_pool/BG.md`
-- **[主] GAP-RQx** → 见 `2_literature/citation_pool/GAP.md`
-- **[次] LR** → 见 `2_literature/citation_pool/LR.md`
-```
-
-**literature.md**：
-```
-## 引用池
-- **[主] LR** → 见 `2_literature/citation_pool/LR.md`
-- **[主] GAP-RQx** → 见 `2_literature/citation_pool/GAP.md`
-- **[次] METHOD** → 见 `2_literature/citation_pool/METHOD.md`
-- **[次] DISC-RQx** → 见 `2_literature/citation_pool/DISC.md`
-```
-
-**methodology.md**：
-```
-## 引用池
-- **[主] METHOD** → 见 `2_literature/citation_pool/METHOD.md`
-```
-
-**discussion.md**：
-```
-## 引用池
-- **[主] DISC-RQx** → 见 `2_literature/citation_pool/DISC.md`
-- **[主] COMP** → 见 `2_literature/citation_pool/COMP.md`
-- **[次] LR** → 见 `2_literature/citation_pool/LR.md`
-```
+自动查找章节文件、插入/更新引用池区块、校验引用池文件存在性。
+stdout 输出 `VERIFY: PASS|FAIL`。
 
 ---
 
@@ -415,35 +334,36 @@ mkdir -p structure/2_literature/citation_pool/
 5. 补检建议（如有）
 6. **下一步建议**：用户审阅 master_report.md → 确认/调整 idea.md → 进入步骤③ idea定稿 → 步骤④ 填充各章节md
 
-## 步骤 8：生成 master.bib
+## 步骤 8：生成 master.bib（Python 脚本）
 
-在所有引用池和总报告生成完毕后，自动生成 `structure/2_literature/citation_pool/master.bib`——将所有入选文献的 RIS 条目转为 BibTeX 格式，供 `/pen-draft` 后续按需提取。
+**由 Python 脚本自动完成 RIS → BibTeX 转换**，替代主 Agent 手动格式转换。
 
-**流程**：
-1. 提取所有引用池 md 文件中的 citation key（格式 `auth+year+letter`）
-2. 解析 `structure/2_literature/*.ris` 中的全部 RIS 条目
-3. 建立索引：按首作者姓氏+年份查找 RIS 条目，用标题首字母区分同名
-4. 将匹配到的 RIS 条目转为 BibTeX 格式（@article），citation key 使用引用池中定义的格式
-5. 保存到 `structure/2_literature/citation_pool/master.bib`
-6. 报告：成功转换 N 条，M 个 key 未在 RIS 中找到（需后续手动补充）
+### 8.1 调用转换脚本
 
-**RIS → BibTeX 字段映射**：
+```bash
+python3 ~/.claude/skills/lit-pool/ris2bib.py \
+  --ris-dir structure/2_literature/ \
+  --prepare-json structure/2_literature/_pool_prepare.json \
+  --output structure/2_literature/citation_pool/master.bib
 ```
-TY=JOUR → @article
-AU → author（多个用 " and " 连接）
-TI → title
-T2 → journal
-PY → year
-VL → volume
-IS → number
-SP/EP → pages（SP--EP）
-DO → doi
-```
+
+**脚本职责**（`ris2bib.py`）：
+1. 从 `_pool_prepare.json` 读取 citation key 映射表
+2. 解析 `*.ris` 文件（`utf-8-sig` 编码处理 BOM）
+3. 按 first_author+year 匹配，用标题区分同名
+4. 转换字段：TY→@article/@inproceedings, AU→author, TI→title, T2→journal, PY→year, VL→volume, IS→number, SP/EP→pages, DO→doi
+5. 处理多作者（" and " 连接）、特殊字符转义
+6. 未匹配文献生成 stub 条目（标注 TODO）
+7. 校验：括号平衡、必填字段、回读验证
+8. stdout 输出匹配率 + `VERIFY: PASS|FAIL`
+
+### 8.2 主 Agent 校验
+
+VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用户后续手动补充。
 
 **注意**：
 - master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
 - `/pen-draft` 在写完每个 section 后，从 master.bib 中提取用到的条目追加到项目 bib
-- 读取RIS文件时须使用 `utf-8-sig` 编码（处理可能存在的UTF-8 BOM头），否则首条条目可能因BOM前缀而解析失败
 
 ---
 

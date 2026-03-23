@@ -119,62 +119,59 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 
 ---
 
-## 步骤 2：分配配额
+## 步骤 2：分配配额（Python 脚本）
 
-### 2.1 标签Pool目标比重（常量）
+**本步骤由 Python 脚本自动完成，不使用 LLM 心算**，以避免算术错误。
 
-以100篇最终引用 × 约3倍储备为基准（COMP排除，自然扫描不驱动配额）：
+### 2.1 准备输入 JSON
 
-| 标签 | Pool目标 |
-|:-----|:-------:|
-| BG | 50 |
-| LR | 150 |
-| GAP-RQx | 75 |
-| METHOD | 60 |
-| DISC-RQx | 65 |
+主 Agent 将步骤 1 设计的方向数据写入临时 JSON 文件 `structure/2_literature/directions.json`：
 
-> 各标签有重叠（同一文献可标多个标签），Pool目标之和 > 总预算。
-> 如果目标引用量不同，按比例缩放。
-
-### 2.2 配额分配公式
-
-**第1步**：对每个标签，计算每个方向的分担量
-
-```
-tag_share[标签, 方向] = 标签Pool目标 / 服务该标签的方向数
+```json
+{
+  "directions": [
+    {
+      "id": 1,
+      "name": "方向名称",
+      "tags": ["BG", "LR", "GAP-RQ1", "DISC-RQ1"],
+      "priority": "P1"
+    }
+  ]
+}
 ```
 
-**第2步**：对每个方向，求其所有标签分担量之和
+### 2.2 调用配额计算脚本
 
-```
-raw_demand[方向] = Σ tag_share[标签, 方向]  （对该方向服务的所有标签求和）
-```
-
-**第3步**：等比缩放到总预算（自动处理标签重叠）
-
-```
-quota[方向] = round(TOTAL_BUDGET × raw_demand[方向] / Σ raw_demand[所有方向])
+```bash
+python3 ~/.claude/skills/lit-plan/quota_calc.py \
+  --directions structure/2_literature/directions.json \
+  --budget {TOTAL_BUDGET}
 ```
 
-> 确保每个方向至少20篇：`if quota < 20: quota = 20`，然后重新缩放其余方向。
+**脚本职责**（`quota_calc.py`）：
+1. 按标签 Pool 目标（BG=50, LR=150, GAP=75, METHOD=60, DISC=65）计算 tag_share
+2. 对每个方向求 raw_demand = Σ tag_share
+3. 等比缩放到总预算，四舍五入
+4. 保底每方向 ≥ 20 篇，重新缩放其余方向
+5. 计算内部分层（核心 ≤25%, 重要 ≤40%, 备选 ≤35%）
+6. 标签覆盖检查
+7. stdout 输出完整计算表 + 校验结果
+8. 写入 `quota_result.json`
 
-### 2.3 展示配额计算过程
+### 2.3 主 Agent 校验脚本输出
 
-在对话中展示完整的计算表：
-
+脚本 stdout 末尾格式：
 ```
-| 方向 | 服务标签 | raw_demand | 缩放后配额 |
-|:-----|:---------|:---------:|:--------:|
-| D1 | BG+LR+GAP+DISC | {n} | {n}篇 |
-| D2 | LR+GAP+DISC | {n} | {n}篇 |
-| ... |
-| 合计 | | | {TOTAL_BUDGET}篇 |
+=== VERIFY: PASS|FAIL ===
 ```
 
-### 2.4 配额内部分层（每方向）
-- **核心（必引）**：≤ 方向配额的 25%
-- **重要（大概率引）**：≤ 方向配额的 40%
-- **备选（可能引）**：≤ 方向配额的 35%
+校验规则：
+- VERIFY 必须为 PASS。FAIL 时停止，展示具体错误给用户
+- 将脚本输出的配额计算表展示给用户确认
+- 后续步骤从 `quota_result.json` 读取配额数据填入输出文件
+
+### 2.4 清理临时文件
+配额写入 `literature_search_plan.md` 后，删除 `directions.json` 和 `quota_result.json`
 
 ---
 

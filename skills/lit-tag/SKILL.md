@@ -43,11 +43,21 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ## 步骤 0：前置检查与上下文加载
 
-### 0.1 检查direction reports
-- Glob `structure/2_literature/direction*_report.md` → 确认存在
-- 不存在 → 停止，提示先运行 `/lit-review`
-- 如果 `$ARGUMENTS` 指定了方向 → 只处理指定方向
-- 统计每个report中的入选文献数量
+### 0.1 扫描 direction reports + 生成调度计划（Python 脚本）
+
+**本步骤由 Python 脚本自动完成**，替代主 Agent 手动读报告数文献。
+
+```bash
+python3 ~/.claude/skills/shared/dispatch_plan.py --mode report \
+  --input-dir structure/2_literature/ \
+  --limit 30 \
+  --directions "{$ARGUMENTS 指定的方向，如 1,3,5；不指定则省略此参数}"
+```
+
+**脚本职责**：扫描 `direction*_report.md` → 计数入选文献 → 按 ⌈N/30⌉ 拆分 → 输出调度表 + `_dispatch_plan.json`。
+
+不存在 reports → 脚本报错退出，主 Agent 停止并提示先运行 `/lit-review`。
+VERIFY 必须为 PASS。
 
 ### 0.2 加载研究上下文
 - 读取 `CLAUDE.md` → 项目编号、标题、方法、目标期刊
@@ -76,12 +86,9 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ## 步骤 1：并行调度SubAgent打标签
 
-### 1.0 拆分判断
+### 1.0 读取调度计划
 
-对每个待处理方向，检查其入选文献数：
-
-- **N ≤ AGENT_ITEM_LIMIT (30)**：该方向分配1个subAgent
-- **N > AGENT_ITEM_LIMIT**：拆为 ⌈N/30⌉ 个subAgent
+从步骤 0.1 生成的 `_dispatch_plan.json` 读取调度信息（拆分和计数已由 Python 脚本完成，主 Agent **不做任何算术**）。
 
 所有 subAgent 按**槽位制**启动（同时不超过 8 个，完成一个补一个）。
 
@@ -138,69 +145,37 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ---
 
-## 步骤 2：合并 + 标签统计
+## 步骤 2：标签聚合统计（Python 脚本）
 
-所有subAgent完成后，主Agent执行：
+所有 subAgent 完成后，**由 Python 脚本自动完成标签统计**，替代主 Agent 手动计数和百分比计算。
 
-### 2.1 读取所有打标签后的reports
-- 逐一读取每个 `directionX_report.md`
-- 提取所有入选文献的功能标签
+### 2.1 调用标签聚合脚本
 
-### 2.2 全局标签统计
-
-```
-| 标签 | 核心 | 重要 | 备选 | 合计 |
-|:-----|:----:|:----:|:----:|:----:|
-| BG   | {n}  | {n}  | {n}  | {n}  |
-| LR   | {n}  | {n}  | {n}  | {n}  |
-| GAP-RQ1 | {n} | {n} | {n} | {n} |
-| ... （按实际RQ数量动态生成行） |
-| METHOD-基础 | {n} | {n} | {n} | {n} |
-| METHOD-先例 | {n} | {n} | {n} | {n} |
-| DISC-RQ1 | {n} | {n} | {n} | {n} |
-| ... （按实际RQ数量动态生成行） |
-| COMP | {n}  | {n}  | {n}  | {n}  |
+```bash
+python3 ~/.claude/skills/lit-tag/tag_aggregate.py \
+  --report-dir structure/2_literature/
 ```
 
-### 2.3 标签均衡性预警
+**脚本职责**（`tag_aggregate.py`）：
+1. 解析所有 `direction*_report.md` 的 markdown 表格
+2. 提取每篇文献的功能标签和分级
+3. 计算全局标签分布（标签 × 分级交叉表）
+4. 计算达标率（实际/Pool目标，BG=50, LR=150, GAP=75, METHOD=60, DISC=65）
+5. 判断均衡性（≥80% ✅, 50-80% ⚠️, <50% ❌）
+6. 计算各方向的标签贡献表
+7. 生成 `tag_report.md` 和 `_tag_aggregate.json`
+8. stdout 输出统计摘要 + `VERIFY: PASS|FAIL`
 
-对照标签Pool目标比重，检查各标签实际入选数：
+### 2.2 主 Agent 校验脚本输出
 
-| 标签 | Pool目标 | 实际入选 | 达标率 | 状态 |
-|:-----|:-------:|:-------:|:-----:|:----:|
-| BG | 50 | {n} | {%} | ✅/⚠️/❌ |
-| LR | 150 | {n} | {%} | ... |
-| GAP-RQx | 75 | {n} | {%} | ... |
-| METHOD | 60 | {n} | {%} | ... |
-| DISC-RQx | 65 | {n} | {%} | ... |
-
-判断标准：
-- 达标率 ≥ 80% → ✅ 充足
-- 达标率 50-80% → ⚠️ 偏少，建议补检
-- 达标率 < 50% → ❌ 严重不足，需补检或调整方向
-
-### 2.4 引用池充足性报告
-
-生成 `structure/2_literature/tag_report.md`：
-
-```markdown
-# 标签统计报告
-
-> **日期**: {YYYY-MM-DD}
-> **入选文献总量**: {N}篇
-
-## 标签分布
-{2.2的统计表}
-
-## 均衡性预警
-{2.3的预警表}
-
-## 各方向标签贡献
-| 方向 | BG | LR | GAP | METHOD | DISC | COMP |
-|:-----|:--:|:--:|:---:|:------:|:----:|:----:|
-| D1 | {n} | {n} | {n} | {n} | {n} | {n} |
-| ... |
 ```
+=== VERIFY: PASS|FAIL ===
+```
+
+校验规则：
+- VERIFY 必须为 PASS。FAIL 时停止，展示具体错误给用户
+- 特别注意：如有 `NO_TAGS` 错误（文献缺标签），说明 subAgent 打标签有遗漏，需重跑对应 agent
+- 将 stdout 的统计数据展示给用户
 
 ---
 

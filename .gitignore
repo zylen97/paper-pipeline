@@ -21,6 +21,7 @@
 !skills/**/*.tex.tmpl
 !skills/**/*.sh
 !skills/**/*.tex
+!skills/**/*.py
 !config/
 !config/**
 !settings.json
