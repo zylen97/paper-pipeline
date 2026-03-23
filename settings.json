@@ -1,4 +1,9 @@
 {
   "env": {},
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/zylen/.claude/statusline-command.sh",
+    "padding": 0
+  }
 }

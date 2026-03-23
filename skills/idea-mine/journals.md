@@ -21,7 +21,7 @@
 19. Land Use Policy                                 #城市 @elsevier
 20. Landscape and Urban Planning                    #城市 @elsevier
 21. Project Management Journal                      #项目管理 @sage
-22. Reliability Engineering & System Safety         #工业工程 #应急 @elsevier
+22. Reliability Engineering & System Safety         #工业工程 #应急 #智能化 @elsevier
 23. Safety Science                                  #应急 #工业工程 @elsevier
 24. Sustainable Cities and Society                  #城市 #建工 @elsevier
 25. Technovation                                    #工业工程 #创新 @elsevier
