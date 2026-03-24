@@ -40,6 +40,7 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
   --input-dir structure/2_literature/ \
   --plan-file structure/2_literature/literature_search_plan.md \
   --limit 30 \
+  --template-dir structure/2_literature/_batch/ \
   --directions "{$ARGUMENTS 指定的方向，如 1,3,5；不指定则省略此参数}"
 ```
 
@@ -48,8 +49,10 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 2. 计数每个 RIS 文件的 `TY  -` 行数
 3. 从 plan 文件提取各方向配额
 4. 按 ⌈N/30⌉ 自动拆分，生成 agent 调度表
-5. stdout 输出调度表 + `VERIFY: PASS|FAIL`
-6. 写入 `_dispatch_plan.json`
+5. 为每个 agent 在 `_batch/` 目录生成模板文件（`d*_batch*_raw.md`），内含条目格式示例
+6. 自动拆分 RIS 为 chunk 文件（`_batch/_chunks/d{N}_batch{M}.ris`），并验证每个 chunk 的条目数与调度计划一致
+7. stdout 输出调度表 + `VERIFY: PASS|FAIL`
+8. 写入 `_dispatch_plan.json`
 
 **主 Agent 校验**：VERIFY 必须为 PASS。将 stdout 的调度表展示给用户。
 
@@ -67,8 +70,18 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 
 ## 全局约束
 
+### ⛔ Fail-Fast 规则（最高优先级）
+本 skill 中任何步骤出现以下情况，**必须立即停止整个流程并向用户汇报**，不得自行修复、跳过或继续：
+- Python 脚本输出 `VERIFY: FAIL`
+- Agent 输出校验不通过（日志行数 ≠ 条目数、入选+淘汰 ≠ 总数）
+- Batch 文件数 ≠ 预期 subAgent 数
+- Dry-run 显示 unmatched > 0
+- 任何脚本报错退出（exit code ≠ 0）
+
+**汇报格式**：原样粘贴脚本 stderr/stdout 错误信息 + 说明出错步骤 + 等待用户指示。
+
 ### 模型选择
-**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku——格式遵从性下降会导致批次文件解析失败。如无特殊指定，不传 `model` 参数即可自动继承。
+**subAgent 使用 Sonnet 模型**（传 `model: "sonnet"` 参数）。筛选文献是分类判断任务，Sonnet 足以胜任，且速度更快。模板填空格式已消除格式遵从性风险。
 
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：入选理由、淘汰理由、方向小结、补检建议、Gap评估、竞品差异说明。文献的标题、期刊名、作者名保持原文（通常为英文）。SubAgent的Prompt中须明确传达此语言要求。
@@ -112,6 +125,13 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 
 > **配额分配**：当一个方向拆分为K个agent时，该方向配额按比例分配给每个agent（方向配额/K，向上取整）。最终合并时由主Agent按方向总配额截断。
 
+### 防重复启动规则
+
+主Agent在补发新 agent 前，**必须**维护一个已启动 agent 的方向+批次注册表（在对话中以列表形式记录）。补发时：
+1. 检查待发 batch 是否已在注册表中
+2. 如果已存在 → 跳过，不重复启动
+3. 每次启动后立即更新注册表
+
 ### 每个SubAgent的Prompt模板
 
 ```
@@ -143,70 +163,42 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 5. 按配额筛选：核心≤{x}篇，重要≤{y}篇，备选≤{z}篇
 6. 如果高相关文献超出配额，优先保留：高被引 > 近5年 > 顶刊 > 方法论对标
 
-## 输出格式（两阶段：Agent 自由输出 → Python 标准化）
+## 输出格式（模板填空 + 结构分离）
 
-> **设计原理**：LLM 擅长分析判断，但不擅长产出精确的 markdown 表格格式。因此 Agent 只需输出 key-value 块（几乎不可能出格式错误），后续由 Python 脚本 `format_batches.py` 自动转换为标准 markdown 表格。
+> **设计原理**：Agent 只输出条目级内容（照模板格式填空），不写任何 section headers、元数据或淘汰表格。Python 脚本 `format_batches.py` 从 `_dispatch_plan.json` 读取元数据，按「级别」字段分组，确定性生成标准 markdown 表格。这样 Agent 的输出零结构，格式偏移风险接近 0。
 
-**用 Write 工具将筛选结果写入** `structure/2_literature/_batch/d{方向编号}_batch{批次编号}_raw.md`（注意 `_raw` 后缀；确保 `_batch/` 目录存在）。
+**步骤**：
+1. 先读取模板文件：`structure/2_literature/_batch/d{方向编号}_batch{批次编号}_raw.md`
+2. 用 Write 工具**覆写**该文件，按模板中的格式逐条添加入选文献
 
-严格按以下 **key-value 块**格式，每篇入选文献一个块：
+**关键规则**：
+- **不要添加任何 `##` 标题行、`>` 元数据行或淘汰记录表格**——这些由 Python 生成
+- 每篇入选文献用 `### 入选N` 开头，后跟 **6 行** `- key: value`
+- **必须包含 `- 级别:` 字段**（核心/重要/备选），这是 Python 分组的依据
+- 期刊名从 RIS 文件原样复制完整名称，**不要缩写**
+- 年份必须是独立的 4 位数字
+- 理由用中文，必须包含摘要中的具体信息；文献标题/期刊名/作者名保持英文原文
+- 无入选文献则只写"无"
+
+**输出示例**：
 
 ```markdown
-# 方向{N} Batch{M} 筛选结果
-
-> direction: {N}
-> direction_name: {方向名称}
-> batch_id: d{N}_batch{M}
-> total_items: {本batch分配的条目数}
-
-## 核心文献（Core）
-
 ### 入选1
-- 作者: Han, Yanhu
+- 级别: 核心
+- 作者: Han
 - 标题: An overall review of research on construction innovation
 - 年份: 2023
-- 期刊: Engineering Construction and Architectural Management
+- 期刊: ENGINEERING CONSTRUCTION AND ARCHITECTURAL MANAGEMENT
 - 理由: 建筑业创新研究综述，梳理合作创新的研究脉络，为Introduction提供背景
 
 ### 入选2
-- 作者: Liu, Bingsheng
+- 级别: 重要
+- 作者: Liu
 - 标题: Evolution of innovation collaboration networks...
 - 年份: 2025
-- 期刊: Buildings
+- 期刊: BUILDINGS
 - 理由: SAOM分析建筑业合作网络演化，方法论直接先例
-
-## 重要文献（Important）
-
-### 入选3
-- 作者: ...
-- 标题: ...
-- 年份: ...
-- 期刊: ...
-- 理由: ...
-
-## 备选文献（Backup）
-
-### 入选4
-- 作者: ...
-- 标题: ...
-- 年份: ...
-- 期刊: ...
-- 理由: ...
-
-## 淘汰文献摘要
-
-淘汰{淘汰数}篇，主要原因：
-- {原因1}：约{n}篇
-- {原因2}：约{n}篇
 ```
-
-**格式要求**：
-- 元数据（`> key: value`）必须完整（direction, direction_name, batch_id, total_items）
-- 三个分级标题（`## 核心文献（Core）`、`## 重要文献（Important）`、`## 备选文献（Backup）`）**必须存在**，即使某分级无入选文献
-- 每篇入选文献用 `### 入选N` 开头，后跟 5 行 `- key: value`（作者/标题/年份/期刊/理由），**每行一个字段，不要合并**
-- **年份必须是独立的4位数字**（如 `2024`），不要写成 `2024a` 或与期刊合并
-- **语言**：理由用中文，文献标题/期刊名/作者名保持英文原文
-- **不要写 JSON 文件或 markdown 表格**——只写上述 key-value 块格式
 
 此外，在对话中返回简要汇报（入选数、淘汰数、亮点说明），供主 Agent 校验。**不要将 markdown 保存为 direction report 文件**（方向报告由步骤 2 的 Python 脚本统一生成）。
 
@@ -214,7 +206,20 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 
 由于拆分后每个subAgent最多处理30条RIS条目（AGENT_ITEM_LIMIT），直接一次性读取全部分配的条目即可。
 
-> 当方向被拆分时，主Agent需在prompt中指定该subAgent处理的条目范围（起止行号或条目序号），subAgent只读取并分析自己负责的条目段。
+> 当方向被拆分时，主Agent在 `dispatch_plan.py` 阶段已预拆分 RIS 为 chunk 文件（`_batch/_chunks/d{N}_batch{M}.ris`），subAgent 直接读取对应 chunk 即可。
+
+---
+
+### 📌 Checkpoint 1：Git 备份 agent 输出（不可跳过）
+
+所有 subAgent 完成后、运行任何 Python 脚本之前，**必须**先备份 agent 输出：
+
+```bash
+git add structure/2_literature/_batch/*_raw.md
+git commit -m "Checkpoint: lit-review agent outputs (raw batch files)"
+```
+
+> **为什么**：62个 agent 的筛选结果是全流程最贵的数据（重跑需数小时）。后续 `dispatch_plan.py` 重跑会覆盖这些文件，如无备份将不可恢复。
 
 ---
 
@@ -285,6 +290,103 @@ Budget: {n}/{TOTAL_BUDGET} → PASS|FAIL
 - `Budget` 为 PASS 才继续；FAIL 时脚本自动按优先级削减（P2/P3 备选 → P1 备选 → 重要）
 
 > **为什么用 Python 而非 Agent**：汇总任务是纯数据聚合（读 JSON → 去重 → 写报告），不需要 LLM 推理。Agent 方案在 subAgent 数量 > 20 时会因上下文溢出静默丢失数据，且无法自动校验完整性。Python 脚本无此限制，且输出精确计数供主 Agent 验证。
+
+### 2.5 强制抽检（不可跳过）
+
+主Agent **必须**执行以下操作，不得以"时间紧"或"数据量大"为由跳过：
+
+1. 从入选文献中随机抽取 3 篇（每篇来自不同方向）
+2. 对每篇：
+   a. 在对应 RIS chunk 文件中用 Grep 搜索该文献的 TI 字段
+   b. 读取该条目的 AB（摘要）字段
+   c. 核对 batch raw 文件中该文献的"理由"是否包含摘要中的具体信息
+3. 3篇全部通过 → 继续；任一篇不通过 → 报告并标记该 batch 需重跑
+
+### 2.6 自动完整性校验（不可跳过）
+
+合并脚本完成后、进入步骤 3 之前，主 Agent **必须**运行以下 Python 校验脚本，对全部产出物做端到端一致性检查：
+
+```python
+python3 -c "
+import json, os, glob
+
+base = 'structure/2_literature'
+batch_dir = f'{base}/_batch'
+plan_quotas = {1:94, 2:63, 3:44, 4:43, 5:51, 6:36, 7:29}
+
+# 1. Artifact existence
+raw_files = sorted(glob.glob(f'{batch_dir}/d*_batch*_raw.md'))
+fmt_files = sorted(glob.glob(f'{batch_dir}/d*_batch[0-9]*.md'))
+fmt_files = [f for f in fmt_files if '_raw' not in f]
+reports = sorted(glob.glob(f'{base}/direction*_report.md'))
+merged_json = f'{base}/_screening_merged.json'
+summary = f'{base}/screening_summary_report.md'
+
+errors = []
+print('=== ARTIFACT CHECK ===')
+print(f'Raw batch files:       {len(raw_files)}')
+print(f'Formatted batch files: {len(fmt_files)}')
+print(f'Direction reports:     {len(reports)}')
+print(f'Merged JSON:           {\"YES\" if os.path.exists(merged_json) else \"MISSING\"}')
+print(f'Summary report:        {\"YES\" if os.path.exists(summary) else \"MISSING\"}')
+
+if len(raw_files) != len(fmt_files):
+    errors.append(f'Raw ({len(raw_files)}) != Formatted ({len(fmt_files)})')
+if len(reports) != 7:
+    errors.append(f'Direction reports: {len(reports)}, expected 7')
+if not os.path.exists(merged_json):
+    errors.append('Merged JSON missing')
+
+# 2. Per-direction quota compliance
+if os.path.exists(merged_json):
+    with open(merged_json) as f:
+        data = json.load(f)
+    dirs = data['directions']
+    print()
+    print('=== QUOTA COMPLIANCE ===')
+    print(f'{\"Dir\":>4} {\"Quota\":>6} {\"Selected\":>8} {\"Core\":>5} {\"Imp\":>5} {\"Bak\":>5} {\"Status\":>8}')
+    total = 0
+    for k in sorted(dirs.keys(), key=int):
+        v = dirs[k]
+        core = sum(1 for p in v if p.get('tier','') == 'core')
+        imp = sum(1 for p in v if p.get('tier','') == 'important')
+        bak = sum(1 for p in v if p.get('tier','') == 'backup')
+        q = plan_quotas[int(k)]
+        status = 'OK' if len(v) <= q else 'OVER'
+        if status == 'OVER':
+            errors.append(f'D{k}: {len(v)} > quota {q}')
+        print(f'D{k:>3} {q:>6} {len(v):>8} {core:>5} {imp:>5} {bak:>5} {status:>8}')
+        total += len(v)
+
+    unique = data.get('unique_count', 0)
+    dupes = data.get('cross_direction_duplicates', 0)
+    print()
+    print(f'Total (pre-dedup):  {total}')
+    print(f'Cross-dir dupes:    {dupes}')
+    print(f'Final unique:       {unique}')
+
+    # 3. Math consistency
+    if total - dupes != unique:
+        errors.append(f'Math: {total} - {dupes} != {unique}')
+
+print()
+if errors:
+    print('=== VERIFY: FAIL ===')
+    for e in errors:
+        print(f'  ERROR: {e}')
+else:
+    print('=== VERIFY: PASS ===')
+"
+```
+
+**校验内容**：
+1. **产出物完整性**：raw batch 数 = formatted batch 数、7 个 direction report、merged JSON、summary report 全部存在
+2. **配额合规**：每个方向入选数 ≤ 该方向配额，按 core/important/backup 分层展示
+3. **数学一致性**：`total - cross_dupes == unique_count`
+
+**注意**：脚本中的 `plan_quotas` 字典需要从 `_dispatch_plan.json` 或 `literature_search_plan.md` 中提取实际配额值，替换示例中的硬编码值。
+
+主 Agent 校验：VERIFY 必须为 PASS。FAIL 时原样粘贴错误信息给用户，不得自行继续。
 
 ---
 

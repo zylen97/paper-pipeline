@@ -2,29 +2,25 @@
 """
 format_batches.py — Agent 输出格式标准化（lit-review §2.2）
 
-将 Agent 输出的 key-value 块格式（*_raw.md）转换为
-merge_screening.py 所需的标准 markdown 表格格式（*.md）。
+设计原理（模板填空 + 结构分离）：
+- Agent 只输出条目级 key-value 块（照模板格式填空），不写任何 section headers
+- 本脚本从 _dispatch_plan.json 读取元数据，从 raw.md 读取条目
+- 按「级别」字段分组为 core/important/backup
+- Section headers、元数据行、表格结构全部由本脚本确定性生成
 
-设计原理：LLM 擅长分析判断，但不擅长产出精确的 markdown 表格。
-Agent 只需输出 key-value 块（几乎不可能出格式错误），
-本脚本负责确定性地转换为标准格式。
-
-支持的输入格式：
-1. key-value 块（新格式，推荐）：
-   ### 入选1
-   - 作者: Author Name
-   - 标题: Paper Title
-   - 年份: 2024
-   - 期刊: Journal Name
-   - 理由: 入选理由
-
-2. markdown 表格（旧格式，兼容）：
-   | # | 第一作者 | 标题 | 年份 | 期刊 | 入选理由 |
-
-3. 混合格式（容错）
+支持的输入格式（唯一）：
+    ### 入选1
+    - 级别: 核心
+    - 作者: Author Name
+    - 标题: Paper Title
+    - 年份: 2024
+    - 期刊: Journal Name
+    - 理由: 入选理由
 
 用法:
-    python3 format_batches.py --batch-dir structure/2_literature/_batch/
+    python3 format_batches.py \
+        --batch-dir structure/2_literature/_batch/ \
+        --plan-json structure/2_literature/_dispatch_plan.json
 
 输出:
     1. 标准化的 d*_batch*.md 文件
@@ -32,138 +28,35 @@ Agent 只需输出 key-value 块（几乎不可能出格式错误），
 """
 
 import argparse
+import json
 import re
 import sys
-import unicodedata
 from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# metadata extraction
+# 级别映射
 # ---------------------------------------------------------------------------
 
-# No hardcoded direction names — extract from metadata or filename only.
-# Fallback: "方向{N}" if direction_name not found in file metadata.
-DIR_NAMES: dict[str, str] = {}  # populated dynamically from batch metadata
+TIER_MAP = {
+    "核心": "core", "core": "core",
+    "重要": "important", "important": "important",
+    "备选": "backup", "backup": "backup",
+    "peripheral": "backup", "alternative": "backup",
+}
 
+FIELD_MAP = {
+    "级别": "tier", "tier": "tier",
+    "作者": "author", "author": "author", "authors": "author",
+    "标题": "title", "title": "title",
+    "年份": "year", "year": "year",
+    "期刊": "journal", "journal": "journal",
+    "理由": "reason", "reason": "reason",
+}
 
-def extract_metadata(text: str, filename: str) -> dict:
-    """Extract metadata from various formats."""
-    meta = {}
+# 允许但忽略的字段
+SKIP_FIELDS = {"doi", "doi:", "链接", "link", "url"}
 
-    # Try blockquote: > key: value
-    for m in re.finditer(r"^>\s*(\w[\w_]*):\s*(.+)$", text, re.MULTILINE):
-        meta[m.group(1).strip()] = m.group(2).strip()
-
-    # Try bullet: - key: value (top-level metadata, not inside ### blocks)
-    if "direction" not in meta:
-        # Only match bullets before the first ### heading
-        header_pos = text.find("### ")
-        search_area = text[:header_pos] if header_pos > 0 else text[:500]
-        for m in re.finditer(r"^[-*]\s*(\w[\w_]*):\s*(.+)$", search_area, re.MULTILINE):
-            meta[m.group(1).strip()] = m.group(2).strip()
-
-    # Try HTML comment: <!-- meta ... -->
-    if "direction" not in meta:
-        comment = re.search(r"<!--\s*meta\s*\n(.*?)-->", text, re.DOTALL)
-        if comment:
-            for m in re.finditer(r"(\w[\w_]*):\s*(.+)", comment.group(1)):
-                meta[m.group(1).strip()] = m.group(2).strip()
-
-    # Fallback: infer from filename
-    fname_m = re.match(r"d(\d+)_batch(\d+)", filename.replace("_raw", ""))
-    if fname_m:
-        if "direction" not in meta:
-            meta["direction"] = fname_m.group(1)
-        if "batch_id" not in meta:
-            meta["batch_id"] = f"d{fname_m.group(1)}_batch{fname_m.group(2)}"
-
-    d = str(meta.get("direction", "0"))
-    if "direction_name" not in meta:
-        meta["direction_name"] = DIR_NAMES.get(d, f"方向{d}")
-    if "total_items" not in meta:
-        meta["total_items"] = "30"
-
-    # Clean total_items
-    ti_match = re.search(r"(\d+)", str(meta.get("total_items", "30")))
-    meta["total_items"] = ti_match.group(1) if ti_match else "30"
-
-    return meta
-
-
-# ---------------------------------------------------------------------------
-# key-value block parsing
-# ---------------------------------------------------------------------------
-
-def parse_kv_blocks(text: str) -> dict[str, list[dict]]:
-    """Parse key-value block format into papers by tier."""
-    papers = {"core": [], "important": [], "backup": []}
-    current_tier = None
-
-    # Split into lines
-    lines = text.split("\n")
-    current_paper = None
-
-    for line in lines:
-        stripped = line.strip()
-
-        # Detect tier
-        if re.match(r"^##\s.*(核心文献|Core)", stripped, re.IGNORECASE):
-            current_tier = "core"
-            continue
-        elif re.match(r"^##\s.*(重要文献|Important)", stripped, re.IGNORECASE):
-            current_tier = "important"
-            continue
-        elif re.match(r"^##\s.*(备选文献|Backup)", stripped, re.IGNORECASE):
-            current_tier = "backup"
-            continue
-        elif re.match(r"^##\s.*(淘汰文献|淘汰摘要)", stripped, re.IGNORECASE):
-            # Save last paper before entering rejection section
-            if current_paper and current_tier:
-                papers[current_tier].append(current_paper)
-                current_paper = None
-            current_tier = None
-            continue
-
-        if current_tier is None:
-            continue
-
-        # Detect new paper block: ### 入选N or ### N or ### Paper N
-        if re.match(r"^###\s+", stripped):
-            if current_paper:
-                papers[current_tier].append(current_paper)
-            current_paper = {}
-            continue
-
-        # Parse key-value lines: - key: value or key: value
-        kv_match = re.match(r"^[-*]?\s*(作者|标题|年份|期刊|理由|author|title|year|journal|reason)\s*[:：]\s*(.+)$",
-                           stripped, re.IGNORECASE)
-        if kv_match and current_paper is not None:
-            key = kv_match.group(1).strip().lower()
-            value = kv_match.group(2).strip()
-
-            # Normalize key names
-            key_map = {
-                "作者": "author", "author": "author",
-                "标题": "title", "title": "title",
-                "年份": "year", "year": "year",
-                "期刊": "journal", "journal": "journal",
-                "理由": "reason", "reason": "reason",
-            }
-            normalized_key = key_map.get(key, key)
-            current_paper[normalized_key] = value
-            continue
-
-    # Save last paper
-    if current_paper and current_tier:
-        papers[current_tier].append(current_paper)
-
-    return papers
-
-
-# ---------------------------------------------------------------------------
-# markdown table parsing (fallback for old format)
-# ---------------------------------------------------------------------------
 
 def extract_year(s: str) -> str:
     """Extract 4-digit year from string."""
@@ -171,181 +64,97 @@ def extract_year(s: str) -> str:
     return m.group(1) if m else ""
 
 
-def parse_table_rows(text: str) -> dict[str, list[dict]]:
-    """Parse markdown table format into papers by tier."""
-    papers = {"core": [], "important": [], "backup": []}
-    current_tier = None
+# ---------------------------------------------------------------------------
+# 解析条目（唯一入口）
+# ---------------------------------------------------------------------------
+
+def parse_entries(text: str) -> list[dict]:
+    """解析 raw.md 中的所有入选条目。
+
+    只认 ### 入选N 开头的块 + 6 行 key-value。
+    支持字段名中英文、有无 bold **标记**。
+    """
+    entries = []
+    current = None
 
     for line in text.split("\n"):
         stripped = line.strip()
 
-        # Detect tier
-        if re.match(r"^##\s.*(核心文献|Core)", stripped, re.IGNORECASE):
-            current_tier = "core"
-            continue
-        elif re.match(r"^##\s.*(重要文献|Important)", stripped, re.IGNORECASE):
-            current_tier = "important"
-            continue
-        elif re.match(r"^##\s.*(备选文献|Backup)", stripped, re.IGNORECASE):
-            current_tier = "backup"
-            continue
-        elif re.match(r"^##\s.*(淘汰文献|淘汰摘要)", stripped, re.IGNORECASE):
-            current_tier = None
+        # 新条目开始：### 入选N 或 ### paperN 或 ### N 或 ### Author Year
+        if re.match(r"^###\s+", stripped):
+            if current:
+                entries.append(current)
+            current = {}
             continue
 
-        if current_tier is None:
+        # 跳过非条目区域
+        if current is None:
             continue
 
-        # Skip header/separator rows
-        if not stripped.startswith("|"):
-            continue
-        if re.match(r"^\|[\s:|-]+\|$", stripped):
-            continue
+        # 清除 bold 标记
+        clean = re.sub(r"\*\*", "", stripped)
 
-        cells = [c.strip() for c in stripped.split("|")]
-        cells = [c for c in cells if c]  # remove empty
-
-        if len(cells) < 3:
+        # 解析 key-value: - key: value
+        kv = re.match(r"^[-*]?\s*(\S+?)\s*[：:]\s*(.+)$", clean)
+        if not kv:
             continue
 
-        # Skip header rows
-        header_words = {"#", "第一作者", "标题", "年份", "期刊", "入选理由",
-                       "作者", "citation", "key", "级别", "等级"}
-        if any(c.lower().strip() in header_words for c in cells[:3]):
+        raw_key = kv.group(1).strip().lower()
+        raw_val = kv.group(2).strip()
+
+        # 跳过无关字段
+        if raw_key in SKIP_FIELDS:
             continue
 
-        # Try to extract year from any cell
-        year = ""
-        for c in cells:
-            y = extract_year(c)
-            if y:
-                year = y
-                break
+        std_key = FIELD_MAP.get(raw_key)
+        if std_key:
+            current[std_key] = raw_val
 
-        if not year:
-            continue
+    # 最后一个条目
+    if current:
+        entries.append(current)
 
-        # Find title (longest English cell)
-        title = ""
-        title_idx = -1
-        for i, c in enumerate(cells):
-            clean = c.strip().strip("`")
-            if len(clean) > 20 and re.search(r"[A-Za-z]{3,}", clean):
-                chinese_ratio = len(re.findall(r"[\u4e00-\u9fff]", clean)) / max(len(clean), 1)
-                if chinese_ratio < 0.3 and len(clean) > len(title):
-                    title = clean
-                    title_idx = i
-
-        # Find author
-        author = ""
-        for i, c in enumerate(cells):
-            if i == title_idx:
-                continue
-            clean = c.strip().strip("`")
-            if re.match(r"^[A-Z][a-zà-ü]+", clean) and len(clean) < 80:
-                if not re.search(r"(Journal|Review|Research|Science|Management|IEEE)", clean):
-                    author = clean.split(",")[0].split("&")[0].split("et al")[0].strip()
-                    break
-            # Try "Author (Year)" format
-            am = re.match(r"([A-Z][a-zà-ü]+(?:\s+(?:et\s+al|&\s+[A-Z][a-zà-ü]+))?)\s*[\(/]?\s*\d{4}", clean)
-            if am:
-                author = am.group(1).strip()
-                break
-
-        if not author:
-            # Try extracting from citation key like "genin2021s"
-            for c in cells:
-                ck_match = re.match(r"^`?([a-z]+)\d{4}[a-z]?`?$", c.strip())
-                if ck_match:
-                    author = ck_match.group(1).capitalize()
-                    break
-
-        # Find journal
-        journal = ""
-        journal_kws = ["Journal", "Review", "Research", "Science", "Management",
-                      "IEEE", "Policy", "Studies", "Networks", "Technovation",
-                      "Organization", "Strategic", "ECAM", "JCEM", "JME"]
-        for i, c in enumerate(cells):
-            if i == title_idx:
-                continue
-            for kw in journal_kws:
-                if kw.lower() in c.lower():
-                    journal = re.sub(r"\s*/?\s*\d{4}\s*$", "", c).strip()
-                    journal = re.sub(r"^\d{4}\s*/?\s*", "", journal).strip()
-                    break
-            if journal:
-                break
-
-        # Find reason (Chinese text)
-        reason = ""
-        for c in cells:
-            if len(re.findall(r"[\u4e00-\u9fff]", c)) > 5:
-                reason = c.strip()
-                break
-        if not reason:
-            reason = cells[-1].strip() if cells else ""
-
-        papers[current_tier].append({
-            "author": author or "Unknown",
-            "title": title,
-            "year": year,
-            "journal": journal or "Unknown",
-            "reason": reason,
-        })
-
-    return papers
+    return entries
 
 
 # ---------------------------------------------------------------------------
-# unified parser
+# 分组 + 生成标准输出
 # ---------------------------------------------------------------------------
 
-def parse_batch(text: str) -> dict[str, list[dict]]:
-    """Parse batch file using key-value blocks first, fallback to table."""
-    # Try key-value block format first
-    kv_papers = parse_kv_blocks(text)
-    kv_total = sum(len(v) for v in kv_papers.values())
-
-    # Try table format
-    table_papers = parse_table_rows(text)
-    table_total = sum(len(v) for v in table_papers.values())
-
-    # Use whichever found more papers
-    if kv_total >= table_total:
-        return kv_papers
-    else:
-        return table_papers
+def group_by_tier(entries: list[dict]) -> dict[str, list[dict]]:
+    """按级别字段分组。"""
+    groups = {"core": [], "important": [], "backup": []}
+    for e in entries:
+        tier_raw = e.get("tier", "备选").strip().lower()
+        tier = TIER_MAP.get(tier_raw, "backup")
+        groups[tier].append(e)
+    return groups
 
 
-# ---------------------------------------------------------------------------
-# output
-# ---------------------------------------------------------------------------
-
-def generate_standard_batch(meta: dict, papers: dict[str, list[dict]],
-                           rejection_text: str) -> str:
-    """Generate standard markdown batch file."""
+def generate_standard_batch(meta: dict, groups: dict[str, list[dict]],
+                            total_items: int) -> str:
+    """生成标准 markdown batch 文件（所有结构由 Python 确定性生成）。"""
     d = meta.get("direction", "0")
-    fname_m = re.search(r"batch(\d+)", meta.get("batch_id", "batch1"))
-    batch_num = fname_m.group(1) if fname_m else "1"
-    total_items = meta.get("total_items", "30")
+    batch_id = meta.get("batch_id", "")
+    direction_name = meta.get("direction_name", f"方向{d}")
 
-    total_selected = sum(len(v) for v in papers.values())
-    total_rejected = max(0, int(total_items) - total_selected)
+    total_selected = sum(len(v) for v in groups.values())
+    total_rejected = max(0, total_items - total_selected)
 
     lines = []
-    lines.append(f"# 方向{d} Batch{batch_num} 筛选结果\n")
+    lines.append(f"# 方向{d} Batch{meta.get('batch_num', '1')} 筛选结果\n")
     lines.append(f"> direction: {d}")
-    lines.append(f"> direction_name: {meta.get('direction_name', '')}")
-    lines.append(f"> batch_id: {meta.get('batch_id', '')}")
+    lines.append(f"> direction_name: {direction_name}")
+    lines.append(f"> batch_id: {batch_id}")
     lines.append(f"> total_items: {total_items}\n")
 
-    for tier_name, tier_key in [("核心文献（Core）", "core"),
-                                 ("重要文献（Important）", "important"),
-                                 ("备选文献（Backup）", "backup")]:
-        lines.append(f"## {tier_name}\n")
+    for tier_label, tier_key in [("核心文献（Core）", "core"),
+                                   ("重要文献（Important）", "important"),
+                                   ("备选文献（Backup）", "backup")]:
+        lines.append(f"## {tier_label}\n")
         lines.append("| # | 第一作者 | 标题 | 年份 | 期刊 | 入选理由 |")
         lines.append("|:--|:---------|:-----|:----:|:-----|:---------|")
-        for i, p in enumerate(papers[tier_key], 1):
+        for i, p in enumerate(groups[tier_key], 1):
             author = p.get("author", "Unknown").replace("|", "/")
             title = p.get("title", "").replace("|", "/")
             year = extract_year(str(p.get("year", ""))) or "0000"
@@ -355,12 +164,54 @@ def generate_standard_batch(meta: dict, papers: dict[str, list[dict]],
         lines.append("")
 
     lines.append("## 淘汰文献摘要\n")
-    if rejection_text:
-        lines.append(f"淘汰{total_rejected}篇。\n{rejection_text}")
-    else:
-        lines.append(f"淘汰{total_rejected}篇。")
+    lines.append(f"淘汰{total_rejected}篇。")
 
     return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# 从 dispatch plan JSON 读取元数据
+# ---------------------------------------------------------------------------
+
+def load_agent_metadata(plan_json_path: str) -> dict[str, dict]:
+    """从 _dispatch_plan.json 读取每个 agent 的元数据。
+
+    返回 {batch_id: {direction, batch_num, direction_name, total_items, ...}}
+    """
+    meta_map = {}
+    try:
+        with open(plan_json_path, encoding="utf-8") as f:
+            plan = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return meta_map
+
+    # 从 items_summary 构建 direction_name 映射（如有）
+    dir_names = {}
+    for item in plan.get("items_summary", []):
+        d = item.get("direction")
+        # 尝试从 source_file 提取方向名
+        if d and "source_file" in item:
+            name = re.sub(r"^\d+[-_]", "", item["source_file"])
+            name = re.sub(r"\.(ris|md)$", "", name)
+            name = re.sub(r"WOS_\d+_\d+$", "", name).strip("_").strip()
+            if name:
+                dir_names[d] = name
+
+    for agent in plan.get("agents", []):
+        d = agent.get("direction", 0)
+        split = agent.get("split_info", "1/1")
+        batch_num = split.split("/")[0] if "/" in split else "1"
+        batch_id = f"d{d}_batch{batch_num}"
+
+        meta_map[batch_id] = {
+            "direction": str(d),
+            "batch_num": batch_num,
+            "batch_id": batch_id,
+            "direction_name": dir_names.get(d, f"方向{d}"),
+            "total_items": agent.get("item_count", 30),
+        }
+
+    return meta_map
 
 
 # ---------------------------------------------------------------------------
@@ -370,57 +221,80 @@ def generate_standard_batch(meta: dict, papers: dict[str, list[dict]],
 def main():
     parser = argparse.ArgumentParser(description="Normalize batch files to standard format")
     parser.add_argument("--batch-dir", required=True, help="Directory containing batch files")
+    parser.add_argument("--plan-json", default=None,
+                        help="Path to _dispatch_plan.json (for metadata)")
     args = parser.parse_args()
 
     batch_dir = Path(args.batch_dir)
 
-    # Find all raw files (new format) and non-raw files (old format)
-    raw_files = sorted(batch_dir.glob("d*_batch*_raw.md"))
-    old_files = sorted(f for f in batch_dir.glob("d*_batch*.md")
-                       if "_raw" not in f.name and "_normalize" not in f.name)
+    # 加载元数据
+    plan_json = args.plan_json
+    if not plan_json:
+        # 自动查找
+        candidate = batch_dir.parent / "_dispatch_plan.json"
+        if candidate.exists():
+            plan_json = str(candidate)
+    meta_map = load_agent_metadata(plan_json) if plan_json else {}
 
-    # Prefer raw files; fall back to old files
-    input_files = raw_files if raw_files else old_files
-    if not input_files:
+    # 查找 raw 文件
+    raw_files = sorted(batch_dir.glob("d*_batch*_raw.md"))
+    if not raw_files:
         print("ERROR: No batch files found", file=sys.stderr)
         sys.exit(1)
 
     total_ok = 0
-    total_fail = 0
+    total_warn = 0
     total_papers = 0
     errors = []
 
-    for fp in input_files:
+    for fp in raw_files:
         try:
             text = fp.read_text(encoding="utf-8")
             stem = fp.stem.replace("_raw", "")
-            meta = extract_metadata(text, stem)
-            papers = parse_batch(text)
 
-            # Extract rejection text
-            rej_match = re.search(r"(?:##\s*淘汰.*?\n)(.*?)$", text, re.DOTALL)
-            rejection_text = rej_match.group(1).strip() if rej_match else ""
+            # 获取元数据（优先从 JSON，回退从文件名推断）
+            meta = meta_map.get(stem, {})
+            if not meta:
+                fname_m = re.match(r"d(\d+)_batch(\d+)", stem)
+                if fname_m:
+                    meta = {
+                        "direction": fname_m.group(1),
+                        "batch_num": fname_m.group(2),
+                        "batch_id": stem,
+                        "direction_name": f"方向{fname_m.group(1)}",
+                        "total_items": 30,
+                    }
 
-            paper_count = sum(len(v) for v in papers.values())
+            # 检查是否是"无入选"
+            if text.strip() in ("无", "无入选文献", ""):
+                entries = []
+            else:
+                entries = parse_entries(text)
+
+            # 分组
+            groups = group_by_tier(entries)
+            paper_count = sum(len(v) for v in groups.values())
             total_papers += paper_count
 
-            # Validate
+            # 校验
             file_errors = []
-            for tier, tier_papers in papers.items():
-                for i, p in enumerate(tier_papers):
+            for tier, tier_entries in groups.items():
+                for i, p in enumerate(tier_entries):
                     if not p.get("title"):
                         file_errors.append(f"{tier}[{i}]: missing title")
-                    year = extract_year(str(p.get("year", "")))
-                    if not year:
+                    if not extract_year(str(p.get("year", ""))):
                         file_errors.append(f"{tier}[{i}]: missing/invalid year")
+                    if not p.get("tier"):
+                        file_errors.append(f"{tier}[{i}]: missing 级别 field")
 
-            # Generate standard output
-            output = generate_standard_batch(meta, papers, rejection_text)
+            # 生成标准输出
+            total_items = meta.get("total_items", 30)
+            output = generate_standard_batch(meta, groups, total_items)
             out_path = batch_dir / f"{stem}.md"
             out_path.write_text(output, encoding="utf-8")
 
             if file_errors:
-                total_fail += 1
+                total_warn += 1
                 errors.append(f"{stem}: {paper_count} papers, {len(file_errors)} errors: {file_errors[:3]}")
                 print(f"  ⚠ {stem}: {paper_count} papers ({', '.join(file_errors[:2])})")
             else:
@@ -428,18 +302,17 @@ def main():
                 print(f"  ✓ {stem}: {paper_count} papers")
 
         except Exception as e:
-            total_fail += 1
+            total_warn += 1
             errors.append(f"{fp.name}: {e}")
             print(f"  ✗ {fp.name}: {e}", file=sys.stderr)
 
-    print(f"\nTotal: {len(input_files)} files, {total_papers} papers")
-    print(f"OK: {total_ok}, Warnings: {total_fail}")
+    print(f"\nTotal: {len(raw_files)} files, {total_papers} papers")
+    print(f"OK: {total_ok}, Warnings: {total_warn}")
 
     if errors:
         print("\n=== VERIFY: FAIL ===")
         for e in errors:
             print(f"  ❌ {e}")
-        # Don't exit 1 for warnings, only for fatal errors
         if total_ok == 0:
             sys.exit(1)
     else:

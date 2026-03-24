@@ -295,6 +295,169 @@ def verify(items: list[dict], agents: list[dict], limit: int) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# 模板生成（模板填空 + 结构分离）
+# ---------------------------------------------------------------------------
+
+# 模板内容：Agent 只需在下方按格式添加条目，不写任何标题行或元数据。
+# Python 负责结构（section headers、元数据、淘汰摘要）。
+
+TEMPLATE_RIS = """\
+（逐条添加入选文献，严格按以下格式。无入选则只写"无"。不要添加任何 ## 标题行、元数据行或淘汰记录。）
+
+### 入选1
+- 级别: {{核心/重要/备选}}
+- 作者: {{第一作者姓}}
+- 标题: {{完整英文标题}}
+- 年份: {{4位数字}}
+- 期刊: {{从RIS文件原样复制完整期刊名，不要缩写}}
+- 理由: {{中文，含摘要具体信息}}
+"""
+
+TEMPLATE_TAG = """\
+（在每行 → 后填写标签，用+分隔多标签，如 LR+GAP-RQ1。不要修改序号和 → 前的内容。）
+
+{sections}"""
+
+
+def _count_tiers_in_report(report_path: Path) -> dict[str, int]:
+    """从 direction report 中统计每个 tier 的文献行数。"""
+    if not report_path.exists():
+        return {}
+    try:
+        content = report_path.read_text(encoding="utf-8")
+    except Exception:
+        return {}
+
+    tier_counts: dict[str, int] = {}
+    current_tier = None
+
+    for line in content.split("\n"):
+        if re.match(r"^##\s.*核心文献", line):
+            current_tier = "核心文献"
+            tier_counts[current_tier] = 0
+        elif re.match(r"^##\s.*重要文献", line):
+            current_tier = "重要文献"
+            tier_counts[current_tier] = 0
+        elif re.match(r"^##\s.*备选文献", line):
+            current_tier = "备选文献"
+            tier_counts[current_tier] = 0
+        elif re.match(r"^##\s.*淘汰", line):
+            current_tier = None
+        elif current_tier and re.match(r"^\|\s*\d+\s*\|", line):
+            tier_counts[current_tier] = tier_counts.get(current_tier, 0) + 1
+
+    return tier_counts
+
+
+def generate_templates(agents: list[dict], template_dir: str, mode: str):
+    """为每个 agent 生成模板文件。"""
+    tpl_dir = Path(template_dir)
+    tpl_dir.mkdir(parents=True, exist_ok=True)
+
+    count = 0
+    skipped = 0
+    if mode == "ris":
+        for a in agents:
+            d = a.get("direction", 0)
+            batch = a["split_info"].split("/")[0] if "/" in a.get("split_info", "") else "1"
+            filename = f"d{d}_batch{batch}_raw.md"
+            filepath = tpl_dir / filename
+            # Safety: skip if file exists and contains agent output (not just template)
+            if filepath.exists():
+                existing = filepath.read_text(encoding="utf-8")
+                if "### 入选" in existing and "- 级别:" in existing:
+                    skipped += 1
+                    continue
+            filepath.write_text(TEMPLATE_RIS, encoding="utf-8")
+            count += 1
+
+    elif mode == "report":
+        # lit-tag: 从 direction report 提取每个 tier 的文献数量，生成带序号的模板
+        # 需要读取 source_file（direction report）解析 tier 结构
+        for a in agents:
+            d = a.get("direction", 0)
+            batch = a["split_info"].split("/")[0] if "/" in a.get("split_info", "") else "1"
+            source = a.get("source_file", "")
+
+            # 尝试从 report 文件读取 tier 结构
+            tier_counts = _count_tiers_in_report(tpl_dir.parent / source) if source else {}
+
+            # 生成模板
+            sections = []
+            for tier_name in ["核心文献（Core）", "重要文献（Important）", "备选文献（Backup）"]:
+                tier_key = tier_name.split("（")[0].strip()  # 核心文献/重要文献/备选文献
+                n = tier_counts.get(tier_key, 0)
+                sections.append(f"## {tier_name}")
+                if n > 0:
+                    for i in range(1, n + 1):
+                        sections.append(f"{i} → ")
+                else:
+                    sections.append("（无）")
+                sections.append("")
+
+            content = "（在每行 → 后填写标签，用+分隔多标签，如 LR+GAP-RQ1。不要修改序号和 → 前的内容。）\n\n"
+            content += "\n".join(sections)
+
+            filename = f"d{d}_tags.md"
+            filepath = tpl_dir / filename
+            # Safety: skip if file exists and contains filled tags (not just template)
+            if filepath.exists():
+                existing = filepath.read_text(encoding="utf-8")
+                if re.search(r"\d+\s*→\s*\S+", existing):
+                    skipped += 1
+                    continue
+            filepath.write_text(content, encoding="utf-8")
+            count += 1
+
+    if skipped:
+        print(f"Templates generated: {count} files, skipped {skipped} (existing agent output) in {tpl_dir}", file=sys.stderr)
+    else:
+        print(f"Templates generated: {count} files in {tpl_dir}", file=sys.stderr)
+
+
+def split_ris_chunks(items_summary: list[dict], agents: list[dict],
+                     input_dir: str, template_dir: str):
+    """Split RIS files into per-agent chunk files under _chunks/."""
+    chunks_dir = Path(template_dir) / "_chunks"
+    chunks_dir.mkdir(parents=True, exist_ok=True)
+
+    # group agents by direction
+    dir_agents: dict[int, list[dict]] = defaultdict(list)
+    for a in agents:
+        dir_agents[a["direction"]].append(a)
+
+    count = 0
+    errors = []
+    for item in items_summary:
+        d = item["direction"]
+        ris_path = Path(input_dir) / item["source_file"]
+        content = ris_path.read_text(encoding="utf-8-sig")
+        entries = re.split(r"(?=^TY  - )", content, flags=re.MULTILINE)
+        entries = [e for e in entries if e.strip() and e.strip().startswith("TY  -")]
+
+        for a in dir_agents.get(d, []):
+            start, end = map(int, a["item_range"].split("-"))
+            chunk = entries[start - 1:end]
+            batch_num = a["split_info"].split("/")[0]
+            chunk_path = chunks_dir / f"d{d}_batch{batch_num}.ris"
+            chunk_path.write_text("\n".join(chunk), encoding="utf-8")
+            count += 1
+
+            # verify chunk entry count
+            actual = sum(1 for line in chunk_path.read_text(encoding="utf-8").split("\n")
+                         if line.startswith("TY  - "))
+            if actual != a["item_count"]:
+                errors.append(f"d{d}_batch{batch_num}: expected {a['item_count']}, got {actual}")
+
+    if errors:
+        print(f"Chunks generated: {count} files (with {len(errors)} ERRORS)", file=sys.stderr)
+        for e in errors:
+            print(f"  ❌ {e}", file=sys.stderr)
+    else:
+        print(f"Chunks generated: {count} files in {chunks_dir}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 
@@ -316,6 +479,8 @@ def main():
                         help="Greedy-merge small tasks (pool mode)")
     parser.add_argument("--output", default=None,
                         help="Output JSON path")
+    parser.add_argument("--template-dir", default=None,
+                        help="Generate entry-only template files for agents (ris/report modes)")
     args = parser.parse_args()
 
     # 解析方向过滤
@@ -344,15 +509,19 @@ def main():
         print("ERROR: No items found to dispatch", file=sys.stderr)
         sys.exit(1)
 
-    # 拆分
-    agents = split_items(items, args.limit)
+    # 拆分（report 模式不拆分，每方向1个 agent——模板按方向生成，拆分会导致多 agent 写同一文件）
+    if args.mode == "report":
+        effective_limit = max(i["item_count"] for i in items) + 1
+    else:
+        effective_limit = args.limit
+    agents = split_items(items, effective_limit)
 
     # 贪心合并（仅 pool 模式）
     if args.merge_small and args.mode == "pool":
         agents = greedy_merge_small(agents, args.limit)
 
-    # 校验
-    errors = verify(items, agents, args.limit)
+    # 校验（report 模式用 effective_limit，避免误报 OVER_LIMIT）
+    errors = verify(items, agents, effective_limit)
 
     # 输出 JSON
     output_path = args.output
@@ -376,6 +545,14 @@ def main():
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
+
+    # ===== 生成模板文件（如指定） =====
+    if args.template_dir:
+        generate_templates(agents, args.template_dir, args.mode)
+
+    # ===== RIS chunk 拆分（ris 模式 + 有 template-dir 时自动执行） =====
+    if args.mode == "ris" and args.template_dir and args.input_dir:
+        split_ris_chunks(items, agents, args.input_dir, args.template_dir)
 
     # ===== stdout 结构化摘要 =====
     print(f"=== DISPATCH PLAN ({args.mode.upper()}) ===")

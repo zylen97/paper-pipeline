@@ -25,12 +25,12 @@ description: "一次性初始化修改工作流（冻结基准 → 解析决定�
 ### 0b. 已有文件检查
 
 - 检查 `revision/` 是否已存在
-  - 存在 → AskUserQuestion：「`revision/` 目录已存在，是否归档到 `revision-archived/` 后重新初始化？」
+  - 存在 → AskUserQuestion：「`revision/` 目录已存在：**1** = 归档到 `revision-archived/` 后重新初始化 / **2** = 停止」
   - 用户确认归档 → `mv revision revision-archived`
 - 检查 `manuscript-original.tex` 是否已存在
   - 存在 → 跳过 Step 1（冻结步骤）
 - 检查 `response-letter.tex` 是否已存在
-  - 存在 → AskUserQuestion：「`response-letter.tex` 已存在，是否覆盖？」
+  - 存在 → AskUserQuestion：「`response-letter.tex` 已存在：**1** = 覆盖 / **2** = 保留现有」
 
 ---
 
@@ -177,10 +177,10 @@ AskUserQuestion：
 - 意见拆分是否合理？
 - 有无遗漏的实质性意见？
 
-确认无误请回复 "ok"，或说明需要调整的地方。
+**1** = 确认无误，或直接输入需要调整的地方。
 ```
 
-用户要求调整 → 修改后重新展示 → 再次确认。反复迭代直到用户说 ok。
+用户输入调整意见 → 修改后重新展示 → 再次 AskUserQuestion。**迭代直到用户输入 1**。
 
 ---
 
@@ -207,10 +207,10 @@ AskUserQuestion：
 ```
 以上是 AI 建议的分类结果。请逐条确认或修改：
 - 修改某条：如 "R1-3: 优先级改为 High"
-- 全部接受：回复 "ok"
+- 全部接受：**1**
 ```
 
-反复迭代直到用户确认。
+**迭代直到用户输入 1**。
 
 ---
 
@@ -254,10 +254,10 @@ AskUserQuestion：
 - 调整归属：如 "R2-3 从 C1 移到 C4"
 - 调整锚点：如 "C1 锚点改为 R2-1"
 - 修改方向：如 "C3 重点改 Methods 而非 Introduction"
-- 全部接受：回复 "ok"
+- 全部接受：**1**
 ```
 
-**反复迭代直到用户确认**——这是整个初始化最关键的交互点。
+**迭代直到用户输入 1**——这是整个初始化最关键的交互点。
 
 ### 特殊情况
 

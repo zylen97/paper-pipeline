@@ -2,10 +2,10 @@
 """
 format_pool_agents.py — 将 Agent 输出的 key-value 块格式转换为 pool_merge.py 所需的标准表格格式
 
-读取 _tmp_pool_agent*_raw.md 文件（key-value 块格式），转换为标准 6 列表格，
-输出为 _tmp_pool_agent*.md（去掉 _raw 后缀）。
-
-如果输入文件已经是表格格式（fallback），直接复制不转换。
+设计原理（模板填空 + 结构分离）：
+- Agent 只输出条目级 key-value 块（照模板格式填空），每条自带「标签」字段
+- 本脚本按「标签」字段分组，确定性生成 `# TAG` section headers + 标准表格
+- Agent 不写任何 `#` headers — section 结构完全由本脚本控制
 
 用法:
     python3 format_pool_agents.py \\
@@ -43,7 +43,6 @@ def normalize_grade(raw: str) -> str:
 # key-value 块解析
 # ---------------------------------------------------------------------------
 
-# 兼容 `- key: value` / `key: value` / `- key：value` / `key：value`
 KV_RE = re.compile(r"^[-*]?\s*(\S+?)\s*[：:]\s*(.+)$")
 
 FIELD_ALIASES = {
@@ -64,19 +63,25 @@ FIELD_ALIASES = {
     "scenario": "引用场景",
     "期刊": "期刊",
     "journal": "期刊",
+    "标签": "标签",
+    "tag": "标签",
+    "tags": "标签",
 }
+
+# 允许但忽略的字段
+SKIP_FIELDS = {"doi", "link", "url", "链接"}
 
 
 def normalize_field(raw: str) -> str | None:
     """归一化字段名，返回标准字段名或 None。"""
     key = raw.strip().lower().replace(" ", "").replace("_", "_")
-    # 先精确匹配
     if key in FIELD_ALIASES:
         return FIELD_ALIASES[key]
-    # 尝试带空格的原始形式
     key_with_space = raw.strip().lower()
     if key_with_space in FIELD_ALIASES:
         return FIELD_ALIASES[key_with_space]
+    if key in SKIP_FIELDS:
+        return None
     return None
 
 
@@ -84,15 +89,17 @@ def parse_kv_block(lines: list[str]) -> dict[str, str] | None:
     """从一组行中解析 key-value 对，返回标准字段字典。"""
     fields: dict[str, str] = {}
     for line in lines:
-        m = KV_RE.match(line.strip())
+        clean = re.sub(r"\*\*", "", line.strip())
+        m = KV_RE.match(clean)
         if not m:
             continue
         raw_key, raw_val = m.group(1), m.group(2).strip()
+        if "{{" in raw_val:
+            continue
         std_key = normalize_field(raw_key)
         if std_key:
             fields[std_key] = raw_val
 
-    # 最少需要 citation_key
     if "citation_key" not in fields:
         return None
     return fields
@@ -101,35 +108,17 @@ def parse_kv_block(lines: list[str]) -> dict[str, str] | None:
 def fields_to_row(fields: dict[str, str]) -> str:
     """将字段字典转为标准表格行。"""
     grade = normalize_grade(fields.get("分级", "备选"))
-    author = fields.get("作者", "—")
+    author = fields.get("作者", "—").replace("|", "/")
     year = fields.get("年份", "—")
     ckey = fields.get("citation_key", "—")
-    scenario = fields.get("引用场景", "—")
-    journal = fields.get("期刊", "—")
+    scenario = fields.get("引用场景", "—").replace("|", "/")
+    journal = fields.get("期刊", "—").replace("|", "/")
     return f"| {grade} | {author} | {year} | {ckey} | {scenario} | {journal} |"
 
 
 # ---------------------------------------------------------------------------
-# 文件级解析与转换
+# 解析所有条目 → 按标签分组 → 生成标准表格
 # ---------------------------------------------------------------------------
-
-def is_table_format(content: str) -> bool:
-    """检测文件是否已经是表格格式（含 | 开头的数据行）。"""
-    data_lines = 0
-    for line in content.split("\n"):
-        stripped = line.strip()
-        if not stripped.startswith("|"):
-            continue
-        # 跳过表头分隔线
-        if re.match(r"\|[\s:-]+\|", stripped):
-            continue
-        # 跳过表头行
-        if re.search(r"分级|作者|citation|引用场景|期刊", stripped, re.IGNORECASE):
-            continue
-        if re.match(r"\|\s*\S", stripped):
-            data_lines += 1
-    return data_lines >= 1
-
 
 TABLE_HEADER = (
     "| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |\n"
@@ -137,80 +126,59 @@ TABLE_HEADER = (
 )
 
 
-def convert_kv_to_table(content: str) -> tuple[str, int, int]:
-    """
-    将 key-value 块格式转换为表格格式。
-
-    返回: (converted_content, paper_count, section_count)
-    """
-    output_lines: list[str] = []
-    paper_count = 0
-    section_count = 0
-
-    current_section: str | None = None
-    current_block_lines: list[str] = []
-    section_rows: list[str] = []
-    in_block = False
-
-    def flush_block():
-        nonlocal paper_count
-        if not current_block_lines:
-            return
-        fields = parse_kv_block(current_block_lines)
-        if fields:
-            section_rows.append(fields_to_row(fields))
-            paper_count += 1
-
-    def flush_section():
-        nonlocal section_count
-        if current_section is not None and section_rows:
-            output_lines.append(f"# {current_section}\n")
-            output_lines.append(TABLE_HEADER)
-            for row in section_rows:
-                output_lines.append(row)
-            output_lines.append("")
-            section_count += 1
-        elif current_section is not None:
-            # section without papers — still emit header
-            output_lines.append(f"# {current_section}\n")
-            output_lines.append(TABLE_HEADER)
-            output_lines.append("")
-            section_count += 1
+def parse_entries(content: str) -> list[dict]:
+    """解析文件中所有 ### paperN 条目块。"""
+    entries = []
+    current_lines: list[str] | None = None
 
     for line in content.split("\n"):
         stripped = line.strip()
 
-        # 检测 section header: `# TAG` 或 `# TAG(xxx)`
-        section_match = re.match(r"^#\s+([A-Z][\w().-]*(?:-[A-Z]\w*)?)", stripped)
-        if section_match:
-            # flush previous
-            flush_block()
-            flush_section()
-            current_block_lines = []
-            section_rows = []
-            in_block = False
-            current_section = section_match.group(1).strip()
-            # 归一化 BG(xxx) → BG
-            if current_section.startswith("BG"):
-                current_section = "BG"
-            continue
-
-        # 检测 paper 块开始: `### paperN` 或 `### N` 或 `### xxx`
         if re.match(r"^#{2,3}\s+", stripped):
-            flush_block()
-            current_block_lines = []
-            in_block = True
+            if current_lines is not None:
+                fields = parse_kv_block(current_lines)
+                if fields:
+                    entries.append(fields)
+            current_lines = []
             continue
 
-        # 在块内收集 key-value 行
-        if in_block and stripped:
-            current_block_lines.append(stripped)
+        if current_lines is not None and stripped:
+            current_lines.append(stripped)
 
-    # flush last block & section
-    flush_block()
-    flush_section()
+    # 最后一个块
+    if current_lines is not None:
+        fields = parse_kv_block(current_lines)
+        if fields:
+            entries.append(fields)
 
-    return "\n".join(output_lines), paper_count, section_count
+    return entries
+
+
+def group_by_tag(entries: list[dict]) -> dict[str, list[str]]:
+    """按标签字段分组，返回 {tag: [table_rows]}。"""
+    groups: dict[str, list[str]] = {}
+    for fields in entries:
+        tag = fields.get("标签", "UNKNOWN")
+        # 归一化 BG(xxx) → BG
+        if tag.startswith("BG"):
+            tag = "BG"
+        if tag not in groups:
+            groups[tag] = []
+        groups[tag].append(fields_to_row(fields))
+    return groups
+
+
+def generate_output(groups: dict[str, list[str]]) -> str:
+    """生成标准输出：每个标签一个 section + 表格。"""
+    lines: list[str] = []
+    for tag in sorted(groups.keys()):
+        rows = groups[tag]
+        lines.append(f"# {tag}\n")
+        lines.append(TABLE_HEADER)
+        for row in rows:
+            lines.append(row)
+        lines.append("")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -227,28 +195,17 @@ def process_file(input_path: Path, output_path: Path) -> dict:
     if not content.strip():
         return {"status": "SKIP", "msg": "Empty file", "papers": 0}
 
-    # Fallback: 已经是表格格式 → 直接复制
-    if is_table_format(content):
-        output_path.write_text(content, encoding="utf-8")
-        # 计数数据行
-        data_lines = 0
-        for line in content.split("\n"):
-            s = line.strip()
-            if s.startswith("|") and not re.match(r"\|[\s:-]+\|", s) \
-               and not re.search(r"分级|作者|citation|引用场景|期刊", s, re.IGNORECASE) \
-               and re.match(r"\|\s*\S", s):
-                data_lines += 1
-        return {"status": "COPY", "msg": "Already table format, copied as-is",
-                "papers": data_lines}
+    entries = parse_entries(content)
 
-    # 转换 key-value → table
-    converted, paper_count, section_count = convert_kv_to_table(content)
+    if not entries:
+        return {"status": "WARN", "msg": "No papers parsed", "papers": 0}
 
-    if paper_count == 0:
-        return {"status": "WARN", "msg": "No papers parsed from key-value blocks",
-                "papers": 0}
+    groups = group_by_tag(entries)
+    output = generate_output(groups)
+    output_path.write_text(output, encoding="utf-8")
 
-    output_path.write_text(converted, encoding="utf-8")
+    paper_count = len(entries)
+    section_count = len(groups)
     return {"status": "OK", "msg": f"{section_count} sections, {paper_count} papers",
             "papers": paper_count}
 
@@ -265,18 +222,10 @@ def main():
 
     input_dir = Path(args.input_dir)
 
-    # 收集 _raw.md 文件
     raw_files = sorted(input_dir.glob("_tmp_pool_agent*_raw.md"))
-
-    # 也收集不带 _raw 但已有的（非目标覆盖检查）
     if not raw_files:
-        print("WARNING: No _tmp_pool_agent*_raw.md files found.", file=sys.stderr)
-        # fallback: 尝试直接处理已有的 _tmp_pool_agent*.md
-        fallback_files = sorted(input_dir.glob("_tmp_pool_agent*.md"))
-        if not fallback_files:
-            print("ERROR: No input files found at all.", file=sys.stderr)
-            sys.exit(1)
-        raw_files = fallback_files
+        print("ERROR: No _tmp_pool_agent*_raw.md files found.", file=sys.stderr)
+        sys.exit(1)
 
     print("=== FORMAT POOL AGENTS ===")
     if args.prepare_json:
@@ -289,34 +238,24 @@ def main():
     all_pass = True
 
     for fp in raw_files:
-        # 确定输出路径：去掉 _raw
-        if "_raw" in fp.name:
-            out_name = fp.name.replace("_raw", "")
-        else:
-            out_name = fp.name  # fallback: 覆盖原文件
+        out_name = fp.name.replace("_raw", "")
         output_path = input_dir / out_name
 
         result = process_file(fp, output_path)
 
-        status_icon = {
-            "OK": "OK",
-            "COPY": "OK(copy)",
-            "WARN": "WARN",
-            "ERROR": "FAIL",
-            "SKIP": "SKIP",
-        }.get(result["status"], result["status"])
+        status_icon = {"OK": "OK", "WARN": "WARN", "ERROR": "FAIL", "SKIP": "SKIP"
+                        }.get(result["status"], result["status"])
 
         print(f"  {fp.name} -> {out_name}: {status_icon} — {result['msg']}")
         total_papers += result["papers"]
 
-        if result["status"] in ("ERROR", "WARN"):
+        if result["status"] in ("ERROR",):
             all_pass = False
 
     print()
     print(f"Total papers formatted: {total_papers}")
-
-    # 验证：回读输出文件，确认可被 pool_merge.py 解析
     print()
+
     if all_pass and total_papers > 0:
         print("VERIFY: PASS")
     elif total_papers > 0:

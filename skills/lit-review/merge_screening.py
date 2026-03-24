@@ -237,7 +237,7 @@ def read_batches(batch_dir: str) -> list[dict]:
         print(f"ERROR: Batch directory not found: {batch_dir}", file=sys.stderr)
         sys.exit(1)
 
-    md_files = {fp.stem: fp for fp in sorted(batch_path.glob("d*_batch*.md"))}
+    md_files = {fp.stem: fp for fp in sorted(batch_path.glob("d*_batch*.md")) if "_raw" not in fp.stem}
     json_files = {fp.stem: fp for fp in sorted(batch_path.glob("d*_batch*.json"))}
 
     # Merge: .md takes priority

@@ -461,6 +461,26 @@ def main():
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
+    # ===== 生成模板文件（模板填空 + 结构分离） =====
+    POOL_TEMPLATE = (
+        "（逐条添加文献，严格按以下格式。不要添加任何 # 标题行。）\n\n"
+        "### paper1\n"
+        "- 标签: {{标签名，如 BG / GAP-RQ1 / METHOD-先例}}\n"
+        "- citation_key: {{原样复制，不可修改}}\n"
+        "- 分级: {{核心/重要/备选}}\n"
+        "- 作者: {{作者}}\n"
+        "- 年份: {{4位数字}}\n"
+        "- 引用场景: {{中文描述}}\n"
+        "- 期刊: {{从报告原样复制完整期刊名，不要缩写}}\n"
+    )
+    tpl_count = 0
+    for a in agents:
+        agent_id = a["agent_id"]
+        tpl_path = output_dir / f"_tmp_pool_agent{agent_id}_raw.md"
+        tpl_path.write_text(POOL_TEMPLATE, encoding="utf-8")
+        tpl_count += 1
+    print(f"Templates generated: {tpl_count} files", file=sys.stderr)
+
     # ===== stdout 结构化摘要 =====
     print(f"=== POOL PREPARE ===")
     print(f"Reports parsed: {len(report_files)}")

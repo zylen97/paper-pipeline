@@ -245,7 +245,7 @@ def make_stub_bibtex(paper: dict) -> str:
 
     lines = [f"@article{{{ck},"]
     lines.append(f"  author = {{{author}}},")
-    lines.append(f"  title = {{{{{title}}}}},")
+    lines.append(f"  title = {{{title}}},")
     if journal:
         lines.append(f"  journal = {{{journal}}},")
     lines.append(f"  year = {{{year}}},")

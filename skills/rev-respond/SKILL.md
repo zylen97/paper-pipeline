@@ -1,12 +1,14 @@
 ---
-description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 → 执行），每步用户确认后推进"
+description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 → 语言润色 → 执行），每步用户确认后推进"
 ---
 
 # Rev-Respond — 交互式逐条审稿回复
 
-对单条审稿意见执行完整的交互式闭环：策略对齐 → 内容起草 → 执行。每一步都需要用户确认后才推进到下一步。
+对单条审稿意见执行完整的交互式闭环：策略对齐 → 内容起草 → 语言润色 → 执行。每一步都需要用户确认后才推进到下一步。
 
 **核心原则**：AI 只提方案，用户拍板。确认前不写文件、不改稿件、不填回复。
+
+**回退原则**：任何轮次中，如果用户的反馈表明需要调整前序轮次的决策，流程可以回退。回退时，从目标轮次重新开始，后续轮次全部重走。具体回退触发条件在各轮次的用户交互环节中定义。
 
 ## 输入说明
 
@@ -62,8 +64,8 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 
 ### 0e. 防护检查
 
-- `revision/drafts/Proposal_{Comment_ID}.md` 或 `Comment_{Comment_ID}.md` 已存在 → AskUserQuestion："该 Comment 已有草稿文件，是否覆盖重做？"
-- `response-letter.tex` 中该 Comment 的 `\response{[TO BE FILLED]}` 已被替换（即已有实质回复内容）→ 警告用户，AskUserQuestion："该 Comment 已有回复内容，是否覆盖重做？"
+- `revision/drafts/Proposal_{Comment_ID}.md` 或 `Comment_{Comment_ID}.md` 已存在 → AskUserQuestion："该 Comment 已有草稿文件：**1** = 覆盖重做 / **2** = 跳过"
+- `response-letter.tex` 中该 Comment 的 `\response{[TO BE FILLED]}` 已被替换（即已有实质回复内容）→ 警告用户，AskUserQuestion："该 Comment 已有回复内容：**1** = 覆盖重做 / **2** = 跳过"
 - 该 Cluster 依赖的其他 Cluster 尚未完成（检查方法：revision-guide.md 中依赖 Cluster 的 Comments 在 response-letter.tex 中仍有 `[TO BE FILLED]`）→ 警告（非阻断）："⚠️ C2 依赖 C1，但 C1 尚未完成。建议先处理 C1。"
 
 ---
@@ -76,6 +78,9 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 
 ```
 ## 策略提案 — {Comment ID}
+
+### 审稿人原文
+> [从 comment-letter-clean.md 摘录该 Comment 的完整原文]
 
 ### 审稿人的真正关切
 [1-2 句话提炼审稿人本质上在问什么——不是转述原话，而是分析后的核心]
@@ -113,10 +118,10 @@ AskUserQuestion：
 - 对风险的判断是否合理？
 - 有无要补充的信息/约束？
 
-回复 "ok" 确认策略，或提出调整意见。
+**1** = 确认策略，或直接输入调整意见。
 ```
 
-用户说调整 → 根据反馈修改策略，重新展示 → 再次 AskUserQuestion。**反复迭代直到用户说 ok**。
+用户输入调整意见 → 根据反馈修改策略，重新展示 → 再次 AskUserQuestion。**迭代直到用户输入 1**。
 
 ### 1c. 保存确认的策略
 
@@ -129,6 +134,9 @@ AskUserQuestion：
 > **所属集群**: C{N} — {Cluster 名称}
 > **角色**: {Anchor/Satellite}
 > **确认日期**: {当前日期}
+
+## 审稿人原文
+> {从 comment-letter-clean.md 摘录的完整原文}
 
 ## 审稿人的真正关切
 {确认的内容}
@@ -236,6 +244,8 @@ AskUserQuestion：
 
 如不需要修改原稿（纯解释类回复），明确声明："本条意见无需修改原稿。"
 
+**生成完成后，执行质量自检（见文末 4 项清单），仅在发现问题时修正后再展示给用户。**
+
 ### 2b. 用户交互
 
 展示 Part A 和 Part B 给用户。
@@ -248,10 +258,20 @@ AskUserQuestion：
 【回复信文本】措辞、论证逻辑、承诺程度
 【修改方案】范围、具体措辞
 
-回复 "ok" 确认，或提出具体修改意见。
+**1** = 确认，或直接输入修改意见。
 ```
 
-用户说调整 → 修改后重新展示 → 再次 AskUserQuestion。**反复迭代直到用户说 ok**。
+用户输入修改意见 → 根据调整性质分两种处理：
+
+**内容调整**（修改措辞、调整论证、增删修改条目）：
+主 Agent 按用户意见修改 Part A 和/或 Part B，重新展示，再次 AskUserQuestion。
+
+**策略回退**（发现论证方向根本性错误、需要重新定义修改范围或回复策略）：
+**回退到 Round 1**。重新对齐策略（1a），用户确认后（1b），再重新进入 Round 2 起草内容。已保存的 `Proposal_{Comment_ID}.md` 将被新版本覆盖。
+
+**判断标准**：如果用户的反馈涉及"换个角度回复""这个方向不对""策略要改"等，属于策略回退；其余属于内容调整。如不确定，AskUserQuestion 确认。
+
+**迭代直到用户输入 1**。
 
 ### 2c. 保存确认的草稿
 
@@ -265,6 +285,11 @@ AskUserQuestion：
 > **所属集群**: C{N} — {Cluster 名称}
 > **角色**: {Anchor/Satellite}
 > **确认日期**: {当前日期}
+
+---
+
+## 审稿人原文
+> {从 comment-letter-clean.md 摘录的完整原文}
 
 ---
 
@@ -298,21 +323,96 @@ AskUserQuestion：
 
 ---
 
-## Round 3: 执行
+## Round 3: 语言润色
 
-### 3a. 应用稿件修改
+### 3a. 准备润色文本
 
-使用 Edit 工具逐条应用确认的修改（manuscript.tex 和/或 supplemental-materials.tex）。
+从 Round 2 确认的内容中提取所有英文文本：
+- **Part A**: Response Letter 回复正文（`\response{}` 内的英文文本）
+- **Part B**: 稿件修改方案中"修改为"部分的英文文本
+
+将两部分合并为一个润色请求，保留 LaTeX 命令结构（`\response{}`、`\manuscriptquote{}`、`\lineref{}` 等不动，只润色其中的英文内容）。
+
+### 3b. 调用 language-polisher agent
+
+使用 Agent 工具调用 language-polisher（Mode B — Ad-hoc）：
+
+```
+Agent(
+  subagent_type: "language-polisher",
+  prompt: "Mode B (Ad-hoc). Polish the following academic English text.
+           This is a response letter and manuscript revision for
+           {期刊名，从 revision-guide.md Section 1 或 CLAUDE.md 读取}.
+           Preserve all LaTeX commands exactly as-is.
+
+           IMPORTANT: Text inside \manuscriptquote{} in Part A is a direct
+           quotation from the revised manuscript. It MUST remain identical
+           to the corresponding revised text in Part B. If you polish a
+           sentence in Part B, apply the exact same change inside the
+           matching \manuscriptquote{} in Part A.
+
+           --- Part A: Response Letter ---
+           {Part A 文本}
+
+           --- Part B: Manuscript Revisions ---
+           {Part B 修改文本}"
+)
+```
+
+### 3c. 展示润色结果
+
+将 language-polisher 返回的内容展示给用户：
+- 润色后的 Part A（完整 LaTeX 回复文本）
+- 润色后的 Part B（修改方案中的新文本）
+- Change Summary（language-polisher 自动生成：总改动数、分类统计、Chinglish 修复表、Top 3 改动）
+
+AskUserQuestion：
+
+```
+以上是 language-polisher 润色后的版本。请审阅：
+
+【Part A 回复信】语言是否自然流畅？
+【Part B 稿件修改】润色是否改变了原意？
+
+**1** = 确认，或直接输入调整内容。
+```
+
+用户输入调整内容 → 根据调整幅度分三种处理：
+
+**场景 A — 语言微调**（换个词、删一句、调语序）：
+主 Agent 直接修改对应文本，不重新调用 polisher。修改后重新展示，再次 AskUserQuestion。
+
+**场景 B — 局部重写**（加了新句子、重写了一段、补充了新论点）：
+主 Agent 先按用户意见修改文本，然后**仅将改动部分**重新丢给 language-polisher agent 润色。将润色结果整合回完整文本后重新展示，再次 AskUserQuestion。
+
+**场景 C — 方向推翻**（论证方向错误、内容策略需要调整、需要重新组织整体结构）：
+**回退到 Round 2**。重新起草内容（2a），用户确认后（2b），再重新进入 Round 3 走完整润色流程。如果方向性调整涉及策略层面的改变，进一步回退到 Round 1 重新对齐策略。
+
+**判断标准**：由主 Agent 根据用户反馈的性质判断属于哪种场景。如不确定，AskUserQuestion 确认："您的调整是语言层面的修改，还是内容方向需要调整？"
+
+**迭代直到用户输入 1**。
+
+### 3d. 更新草稿文件
+
+用润色后的最终版本覆盖 `revision/drafts/Comment_{Comment_ID}.md` 中的 Part 2（回复正文）和 Part 3（原稿修改）。
+
+---
+
+## Round 4: 执行
+
+### 4a. 应用稿件修改
+
+从 `revision/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 3 原稿修改，使用 Edit 工具逐条应用（manuscript.tex 和/或 supplemental-materials.tex）。
 
 **铁律**：仅改确认内容，不做额外修改。
 
-### 3b. 填写回复信
+### 4b. 填写回复信
 
-在 `response-letter.tex` 中定位该 Comment 的 `\response{[TO BE FILLED]}`，替换为确认的回复文本。
+从 `revision/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 2 回复正文，在 `response-letter.tex` 中定位该 Comment 的 `\response{[TO BE FILLED]}`，替换为润色后的回复文本。
 
 如果该 Comment 的 `\response{[TO BE FILLED]}` 找不到（可能已被提前填写），告知用户并跳过。
 
-### 3c. 编译验证
+### 4c. 编译验证
 
 编译由 PostToolUse hook 自动触发（`/rev-init` Step 2 配置）：
 - Edit/Write `.tex` 文件后自动编译
@@ -320,7 +420,7 @@ AskUserQuestion：
 
 **主 Agent 无需手动执行编译命令。** 如果 hook 报告编译失败，告知用户错误信息，不自动修复。
 
-### 3d. Commit 决策
+### 4d. Commit 决策
 
 AskUserQuestion：
 
@@ -331,11 +431,11 @@ AskUserQuestion：
   ✅ 编译 {通过/失败}
 
 是否提交 Git commit？
-  [yes] 提交
-  [no] 暂不提交
+  **1** = 提交
+  **2** = 暂不提交
 ```
 
-如 yes：
+如用户输入 1：
 ```bash
 git add manuscript.tex response-letter.tex \
        revision/drafts/
@@ -344,7 +444,69 @@ git add supplemental-materials.tex 2>/dev/null || true
 git commit -m "C{N} {Comment_ID}: {brief description}"
 ```
 
-### 3e. 下一步提示
+### 4e. 修改追踪报告（全部完成时触发）
+
+扫描 `response-letter.tex` 中所有 `\response{[TO BE FILLED]}` 的数量：
+
+- **仍有 `[TO BE FILLED]`** → 跳过此步骤，直接进入 4f 下一步提示
+- **全部填完（0 个 `[TO BE FILLED]`）** → 自动生成修改追踪报告
+
+**报告生成**：
+
+1. **确认 baseline 文件**：检查 `revision/baseline/` 目录（由 `/rev-init` 冻结），找到基准稿 `manuscript_baseline.tex`
+   - 不存在 → 警告并跳过
+
+2. **逐 section 差异对比**：对比 `revision/baseline/manuscript_baseline.tex` 和当前 `manuscript.tex`
+   - 提取每个 `\section{}` 的内容，逐 section diff
+   - 统计：新增字数、删除字数、净变化
+
+3. **生成修改摘要**（写入 `revision/revision_summary.md`）：
+
+```markdown
+# Revision Summary
+
+> Generated: {date}
+> Baseline: revision/baseline/manuscript_baseline.tex
+> Current: manuscript.tex
+
+## Overview
+
+| 指标 | 数值 |
+|------|------|
+| 总 Comment 数 | {N} |
+| 已回复 | {N} |
+| 涉及稿件修改的 Comment | {M} |
+| 纯解释（无修改） | {N-M} |
+
+## Changes by Section
+
+| Section | 新增 | 删除 | 净变化 | 涉及 Comment |
+|---------|------|------|--------|-------------|
+| Introduction | +{n} | -{n} | {±n} | R1-2, R2-1 |
+| Literature Review | +{n} | -{n} | {±n} | R1-3 |
+| ... | ... | ... | ... | ... |
+
+## Comment → Modification Mapping
+
+| Comment | 修改位置 | 修改类型 | 简述 |
+|---------|---------|---------|------|
+| R1-1 | Section 3, L120-135 | Rewrite | {从 Comment 草稿提取} |
+| R1-2 | Section 1, L45-50 | Insert | {从 Comment 草稿提取} |
+| R2-3 | — | 无修改 | 纯解释 |
+| ... | ... | ... | ... |
+```
+
+4. **展示报告** 给用户，提示：
+```
+📊 所有审稿意见已回复完毕！修改摘要已保存至 revision/revision_summary.md
+
+下一步：
+- 检查 response-letter.pdf 和 manuscript.pdf
+- 运行 /pre-submit 做投稿前终检
+- 确认后重新提交
+```
+
+### 4f. 下一步提示（仍有未完成 Comment 时）
 
 展示：
 - 当前 Cluster 剩余情况（从 revision-guide.md 获取 Cluster 成员列表，grep response-letter.tex 中对应 Comment 的 `[TO BE FILLED]` 计数）
@@ -353,7 +515,9 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 
 ---
 
-## 科技写作纪律（适用于所有生成文本）
+## 科技写作纪律（指导 Round 2 起草）
+
+> **定位**：此纪律指导 Round 2 内容起草的语言质量基线。Round 3 的 language-polisher agent 提供最终语言润色（Chinglish 消除、搭配校正、句式优化等）。起草阶段语言质量越高，润色阶段改动越小、风险越低。
 
 **每一句**回复和修改文本必须通过以下检查：
 
@@ -371,19 +535,11 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 
 ---
 
-## 质量检查清单
+## 质量自检（4 项）
 
-每条回复完成前自检：
+> **执行时机**：Round 2 内容起草完成后、展示给用户之前。AI 内部自检，仅在发现问题时报告给用户。
 
-- [ ] 感谢措辞不与已有回复重复
-- [ ] 每个论证点有具体支撑（文献/推导/逻辑）
-- [ ] `\response{}`、`\manuscriptquote{}`、`\lineref{}` 格式正确且不嵌套
-- [ ] 回复直接回应审稿人核心关切（不答非所问）
-- [ ] Part A 和 Part B 内容一致
-- [ ] 行号准确（或已标注 [TBD]）
-- [ ] 未过度承诺（用 "We addressed" 而非 "We have completely resolved"）
-- [ ] 与同 Cluster 其他回复一致
-- [ ] 跨审稿人回复为自含式（无 "see Comment #X-Y" 跨审稿人引用）
-- [ ] 科技写作纪律通过（短句、主动语态、无冗余修饰）
-- [ ] 回复体现对目标期刊读者群的关注（从 CLAUDE.md 或 revision-guide.md 确认期刊和读者群特征）
-- [ ] 回复中使用了论文的核心术语（从 revision-guide.md 或 manuscript.tex 摘要提取）
+1. **Part A ↔ Part B 一致性**：`\manuscriptquote{}` 中引用的文本必须与 Part B 的实际修改文本完全一致
+2. **跨审稿人自含性**：不同 Reviewer 的回复不可引用对方的 Comment 编号，必须自含式
+3. **同 Cluster 一致性**：与同 Cluster 已确认的回复在立场和措辞上保持一致
+4. **LaTeX 格式正确**：`\response{}`、`\manuscriptquote{}`、`\lineref{}` 不嵌套；`\response{}` 内无空行

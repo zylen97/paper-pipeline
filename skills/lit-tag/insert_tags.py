@@ -69,8 +69,10 @@ def parse_tag_file(filepath: Path) -> dict:
         if current_tier is None:
             continue
 
-        # Parse "N: TAG1+TAG2+..." lines
-        m = re.match(r"(\d+)\s*[:：]\s*(.+)$", stripped)
+        # Parse tag lines — support both formats:
+        #   New: "N → TAG1+TAG2+..."  (template fill-in mode)
+        #   Old: "N: TAG1+TAG2+..."   (backward compat)
+        m = re.match(r"(\d+)\s*(?:→|[:：])\s*(.+)$", stripped)
         if m:
             row_num = int(m.group(1))
             raw_tags = m.group(2).strip()
@@ -142,8 +144,9 @@ def insert_tags_into_report(report_path: Path, tag_data: dict) -> tuple[str, lis
             new_lines.append(line)
             continue
 
-        # Check if this is a table header row (contains 第一作者 or 作者)
-        if current_tier and re.match(r"\|.*(?:第一作者|作者).*\|", line):
+        # Check if this is a table header row (contains 作者, but first cell is NOT a number)
+        # Must exclude data rows like "| 1 | Huisman | ... | Snijders共同作者... |"
+        if current_tier and not re.match(r"\|\s*\d+\s*\|", line) and re.search(r"(?:第一作者|作者)", line):
             # Check if tag column already exists
             if "功能标签" in line:
                 new_lines.append(line)

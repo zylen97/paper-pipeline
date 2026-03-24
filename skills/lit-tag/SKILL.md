@@ -16,8 +16,17 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ## 全局约束
 
+### ⛔ Fail-Fast 规则（最高优先级）
+本 skill 中任何步骤出现以下情况，**必须立即停止整个流程并向用户汇报**，不得自行修复、跳过或继续：
+- Python 脚本输出 `VERIFY: FAIL`
+- `insert_tags.py` 报 `NO_TAGS` 错误（文献缺标签）
+- 标签数 ≠ 文献数（任一分级内不匹配）
+- 任何脚本报错退出（exit code ≠ 0）
+
+**汇报格式**：原样粘贴脚本 stderr/stdout 错误信息 + 说明出错步骤 + 等待用户指示。
+
 ### 模型选择
-**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku。如无特殊指定，不传 `model` 参数即可自动继承。
+**subAgent 使用 Sonnet 模型**（传 `model: "sonnet"` 参数）。打标签是多标签分类任务，Sonnet 准确率接近 Opus，且速度更快。模板填空格式已消除格式遵从性风险。
 
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：依据短语、标签锚定说明、处理日志中的备注。文献的标题、期刊名、作者名保持原文。
@@ -52,10 +61,11 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 python3 ~/.claude/skills/shared/dispatch_plan.py --mode report \
   --input-dir structure/2_literature/ \
   --limit 30 \
+  --template-dir structure/2_literature/_tags/ \
   --directions "{$ARGUMENTS 指定的方向，如 1,3,5；不指定则省略此参数}"
 ```
 
-**脚本职责**：扫描 `direction*_report.md` → 计数入选文献 → 按 ⌈N/30⌉ 拆分 → 输出调度表 + `_dispatch_plan.json`。
+**脚本职责**：扫描 `direction*_report.md` → 计数入选文献 → 按 ⌈N/30⌉ 拆分 → 从 report 读取 tier 结构生成标签模板文件（`_tags/d*_tags.md`，含预写的 section headers 和序号占位） → 输出调度表 + `_dispatch_plan.json`。
 
 不存在 reports → 脚本报错退出，主 Agent 停止并提示先运行 `/lit-review`。
 VERIFY 必须为 PASS。
@@ -133,43 +143,57 @@ VERIFY 必须为 PASS。
 2. 对每篇入选文献，基于其标题、期刊、入选理由，标注功能标签（可多个）
 3. 每篇文献至少标注1个标签
 
-## 输出（只输出标签列表，不修改表格）
+## 输出（模板填空，只输出标签）
 
-> **设计原理**：表格插列是纯机械操作，交给 Python 脚本（`insert_tags.py`）完成。Agent 只需输出标签判断结果。
+> **设计原理**：Agent 只负责判断标签，表格插列由 Python 脚本（`insert_tags.py`）完成。模板文件由 `dispatch_plan.py --mode report` 预生成，section headers 和序号已固定，Agent 只需在 `→` 后填写标签。
 
-**用 Write 工具写入** `structure/2_literature/_tags/d{方向编号}_tags.md`（确保 `_tags/` 目录存在）。
+**步骤**：
+1. 先读取模板文件：`structure/2_literature/_tags/d{方向编号}_tags.md`
+2. 用 Write 工具**覆写**该文件，在每行 `→` 后填写标签
 
-按分级分组，每篇文献一行 `序号: 标签`，严格按 report 中的表格顺序编号：
+**模板示例**（section headers 和序号已由 Python 预写）：
 
 ```markdown
-# 方向{N} 标签标注结果
-
-> direction: {N}
-> direction_name: {方向名称}
-
 ## 核心文献（Core）
-1: LR+GAP-RQ1+DISC-RQ1
-2: LR+METHOD-先例+COMP
-3: BG+LR
+1 → LR+GAP-RQ1+DISC-RQ1
+2 → LR+METHOD-先例+COMP
+3 → BG+LR
 
 ## 重要文献（Important）
-1: LR+DISC-RQ2
-2: METHOD-基础
-3: LR+GAP-RQ2
+1 → LR+DISC-RQ2
+2 → METHOD-基础
+3 → LR+GAP-RQ2
 
 ## 备选文献（Backup）
-1: LR
-2: LR+DISC-RQ3
+1 → LR
+2 → LR+DISC-RQ3
 ```
 
 **格式约束**：
-- 每行格式：`序号: 标签1+标签2+...`（序号对应该分级表格内的行号，从1开始）
+- **不要修改 `##` 标题行和序号**——只在 `→` 后填写标签
 - 多个标签用 `+` 分隔，禁止用 `|`、`;` 或其他分隔符
 - 每篇至少1个标签，不可留空
 - 标签名称严格匹配定义表（区分大小写），不可自创标签
 - **不要修改 direction report 文件**——标签插入由 Python 脚本完成
 
-**语言要求**：标签列表无需中文说明，只需 `序号: 标签` 即可。
+**⚠️ 关键警告：Write 工具写入内容时，绝对不要包含行号前缀！**
+Read 工具的输出格式为 `行号→内容`（如 `1→## 核心文献（Core）`），其中 `行号→` 是显示用的前缀，**不是文件的实际内容**。用 Write 工具覆写时，只写实际内容，不要把 `1→`、`2→` 等行号前缀写进去。
+
+**正确写法**（Write 工具的 content 参数）：
+```
+## 核心文献（Core）
+1 → LR+GAP-RQ1
+2 → LR+METHOD-先例
+```
+
+**错误写法**（混入了 Read 的行号前缀）：
+```
+3→## 核心文献（Core）
+4→1 → LR+GAP-RQ1
+5→2 → LR+METHOD-先例
+```
+
+**语言要求**：标签列表无需中文说明，只需在 `→` 后填标签即可。
 ```
 
 ---
@@ -233,6 +257,22 @@ python3 ~/.claude/skills/lit-tag/tag_aggregate.py \
 2. 均衡性预警结果
 3. 如有⚠️或❌标签，建议具体补检方向
 4. 下一步建议：运行 `/lit-pool` 生成引用池
+
+### 📌 Checkpoint 2：Git 备份 tagged reports（不可跳过）
+
+步骤3汇报完毕、用户确认后，**必须**备份：
+
+```bash
+git add structure/2_literature/direction*_report.md \
+       structure/2_literature/tag_report.md \
+       structure/2_literature/_tag_aggregate.json \
+       structure/2_literature/_screening_merged.json \
+       structure/2_literature/_tags/ \
+       structure/2_literature/*.ris
+git commit -m "Checkpoint: lit-tag complete (tagged reports + cleaned RIS)"
+```
+
+> **为什么**：tagged direction reports 是 `/lit-pool` 的输入，也是人工复核的基准。此备份覆盖 lit-review + lit-tag 两个 skill 的全部产出。
 
 ---
 

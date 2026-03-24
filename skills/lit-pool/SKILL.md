@@ -14,8 +14,17 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 
 ## 全局约束
 
+### ⛔ Fail-Fast 规则（最高优先级）
+本 skill 中任何步骤出现以下情况，**必须立即停止整个流程并向用户汇报**，不得自行修复、跳过或继续：
+- Python 脚本输出 `VERIFY: FAIL`
+- 引用池文件数 ≠ 标签类别数
+- `master.bib` 条目数与入选文献数不一致
+- 任何脚本报错退出（exit code ≠ 0）
+
+**汇报格式**：原样粘贴脚本 stderr/stdout 错误信息 + 说明出错步骤 + 等待用户指示。
+
 ### 模型选择
-**subAgent 必须使用与主 Agent 相同的模型**（即继承 parent 模型）。**严禁**手动降级到 Sonnet 或 Haiku。如无特殊指定，不传 `model` 参数即可自动继承。
+**subAgent 使用 Opus 模型**（不传 `model` 参数，继承主 Agent）。引用场景生成是写作任务，质量直接传导到下游 pen-draft，需要 Opus 的理解深度。
 
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：引用场景、与本研究的关键差异、标签文件header/备注。文献的标题、期刊名、作者名保持原文（通常为英文）。
@@ -123,41 +132,44 @@ subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严
    - 入选理由 = "为什么留下这篇"（筛选视角）
    - 引用场景 = "这篇可以支撑什么论点"（写作视角）
 
-## 输出格式（只输出 key-value 块，不写表格）
+## 输出格式（模板填空 + 结构分离）
 
-> **设计原理**：LLM 不擅长精确 markdown 表格。Agent 只需输出 key-value 块，Python 脚本 `format_pool_agents.py` 自动转换为标准表格。
+> **设计原理**：Agent 只输出条目级内容（照模板格式填空），不写任何 `#` section headers。Python 脚本 `format_pool_agents.py` 按「标签」字段分组，确定性生成标准表格。
 
-**用 Write 工具写入** `structure/2_literature/_tmp_pool_agent{N}_raw.md`（注意 `_raw` 后缀）。
+**步骤**：
+1. 先读取模板文件：`structure/2_literature/_tmp_pool_agent{N}_raw.md`
+2. 用 Write 工具**覆写**该文件，按模板中的格式逐条添加文献
 
-每个标签用 `# 标签名` 作为 section 标题，每篇文献用 `### paperN` 开头：
+**关键规则**：
+- **不要添加任何 `#` 标题行**——标签分组由 Python 生成
+- 每篇文献用 `### paperN` 开头，后跟 **7 行** `- key: value`
+- **必须包含 `- 标签:` 字段**——**只写当前 agent 被分配处理的那一个标签**（如 BG / GAP-RQ1 / METHOD-先例），不要写该文献的所有标签。这是 Python 分组的唯一依据，写多个标签会导致下游脚本解析失败
+- citation key 必须**原样复制**，不可修改
+- 分级写中文：核心/重要/备选
+- 引用场景用中文，文献信息保持英文
+- 期刊名使用完整名称，不要缩写
+
+**输出示例**：
 
 ```markdown
-# BG
-
 ### paper1
+- 标签: BG
 - citation_key: smith2024b
 - 分级: 核心
 - 作者: Smith et al.
 - 年份: 2024
 - 引用场景: 中文引用场景描述
-- 期刊: Journal Name
+- 期刊: JOURNAL OF CONSTRUCTION ENGINEERING AND MANAGEMENT
 
 ### paper2
+- 标签: GAP-RQ1
 - citation_key: lee2023s
 - 分级: 重要
 - 作者: Lee et al.
 - 年份: 2023
 - 引用场景: 中文引用场景描述
-- 期刊: Another Journal
+- 期刊: RESEARCH POLICY
 ```
-
-**格式约束**：
-- Section 标题格式：`# 标签名`（如 `# BG`、`# GAP-RQ1`），不加副标题或篇数
-- 每篇文献 6 行 key-value（citation_key/分级/作者/年份/引用场景/期刊），每行一个字段
-- citation key 必须原样复制，不可修改
-- 分级写中文：核心/重要/备选
-- 引用场景用中文，文献信息保持英文
-- **不要写 markdown 表格**
 ```
 
 ---
@@ -253,139 +265,58 @@ stdout 输出 `VERIFY: PASS|FAIL`。
 
 ---
 
-## 步骤 7：生成总报告 master_report.md
+## 步骤 7：生成总报告 master_report.md（两步法）
 
-所有引用池文件生成完毕后，主Agent基于以下数据源生成 `structure/2_literature/master_report.md`：
-- direction reports（各方向筛选结果）
-- tag_report.md（标签统计与均衡性，由 `/lit-tag` 生成）
-- citation_pool/ 目录（各标签引用池）
-- idea.md（RQ、Gap、方法论）
+**设计原理**：master_report 80% 是数据搬运（竞品表、方法先例表、标签统计），20% 是判断（Gap 真实性、可行性结论）。用 Python 处理前者，主 Agent 直接填写后者——不开 subAgent，因为主 Agent 已有完整上下文。
 
-回答以下 **6个硬问题**：
+### 7.1 Python 生成报告骨架
 
-```markdown
-# 文献总报告 — {项目编号}
-
-> **日期**: {YYYY-MM-DD}
-> **分析方向数**: {N}
-> **文献总量**: 检索{X}篇 → 去重后入选{Y}篇（核心{a} + 重要{b} + 备选{c}）
-
----
-
-## 一、创新性判断：有没有人做过？
-
-### 竞品论文清单
-| # | 作者 | 标题 | 年份 | 来源方向 | 与本研究的相似度 | 关键差异 |
-|:--|:-----|:-----|:----:|:---------|:---------------:|:---------|
-
-### 判断
-- **直接竞品**: {有/无}。{如有，说明差异化空间}
-- **间接竞品**: {列出方法相似但问题不同、或问题相似但方法不同的论文}
-- **结论**: {能做/需调整/风险高}
-
----
-
-## 二、Research Gap 分析
-
-根据 idea.md 的成熟度，自动选择模式：
-
-### 模式A：验证模式（idea.md 中已有明确 Gap/RQ）
-
-逐个Gap评估：
-
-| Gap | 描述 | 文献支撑 | 是否已被填补 | 评估 |
-|:----|:-----|:---------|:------------|:-----|
-| G1 | ... | {哪些文献证明这个Gap存在} | {有无文献已解决} | ✅真实 / ⚠️部分填补 / ❌已解决 |
-| G2 | ... | ... | ... | ... |
-
-### 模式B：发现模式（idea.md 仅有初步idea，Gap/RQ尚不明确）
-
-基于各方向文献分析，识别潜在Gap：
-
-| 潜在Gap | 文献证据 | 来源方向 | 可发展为RQ的方向 | 置信度 |
-|:--------|:---------|:---------|:----------------|:------:|
-| {现有文献缺少什么} | {哪些文献暗示了这个缺口} | 方向X | {建议的RQ方向} | 高/中/低 |
-
-> 发现模式下，总报告额外输出一节 **"Gap → RQ 建议"**，帮助用户从文献中提炼出可行的研究问题。用户确认后可回写 idea.md。
-
----
-
-## 三、方法论先例：本研究方法有无应用先例？
-
-| 先例论文 | 方法 | 应用领域 | 与本研究的方法论距离 |
-|:---------|:-----|:---------|:--------------------|
-
-- **结论**: {方法论有充分先例 / 有部分先例需论证 / 首次应用需重点论证}
-
----
-
-## 四、紧迫性与实践需求
-
-- **行业实践证据**: {列出支撑研究紧迫性的文献/事件}
-- **政策/行业趋势**: {列出相关趋势}
-- **结论**: {紧迫性高/中/低}
-
----
-
-## 五、引用池充足性
-
-### 按分级
-
-| 分级 | 数量 | 充足性 | 补检建议 |
-|:-----|:----:|:------:|:---------|
-| 核心 | {n} | ✅足够 / ⚠️偏少 | ... |
-| 重要 | {n} | ... | ... |
-| 备选 | {n} | ... | ... |
-
-### 按标签
-
-> 基于 tag_report.md 和 citation_pool/ 的实际标签数据。
-
-| 标签 | Pool目标 | 实际入选 | 达标率 | 状态 |
-|:-----|:-------:|:-------:|:-----:|:----:|
-| BG | 50 | {n} | {%} | ✅/⚠️/❌ |
-| LR | 150 | {n} | {%} | ... |
-| GAP-RQx | 75 | {n} | {%} | ... |
-| METHOD | 60 | {n} | {%} | ... |
-| DISC-RQx | 65 | {n} | {%} | ... |
-
----
-
-## 六、补检建议
-
-| 建议编号 | 补检方向 | 原因 | 建议检索式 | 预估文献量 |
-|:---------|:---------|:-----|:----------|:----------|
-
----
-
-## 综合评估
-
-### 本研究可行性: {✅可行 / ⚠️可行但需调整 / ❌风险过高}
-
-### 核心发现
-1. {发现1}
-2. {发现2}
-3. ...
-
-### 对研究设计的建议
-1. {建议1：如调整RQ措辞、补充某个理论视角等}
-2. {建议2}
-3. ...
-
-### 文献分布可视化
-
-| 方向 | ████████ 核心 | ████ 重要 | ██ 备选 | 合计 |
-|:-----|:-------------|:---------|:--------|:----:|
-| 方向1 | {n} | {n} | {n} | {n} |
-| ... | ... | ... | ... | ... |
-| **总计** | {n} | {n} | {n} | **{N}** |
+```bash
+python3 ~/.claude/skills/lit-pool/generate_master_report.py \
+  --pool-dir structure/2_literature/citation_pool/ \
+  --data-dir structure/2_literature/ \
+  --idea-file structure/0_global/idea.md \
+  --output structure/2_literature/master_report.md
 ```
 
-### 对话汇报
-生成完毕后在对话中展示：
+**脚本职责**（`generate_master_report.py`）：
+1. 从 `screening_summary_report.md` 提取检索总量（加总各方向检索数）
+2. 从 `direction*_report.md` 提取各方向分级分布 + 跨方向去重后的全局分级计数
+3. 从 `citation_pool/COMP.md` 提取竞品表格（截断120字 + 注明"详见COMP.md"）
+4. 从 `citation_pool/METHOD.md` 提取方法论先例表格（核心+重要，上限20篇）
+5. 从 `tag_report.md` 提取标签充足性数据 + 自动标出达标率最低的标签
+6. 从 `citation_pool/BG.md` 提取近年文献列表，作为紧迫性填写的参考素材
+7. 生成 `master_report.md`，判断性内容留 `<!-- JUDGE: ... -->` 占位符
+8. 文献分布表分两行展示：各方向小计（含重复）+ 去重后独立文献数
+9. stdout 输出统计 + `VERIFY: PASS|FAIL`（含数学校验：tier sum == total_dedup）
+
+> **数据源约束**：脚本只依赖永久文件（direction reports / tag_report.md / screening_summary / citation_pool/），不依赖任何 `_*.json` 中间文件。清理顺序不影响结果。
+
+### 7.2 主 Agent 填写判断（不开 subAgent）
+
+主 Agent 读取 `master_report.md`，基于当前对话上下文（已跑完 lit-review/lit-tag/lit-pool 全流程），直接用 Edit 工具替换每个 `<!-- JUDGE: ... -->` 占位符：
+
+| 判断项 | 填写内容 | 质量要求 |
+|:-------|:---------|:---------|
+| 竞品判断 | 直接竞品有/无、差异化空间、间接竞品、结论 | 列出具体论文和差异点 |
+| Gap 验证 | 每个 Gap: ✅/⚠️/❌ + 文献支撑 + 理由 | 每个 Gap 至少引用 2 篇文献作为证据 |
+| 方法论结论 | 有充分先例/有部分先例/首次应用 | 引用 METHOD 表格中的具体数字 |
+| 紧迫性 | 高/中/低 + 行业证据 + 趋势 | **至少引用 2-3 篇 BG 文献**（骨架已提供参考列表）；列出具体政策文件名或行业事件 |
+| 补检建议 | 基于标签缺口给具体建议 | **即使全达标，也检查**：(1)达标率最低的标签 (2)某个RQ的DISC是否偏少 (3)是否有论点缺乏支撑。如确实无需补检，说明理由 |
+| 综合评估 | 可行性 + 核心发现 + 设计建议 | 核心发现 3-5 条；设计建议 2-3 条 |
+
+### 7.3 质量校验
+
+主 Agent 完成判断填写后，**必须**执行以下校验：
+
+1. **占位符清零**：`grep -c 'JUDGE' master_report.md` 必须为 0（所有占位符已替换）
+2. **表格完整性**：竞品表行数 > 0、方法论先例表行数 > 0、标签充足性表有 5 行数据
+3. **判断一致性**：Gap 评估结论与 lit-review 步骤 3 的初步判断一致（如有不一致，说明原因）
+
+校验通过后在对话中展示：
 1. 可行性结论
 2. 竞品预警（如有）
-3. Gap真实性评估
+3. Gap 真实性评估
 4. 引用池充足性（按标签）
 5. 补检建议（如有）
 6. **下一步建议**：用户审阅 master_report.md → 确认/调整 idea.md → 进入步骤③ idea定稿 → 步骤④ 填充各章节md
@@ -441,6 +372,20 @@ rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _scree
 > **命名约定**：pipeline 中所有中间文件/目录以 `_` 前缀命名，永久产出不以 `_` 开头。这样清理时用通配符 `_*` 即可，不需要逐个枚举文件名。
 >
 > **永久保留的文件**：direction reports（文献+标签）、screening_summary_report.md（筛选统计）、tag_report.md（标签统计）、citation_pool/（引用池）、master.bib（BibTeX）、literature_search_plan.md（检索方案）。
+
+### 📌 Checkpoint 3：Git 备份文献管线最终交付物（不可跳过）
+
+清理完成后，**必须**备份整个文献管线的最终产出：
+
+```bash
+git add structure/2_literature/citation_pool/ \
+       structure/2_literature/master.bib \
+       structure/2_literature/master_report.md \
+       structure/2_literature/screening_summary_report.md
+git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib)"
+```
+
+> **为什么**：这是 lit-plan → lit-review → lit-tag → lit-pool 四步管线的最终交付物，直接喂给下游 pen-draft 写作。
 
 ---
 

@@ -114,33 +114,42 @@ def parse_tmp_files(tmp_dir: Path) -> dict[str, list[dict]]:
             continue
 
         # 检测当前处理的标签（通过 section header）
-        current_tag = None
+        current_tags: list[str] = []
         for line in content.split("\n"):
-            # 匹配 section header（如 "# BG" "# BG(2024-2026)" "## GAP-RQ1"）
-            tag_match = re.match(r"#{1,3}\s+([A-Z][\w()-]*)", line)
+            # 匹配 section header（如 "# BG" "# LR, BG, DISC-RQ1" "## GAP-RQ1"）
+            tag_match = re.match(r"#{1,3}\s+(.+)", line)
             if tag_match:
-                potential_tag = tag_match.group(1).strip()
-                # 归一化：BG(2024-2026) → BG
-                if potential_tag.startswith("BG"):
-                    potential_tag = "BG"
-                # 验证是否是有效标签
-                if (potential_tag in TAG_FILE_MAP or
-                    potential_tag.startswith("GAP-RQ") or
-                    potential_tag.startswith("DISC-RQ") or
-                    potential_tag in ("BG", "LR", "COMP") or
-                    potential_tag.startswith("METHOD")):
-                    current_tag = potential_tag
+                header_text = tag_match.group(1).strip()
+                # 按逗号拆分，支持组合标签
+                candidate_tags = [t.strip() for t in header_text.split(",")]
+                valid_tags = []
+                for potential_tag in candidate_tags:
+                    # 归一化：BG(2024-2026) → BG
+                    if potential_tag.startswith("BG"):
+                        potential_tag = "BG"
+                    # 验证是否是有效标签
+                    if (potential_tag in TAG_FILE_MAP or
+                        potential_tag.startswith("GAP-RQ") or
+                        potential_tag.startswith("DISC-RQ") or
+                        potential_tag in ("BG", "LR", "COMP") or
+                        potential_tag.startswith("METHOD")):
+                        valid_tags.append(potential_tag)
+                if valid_tags:
+                    current_tags = valid_tags
 
             # 收集表格行（排除 header 行和分隔线）
-            if current_tag and line.startswith("|"):
-                # 跳过表头和分隔线
+            if current_tags and line.startswith("|"):
+                # 跳过分隔线
                 if re.match(r"\|[\s:-]+\|", line):
                     continue
-                if re.search(r"分级|作者|citation|引用场景|期刊", line, re.IGNORECASE):
+                # 跳过表头行：检查第一个 cell 是否为表头关键词（不用 re.search 避免误匹配数据行）
+                cells = [c.strip() for c in line.split("|") if c.strip()]
+                if cells and cells[0] in ("分级", "#", "Tier", "Grade", "标签"):
                     continue
-                # 有实质内容的表格行
+                # 有实质内容的表格行 → 分配到所有当前标签
                 if re.match(r"\|\s*\S", line):
-                    tag_rows[current_tag].append(line)
+                    for tag in current_tags:
+                        tag_rows[tag].append(line)
 
     return {tag: rows for tag, rows in tag_rows.items()}
 
@@ -243,7 +252,7 @@ def verify(tag_rows: dict[str, list[str]], file_counts: dict[str, int],
         actual = len([
             line for line in content.split("\n")
             if line.startswith("|") and not re.match(r"\|[\s:-]+\|", line)
-            and not re.search(r"分级|作者|citation|引用场景|期刊", line, re.IGNORECASE)
+            and not (line.split("|")[1].strip() if len(line.split("|")) > 1 else "") in ("分级", "#", "Tier", "Grade", "标签")
             and re.match(r"\|\s*\S", line)
         ])
         if actual != expected:

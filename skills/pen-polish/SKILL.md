@@ -245,3 +245,4 @@ Read `{WORK_DIR}/{最新版本}`
 - 审稿轮数：{1 或 2}
 - Checkpoint 文件清单
 - 💡 提醒手动替换 manuscript.tex 中的对应文本
+- 💡 所有章节 polish 完成后，运行 `/finalize` 完成 Conclusion → Abstract → Cover Letter

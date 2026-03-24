@@ -118,7 +118,10 @@ def parse_report(filepath: Path) -> list[dict]:
             if tags_raw.strip() in ("—", "-", "N/A", ""):
                 tags = []
             else:
-                tags = [t.strip().rstrip("\\").strip() for t in re.split(r"[+,、/;|]", tags_raw) if t.strip().rstrip("\\").strip()]
+                # Valid tag prefixes
+                VALID_PREFIXES = ("BG", "LR", "GAP", "METHOD", "DISC", "COMP")
+                raw_tags = [t.strip().rstrip("\\").strip() for t in re.split(r"[+,、/;|]", tags_raw) if t.strip().rstrip("\\").strip()]
+                tags = [t for t in raw_tags if any(t.startswith(p) for p in VALID_PREFIXES)]
             papers.append({
                 "direction": direction,
                 "author": m7.group(2).strip(),

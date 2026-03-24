@@ -55,7 +55,28 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
   - 否则 → `{INPUT_FORM}` = "single"（Form 1）
 - **匹配失败** → AskUserQuestion 让用户从脚本列出的 section 中选择
 
-### 0.5 定位源文件
+### 0.5 方法论审计检查（仅技术章节）
+
+当目标 section 匹配以下关键词时触发检查：`model/method/formul/equilibrium/result/analysis/simulation/numerical`
+
+- 检查 `drafts/method_audit_report.md` 是否存在
+- **不存在** → 警告用户：
+  ```
+  ⚠️ 检测到你正在 draft 技术章节（{section name}），但尚未运行 /method-audit。
+  建议先运行 /method-audit 完成方法论审计，再生成初稿。
+  - 继续 draft（跳过审计）→ 输入 "continue"
+  - 先去审计 → 输入 "stop"
+  ```
+- **存在但有未修复的 🔴 MUST-FIX** → 警告用户：
+  ```
+  ⚠️ method_audit_report.md 中仍有 {N} 条 🔴 MUST-FIX 未处理。
+  建议先处理完再 draft，否则 draft 后可能需要大幅修改。
+  - 继续 draft → 输入 "continue"
+  - 先去处理 → 输入 "stop"
+  ```
+- **存在且无红色项** → 静默通过
+
+### 0.6 定位源文件
 
 - **章节 md 文件**：找到匹配 section 的顶层父 section，扫描 `structure/` 子目录用关键词匹配目录名：
 
@@ -79,7 +100,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 从 `_citation_paths.json` 读取 `citation_pool_paths` → `{CITATION_POOL_PATHS}`。如无引用池区块 → 空列表，不报错
 - **全局上下文**：固定读取 `structure/0_global/idea.md` → `{IDEA_PATH}`
 
-### 0.6 创建工作目录
+### 0.7 创建工作目录
 
 **`normalize(title)`**：空格→下划线，Capitalized_Words 风格，> 40 字符在最后完整单词边界截断。
 

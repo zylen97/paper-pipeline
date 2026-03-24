@@ -20,7 +20,6 @@ clean_ris.py — RIS 文件清理脚本（步骤 5）
 
 import argparse
 import json
-import os
 import re
 import sys
 import unicodedata
@@ -61,35 +60,40 @@ def parse_ris_entries(content: str) -> list[dict]:
     return parsed
 
 
-def match_paper(entry: dict, selected_titles: set[str],
-                selected_author_year: set[str]) -> bool:
-    """Try to match a RIS entry against selected papers.
-    Strategy 1: normalized title prefix match (first 40 chars)
-    Strategy 2: first_author + year fallback
+def match_paper(entry: dict, selected_papers: list[dict]) -> bool:
+    """Try to match a RIS entry against selected papers for THIS direction only.
+
+    Strategy 1: Full normalized title match (strict)
+    Strategy 2: Normalized title prefix match (first 60 chars) + same year
+    Strategy 3: first_author + year + title overlap (≥20 chars)
     """
     ti_norm = entry["title_norm"]
+    entry_au = entry["first_author"]
+    entry_yr = entry["year"]
 
-    # Strategy 1: title match (first 40 chars both ways)
-    for sel_ti in selected_titles:
-        if ti_norm[:40] == sel_ti[:40]:
-            return True
-        if len(sel_ti) > 25 and sel_ti[:25] in ti_norm:
-            return True
-        if len(ti_norm) > 25 and ti_norm[:25] in sel_ti:
+    for sel in selected_papers:
+        sel_ti = sel["title_norm"]
+        sel_au = sel["first_author"]
+        sel_yr = sel["year"]
+
+        # Strategy 1: full normalized title match
+        if ti_norm and sel_ti and ti_norm == sel_ti:
             return True
 
-    # Strategy 2: author + year fallback
-    au_yr = f"{entry['first_author']}|{entry['year']}"
-    if au_yr and au_yr in selected_author_year:
-        return True
+        # Strategy 2: title prefix (60 chars) + same year
+        if (ti_norm and sel_ti and entry_yr and sel_yr
+                and entry_yr == sel_yr
+                and len(ti_norm) >= 30 and len(sel_ti) >= 30
+                and ti_norm[:60] == sel_ti[:60]):
+            return True
 
-    # Strategy 3: title-only matching for "Unknown" authors
-    if entry["first_author"] in ("unknown", ""):
-        entry_ti = entry["title_norm"][:60]
-        if entry_ti:
-            for sel_ti in selected_titles:
-                if entry_ti == sel_ti[:60]:
-                    return True
+        # Strategy 3: author + year + title overlap
+        if (entry_au and sel_au and entry_yr and sel_yr
+                and entry_au == sel_au and entry_yr == sel_yr):
+            # Require at least 20 chars of title prefix match to avoid
+            # matching different papers by the same author in the same year
+            if len(ti_norm) >= 20 and len(sel_ti) >= 20 and ti_norm[:20] == sel_ti[:20]:
+                return True
 
     return False
 
@@ -128,19 +132,25 @@ def main():
     print(f"=== CLEAN {mode_label} ===")
 
     directions = merged.get("directions", {})
-    for d_str in sorted(directions.keys(), key=int):
-        d = int(d_str)
-        papers = directions[d_str]
 
-        # Build match sets for this direction
-        selected_titles = set()
-        selected_author_year = set()
+    # Pre-process: build per-direction selected paper list with normalized fields
+    dir_selected: dict[int, list[dict]] = {}
+    for d_str, papers in directions.items():
+        d = int(d_str)
+        processed = []
         for p in papers:
-            selected_titles.add(normalize(p.get("title", ""))[:80])
             fa = p.get("first_author", "").split(",")[0].split(";")[0].strip().lower()
             yr = str(p.get("year", ""))
-            if fa and yr:
-                selected_author_year.add(f"{fa}|{yr}")
+            processed.append({
+                "title": p.get("title", ""),
+                "title_norm": normalize(p.get("title", "")),
+                "first_author": fa,
+                "year": yr,
+            })
+        dir_selected[d] = processed
+
+    for d in sorted(dir_selected.keys()):
+        papers = dir_selected[d]
 
         # Find RIS file
         ris_file = find_ris_file(ris_dir, d)
@@ -155,10 +165,10 @@ def main():
         before = len(entries)
         total_before += before
 
-        # Match entries
+        # Match entries — only against THIS direction's selected papers
         kept = []
         for entry in entries:
-            if match_paper(entry, selected_titles, selected_author_year):
+            if match_paper(entry, papers):
                 kept.append(entry)
 
         after = len(kept)
@@ -168,12 +178,20 @@ def main():
         if unmatched > 0:
             total_unmatched += unmatched
             # Find which selected papers didn't match
-            matched_titles = {e["title_norm"][:40] for e in kept}
             for p in papers:
-                p_norm = normalize(p.get("title", ""))[:40]
-                found = any(p_norm == mt for mt in matched_titles)
+                found = False
+                for e in kept:
+                    if e["title_norm"] == p["title_norm"]:
+                        found = True
+                        break
+                    if (e["title_norm"][:60] == p["title_norm"][:60]
+                            and e["year"] == p["year"]):
+                        found = True
+                        break
                 if not found:
-                    unmatched_details.append(f"  D{d}: {p.get('first_author', '?')} ({p.get('year', '?')}) - {p.get('title', '?')[:60]}")
+                    unmatched_details.append(
+                        f"  D{d}: {p['first_author']} ({p['year']}) - {p['title'][:60]}"
+                    )
 
         print(f"D{d}: {before} → {after} (matched {after}/{expected}, unmatched {max(0, unmatched)})")
 

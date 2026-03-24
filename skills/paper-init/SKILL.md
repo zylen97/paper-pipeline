@@ -519,3 +519,6 @@ git push -u origin main
    - 开始撰写 `structure/0_global/idea.md`（研究纲领）
    - idea 确定后运行 `/lit-plan` 规划文献检索方向
    - WoS 检索完成后运行 `/lit-review`(筛选) → `/lit-tag`(打标签) → `/lit-pool`(引用池)
+   - 填写 methodology.md + results.md（+ simulation.md）后运行 `/method-audit`（方法论审计）
+   - 审计通过后运行 `/pen-outline`(叙述章节大纲) → `/pen-draft`(初稿) → `/pen-polish`(打磨)
+   - 论文主体定稿后运行 `/finalize`(Conclusion → Abstract → Cover Letter) → `/pre-submit`(投稿终检) → 投稿
