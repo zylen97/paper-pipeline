@@ -550,7 +550,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
    b. 在 `## 大纲` 中为每个方向创建 `###` heading（如不存在）
 
-   c. **同步更新 manuscript.tex**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
+   c. **同步更新 manuscript.tex**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。**定位表不插入 tex**——定位表是表格，不是独立 subsection，遍历时跳过。检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
 
 3. 在 `## 大纲` 区块开头插入字数分配表：
    ```markdown

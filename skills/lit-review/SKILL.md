@@ -312,7 +312,12 @@ import json, os, glob
 
 base = 'structure/2_literature'
 batch_dir = f'{base}/_batch'
-plan_quotas = {1:94, 2:63, 3:44, 4:43, 5:51, 6:36, 7:29}
+plan_quotas = {}  # 必须从 _dispatch_plan.json 提取实际值
+with open(f'{base}/_dispatch_plan.json') as f:
+    dp = json.load(f)
+    for d in dp['directions']:
+        plan_quotas[int(d['id'])] = d['quota']
+expected_directions = len(plan_quotas)
 
 # 1. Artifact existence
 raw_files = sorted(glob.glob(f'{batch_dir}/d*_batch*_raw.md'))
@@ -332,8 +337,8 @@ print(f'Summary report:        {\"YES\" if os.path.exists(summary) else \"MISSIN
 
 if len(raw_files) != len(fmt_files):
     errors.append(f'Raw ({len(raw_files)}) != Formatted ({len(fmt_files)})')
-if len(reports) != 7:
-    errors.append(f'Direction reports: {len(reports)}, expected 7')
+if len(reports) != expected_directions:
+    errors.append(f'Direction reports: {len(reports)}, expected {expected_directions}')
 if not os.path.exists(merged_json):
     errors.append('Merged JSON missing')
 
@@ -380,11 +385,11 @@ else:
 ```
 
 **校验内容**：
-1. **产出物完整性**：raw batch 数 = formatted batch 数、7 个 direction report、merged JSON、summary report 全部存在
+1. **产出物完整性**：raw batch 数 = formatted batch 数、direction report 数 = 实际方向数、merged JSON、summary report 全部存在
 2. **配额合规**：每个方向入选数 ≤ 该方向配额，按 core/important/backup 分层展示
 3. **数学一致性**：`total - cross_dupes == unique_count`
 
-**注意**：脚本中的 `plan_quotas` 字典需要从 `_dispatch_plan.json` 或 `literature_search_plan.md` 中提取实际配额值，替换示例中的硬编码值。
+**注意**：脚本已从 `_dispatch_plan.json` 自动读取配额和方向数，无需手动替换。确保运行此脚本时 `_dispatch_plan.json` 尚未被清理。
 
 主 Agent 校验：VERIFY 必须为 PASS。FAIL 时原样粘贴错误信息给用户，不得自行继续。
 
