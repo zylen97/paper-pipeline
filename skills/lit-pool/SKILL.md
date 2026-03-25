@@ -362,7 +362,8 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 # 按约定：所有以 _ 开头的文件/目录均为 pipeline 中间产物
 rm -rf structure/2_literature/_batch/              # lit-review batch 文件
 rm -rf structure/2_literature/_tags/               # lit-tag 标签列表
-rm -rf structure/2_literature/_tmp_agent_inputs/   # lit-pool agent 输入文件
+rm -rf structure/2_literature/_tmp_agent_inputs/   # lit-pool agent 输入文件（目录形式）
+rm -f  structure/2_literature/_tmp_agent_input_*.txt   # lit-pool agent 输入文件（散文件形式）
 rm -f  structure/2_literature/_tmp_pool_agent*_raw.md  # lit-pool agent 原始输出
 rm -f  structure/2_literature/_tmp_pool_agent*.md       # lit-pool agent 标准化输出
 rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _screening_merged.json,

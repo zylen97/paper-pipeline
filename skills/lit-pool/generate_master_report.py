@@ -117,6 +117,7 @@ def main():
     parser.add_argument('--data-dir', required=True)
     parser.add_argument('--idea-file', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--project-id', default='', help='Project ID for report title (e.g. zy06)')
     args = parser.parse_args()
 
     # === LOAD DATA (permanent files only) ===
@@ -189,12 +190,12 @@ def main():
     total_bak = sum(1 for t in all_papers.values() if t == 'backup')
     total_prededup = sum(s['total'] for s in dir_stats.values())
 
-    dir_names = {
-        1: '工程建设行业创新合作网络', 2: 'SAOM方法论与纵向网络演化',
-        3: '同质性vs互补性驱动机制', 4: '产学研合作与组织异质性',
-        5: '央企集团结构与创新治理', 6: '地理邻近性与创新合作',
-        7: '专利合作网络构建方法'
-    }
+    dir_names = {}
+    for rpath in dir_reports:
+        bn = os.path.basename(rpath)
+        nm = re.search(r'direction(\d+)_(.+?)_report\.md', bn)
+        if nm:
+            dir_names[int(nm.group(1))] = nm.group(2)
 
     # 3. Pool tables
     comp_rows = parse_pool_table(os.path.join(args.pool_dir, 'COMP.md'))
@@ -212,7 +213,8 @@ def main():
 
     # === BUILD REPORT ===
     lines = []
-    lines.append('# 文献总报告 — cx02')
+    project_id = args.project_id or os.path.basename(os.path.dirname(os.path.abspath(args.output))).split('_')[0] if args.output else ''
+    lines.append(f'# 文献总报告 — {project_id}' if project_id else '# 文献总报告')
     lines.append('')
     lines.append(f'> **日期**: {date.today().isoformat()}')
     lines.append(f'> **分析方向数**: {len(dir_stats)}')

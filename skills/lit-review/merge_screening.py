@@ -79,7 +79,7 @@ def parse_quotas(plan_path: str) -> dict[int, int]:
         with open(plan_path, encoding="utf-8") as f:
             content = f.read()
         # Match rows like: | 1 | 方向名 | 标签 | P1 | 49篇 |
-        for m in re.finditer(r"\|\s*(\d)\s*\|[^|]+\|[^|]+\|[^|]+\|\s*(\d+)篇\s*\|", content):
+        for m in re.finditer(r"\|\s*D?(\d+)\s*\|[^|]+\|[^|]+\|[^|]+\|\s*(\d+)篇\s*\|", content):
             d = int(m.group(1))
             q = int(m.group(2))
             quotas[d] = q
@@ -299,7 +299,7 @@ def cross_dedup(all_papers: dict[int, list[dict]]) -> tuple[dict[int, list[dict]
                 global_seen[key] = set()
             global_seen[key].add(d)
 
-    dup_count = sum(1 for dirs in global_seen.values() if len(dirs) > 1)
+    dup_count = sum(len(dirs) - 1 for dirs in global_seen.values() if len(dirs) > 1)
     unique_count = len(global_seen)
     return all_papers, dup_count, unique_count
 

@@ -37,3 +37,46 @@
 - **判断标准**：如果用户的消息是疑问句（"怎么做？""你觉得呢？""有没有什么好的做法？"），这是在讨论，不是在下达修改指令。只有用户说"改吧""就这样做""OK 你写进去"之类的确认性语句时，才动手修改。
 - **违反后果**：这条规则的优先级高于一切效率考量。宁可多问一句，不可擅自改一行。
 
+## LaTeX 编译配置
+- LaTeX Workshop 配置统一在 VS Code 全局 User Settings（`~/Library/Application Support/Code/User/settings.json`）管理，不在项目级生成 `.vscode/settings.json`
+- 各项目编译差异（xelatex/pdflatex 等）由项目根目录的 `latexmkrc` 控制
+
+## 科研论文研究推进顺序
+
+> 适用于所有 `/paper-init` 初始化的科研论文项目。
+
+```
+① 确定idea（研究主题+大致方向）
+    ↓
+② /lit-plan → 用户WoS检索 → /lit-review → /lit-tag → /lit-pool
+    ↓
+③ idea定稿（Gap/RQ/方法论确认，回写idea.md）
+    ↓
+④ 技术型章节 md（用户与Claude交互填充）
+   · methodology.md + results.md
+   · 过程中使用 /figure · /latex-table
+   · 过程中可能微调 idea.md 细节（大方向不变）
+    ↓
+⑤ /method-audit（审计+对标借鉴，修复后回写 md）
+   → 技术型章节定稿
+    ↓
+⑥ 叙述型章节 md
+   · /pen-outline → 手动补充，逐章完成：
+     introduction.md → literature.md → discussion.md
+    ↓
+⑦ 各章节 md 定稿后逐章写入 manuscript.tex
+   · /pen-draft → /pen-polish
+    ↓
+⑧ /finalize（Conclusion → Abstract → Cover Letter）
+    ↓
+⑨ /pre-submit（投稿终检）
+    ↓
+─── 投稿 ───
+    ↓
+⑩ /rev-init → /rev-respond（审稿修改）
+```
+
+- **核心原则**：产出必须先落入章节 md，用户确认后才写入 manuscript.tex
+- **前进不可跳步，回改随时允许**
+- 工具类 skill 不入流程：`/resume`（上下文加载）、`/web-access`（联网操作）
+
