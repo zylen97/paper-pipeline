@@ -5,6 +5,9 @@
 # Track these
 !.gitignore
 !CLAUDE.md
+!README.md
+!assets/
+!assets/*
 !commands/
 !commands/*.md
 !agents/
