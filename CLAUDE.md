@@ -81,16 +81,18 @@
     ↓
 ③ idea定稿（Gap/RQ/方法论确认，回写idea.md）
     ↓
-④ 技术型章节（用户与Claude交互填充 → 凝练成稿）
+④ 技术型章节（用户与Claude交互填充）
    · 交互过程填入 X_dev.md（过程文件，格式自由，记录推导细节）
-   · 研究定稿后从 X_dev.md 凝练要点 → 写入 X.md（成稿，按 manuscript subsection 结构）
    · 过程中使用 /figure · /latex-table（图表即时落地到 figures_tables/）
-   · 成稿 md 内容 = manuscript 正文，不含非正文材料
    · 过程中可能微调 idea.md 细节（大方向不变）
     ↓
 ⑤ /method-audit（审计 _dev.md + 对标借鉴，修复回写 _dev.md）
-   → 审计完成后从 _dev.md 凝练 → 写入成稿 X.md
-   → 技术型章节定稿
+   → 末尾确认技术型章节的 section 结构（Step 5.7）
+    ↓
+⑤.5 /method-end（从 _dev.md 凝练正文要点 → 填充成稿 X.md）
+   · 交互式逐 subsection 提取 + 引用标注
+   · 成稿 md 内容 = manuscript 正文，不含非正文材料
+   · 技术型章节定稿
     ↓
 ⑥ 叙述型章节 md
    · /pen-outline → 手动补充，逐章完成：

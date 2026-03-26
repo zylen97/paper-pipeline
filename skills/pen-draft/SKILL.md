@@ -76,6 +76,19 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
   ```
 - **存在且无红色项** → 静默通过
 
+**成稿 md 填充检查**（紧接审计检查之后）：
+
+读取该 section 对应的成稿 md 文件，检查 `## 正文要点` 下是否仍有大量 `TODO` 占位符：
+- **全部或大部分 subsection 仍为 TODO** → 警告用户：
+  ```
+  ⚠️ {md文件名} 的正文要点大部分仍为 TODO，尚未被 /method-end 填充。
+  /pen-draft 需要完整的成稿 md 作为输入，直接 draft 可能产出空洞内容。
+  - 先运行 /method-end 填充成稿 md → 输入 "stop"
+  - 仍然继续 draft → 输入 "continue"
+  ```
+- **已有实质内容** → 静默通过
+- **叙述型章节** → 跳过此检查（叙述型通过 /pen-outline 填充大纲）
+
 ### 0.6 定位源文件
 
 - **章节 md 文件**：找到匹配 section 的顶层父 section，扫描 `structure/` 子目录用关键词匹配目录名：
@@ -125,24 +138,41 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 - `{CHAPTER_MD_CONTENT}` = 章节 md 中对应区块（顶级 section 读全文，子 section 按 heading 提取）
 - `{WORD_TARGET}` = null（由 sci-writer 根据大纲密度自行判断）
 
-### 2.2 Form 2（真实 subsection — 并行调度）
+### 2.2 Form 2（真实 subsection）
 
 **2.2a 解析段落列表**：
 
 - `{SPLIT_SEGMENTS}` = tex 中的 `\subsection` 列表（步骤 0.4 已解析）
-- 对每个 subsection：从 `{CHAPTER_MD_PATH}` 的 `## 大纲` 按 heading 匹配提取内容（intent + 要点）。匹配规则：忽略编号前缀（如 "### 2.1 "），对标题部分做模糊匹配（忽略大小写）。匹配失败 → 使用章节 md 全文并警告
+- 对每个 subsection：从 `{CHAPTER_MD_PATH}` 按 heading 匹配提取内容。
+  - **叙述型章节**：从 `## 大纲` 区块提取（intent + 要点）
+  - **技术型章节**：从 `## 正文要点` 区块提取（凝练后的正文要点）
+  - 匹配规则：忽略编号前缀（如 "### 2.1 "），对标题部分做模糊匹配（忽略大小写）。匹配失败 → 使用章节 md 全文并警告
 - 从 md 的字数分配表匹配每个 subsection 的目标字数 → `{WORD_TARGETS}`
 
-**2.2b 确认**（AskUserQuestion）：
+**2.2b 判定写作模式**：
+
+根据章节类型判定调度策略：
+
+- **叙述型章节**（Introduction, Literature Review, Discussion）→ `{WRITE_MODE}` = "parallel"
+- **技术型章节**（Methodology, Results, Simulation 等）→ `{WRITE_MODE}` = "sequential"
+
+**判定依据**：技术型章节的 subsection 有强顺序依赖（前面的 subsection 定义符号/假设/模型，后面的 subsection 引用和扩展），并行写作会导致术语和符号不一致。叙述型章节的 subsection 相对独立，并行写作效率更高。
+
+**2.2c 确认**（AskUserQuestion）：
 
 - Parent section 名称
 - Subsection 列表 + 各自目标字数
+- 写作模式：并行 / 串行
 - 源文件列表：`{CHAPTER_MD_PATH}` + `{CITATION_POOL_PATHS}`
-- 预计 agent 调用次数：N 次并行 sci-writer
+- 预计 agent 调用次数：N 次 sci-writer（{并行/串行}）
 
 等待用户确认。
 
-**2.2c 并行写作**：
+**2.2d 写作执行**：
+
+根据 `{WRITE_MODE}` 分派：
+
+**并行模式**（叙述型章节）：
 
 读取 `{IDEA_PATH}`、`{CITATION_POOL_PATHS}` 等共享上下文后，按**槽位制**调用 N 个 sci-writer agent（同时不超过 8 个，完成一个补一个）：
 
@@ -152,6 +182,32 @@ FOR EACH subsection IN {SPLIT_SEGMENTS} (PARALLEL):
   b. 执行步骤 3（传入：subsection 内容 + 字数 + 位置信息）
 END FOR
 ```
+
+**串行模式**（技术型章节）：
+
+读取共享上下文后，按 subsection 顺序**逐个**调用 sci-writer agent。每个 agent 额外接收前序 subsection 的已完成输出作为上下文：
+
+```
+SET {PRIOR_OUTPUTS} = ""
+
+FOR EACH subsection IN {SPLIT_SEGMENTS} (SEQUENTIAL):
+  a. 创建工作目录 {WORK_DIR} = {MULTI_BASE_DIR}/{normalize(subsection.title)}_{序号:03d}/
+  b. 执行步骤 3（传入：subsection 内容 + 字数 + 位置信息 + {PRIOR_OUTPUTS}）
+  c. 读取输出 → 追加到 {PRIOR_OUTPUTS}：
+     {PRIOR_OUTPUTS} += "\n\n## Previously written: {subsection.title}\n{该 subsection 的 LaTeX 输出}"
+  d. 显示进度："✓ [{i}/{N}] {subsection.title} — {word_count} words"
+END FOR
+```
+
+> **串行模式的 sci-writer prompt 额外指令**：在步骤 3.2 的 prompt 中追加：
+> ```
+> ## Previously Written Subsections (for consistency)
+> {PRIOR_OUTPUTS}
+>
+> IMPORTANT: Maintain exact consistency with the notation, terminology, and
+> definitions established in the previously written subsections above.
+> Do not redefine symbols or introduce alternative notation.
+> ```
 
 ### 2.3 Form 3（隐形结构 — 并行调度）
 

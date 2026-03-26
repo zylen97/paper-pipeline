@@ -257,9 +257,11 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 3. **模型设定**：效应/变量完整列表、嵌套模型策略、估计方法和参数
 4. **诊断与检验**：收敛诊断、GOF（统计量+结果+处理方式）、稳健性检验（数量+具体项目）
 5. **报告规范**：显著性标准、效应量报告方式（exp(β)/odds ratio）、缺失数据处理、边缘显著处理
-6. **章节结构**：
-   - Methodology 完整层级（大标题→小标题→每节内容+篇幅占比）
-   - Results 完整层级（报告顺序、独立小节划分、各节衔接方式）
+6. **章节结构**（⭐ 关键提取项——直接影响后续结构决策）：
+   - Methodology 完整层级（大标题→小标题→subsubsection→每节核心内容+估算篇幅占比）
+   - Results/Analysis 完整层级（报告顺序、独立小节划分、各节衔接方式）
+   - Simulation/Numerical Analysis 完整层级（若存在：参数设定→基准情景→敏感性分析→管理启示的组织方式）
+   - 对于博弈论/建模论文额外记录：模型数量及命名方式、假设集中呈现还是分散嵌入、命题/引理的放置位置（正文 vs 附录）、证明的呈现方式（正文完整证明/正文sketch+附录完整/纯附录）
 7. **图表清单**：所有方法/结果相关图表（编号+标题+内容简述+呈现方式）
 
 {METHOD_TYPE 差异化补充——见下方}
@@ -286,7 +288,7 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 
 - **SAOM/网络模型**：额外提取 Jaccard index、score test、composition change 处理、forcing model 设定、MaxDegree 约束
 - **SEM/问卷**：额外提取 CFA 报告方式、AVE/CR 阈值、CMV 检验方法、measurement model 是否独立报告
-- **博弈论/建模**：额外提取参数校准来源、命题证明详细程度、数值模拟的参数取值论证
+- **博弈论/建模**：额外提取参数校准来源、命题证明详细程度、数值模拟的参数取值论证、数值模拟章节的完整小节结构（参数设定节→基准情景节→敏感性分析节→管理启示节的层级与篇幅分配）
 - **面板回归**：额外提取内生性策略（IV/GMM/DID）、工具变量选择论证、固定效应 vs 随机效应的 Hausman 检验
 
 ### 2.5 横向比对表
@@ -317,15 +319,17 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 | Score test | {状态} | {状态} | {状态} | | {N}/{M} 篇使用 |
 ```
 
-**表 3：结构与借鉴比对**
+**表 3：章节结构详细比对**
 
 ```markdown
-| 论文 | Methodology 小节结构 | Results 小节结构 | 模型创新（适用于本文的） | 推荐图表（适配本文数据的） |
-|:-----|:--------------------|:----------------|:------------------------|:-------------------------|
-| **本文** | {当前结构} | {当前结构} | | |
-| {key1} | {结构} | {结构} | {从 B3 提取} | {从 B4 提取} |
+| 论文 | Methodology 层级结构 | Results/Analysis 层级结构 | Simulation/Numerical 层级结构 | 证明放置方式 | 模型创新（适用于本文的） | 推荐图表（适配本文数据的） |
+|:-----|:--------------------|:------------------------|:----------------------------|:-----------|:------------------------|:-------------------------|
+| **本文** | {当前 ### + #### 结构} | {当前 ### + #### 结构} | {当前 ### + #### 结构} | {当前方式} | | |
+| {key1} | {### + #### 结构} | {### + #### 结构} | {### + #### 结构，若无标 N/A} | {正文/附录/混合} | {从 B3 提取} | {从 B4 提取} |
 | ... |
 ```
+
+> 注：结构列须包含 subsubsection 级别（即 `####` 对应的层级），每级用缩进表示层级关系。对于博弈论/建模论文，Methodology 列须标注各模型的起止小节和假设集中区段。
 
 末尾附 **行业基线总结**：
 
@@ -347,6 +351,23 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 ### 图表推荐汇总（从各报告 B4 聚合）
 - {图表类型1}：{N} 篇使用 → 适配性评估
 - {图表类型2}：...
+
+### 技术型章节结构共性模式（从各报告 A6 聚合）
+
+**Methodology 章节**：
+- 常见小节划分：{列出 ≥50% 论文采用的小节名}
+- 假设呈现：{N}/{M} 篇集中呈现 vs {N}/{M} 篇分散嵌入
+- 模型组织：{N}/{M} 篇按情景分模型 / {N}/{M} 篇按决策阶段分节
+
+**Results/Analysis 章节**：
+- 常见报告顺序：{列出最常见的小节排列}
+- 命题/定理呈现：{N}/{M} 篇正文完整证明 / {N}/{M} 篇正文sketch+附录 / {N}/{M} 篇纯附录
+- 比较静态/Corollary 放置：{N}/{M} 篇在主定理后立即 / {N}/{M} 篇独立成节
+
+**Simulation/Numerical 章节**（若适用）：
+- {N}/{M} 篇包含独立数值分析章节
+- 常见小节划分：{参数设定→基准情景→敏感性分析→管理启示 等}
+- 图表密度：平均 {X} 张/章
 ```
 
 ### 📌 Checkpoint C1：Git 备份对标分析（不可跳过）
@@ -371,10 +392,19 @@ git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 - 稳健性: 行业中位数 {X} 项，我们 {Y} 项 → {判断}
 - ...
 
-论文结构共性模式：
-- {N}/{M} 篇将 Model Specification 独立为一节
-- {N}/{M} 篇在 Results 先放描述统计→主模型→稳健性
-- ...
+论文结构共性模式（详见 cross_comparison.md → 技术型章节结构共性模式）：
+
+  Methodology:
+  - {N}/{M} 篇将 Problem Description/Assumptions 独立为首节
+  - {N}/{M} 篇按情景/制度分模型，{N}/{M} 篇按决策阶段分节
+  - 假设呈现：{集中/分散} 为主流（{N}/{M} 篇）
+
+  Results/Analysis:
+  - 常见顺序：{最常见的 3-4 节排列}
+  - 证明方式：{主流方式}（{N}/{M} 篇）
+
+  Simulation/Numerical（若适用）：
+  - {N}/{M} 篇设独立章节，常见分节：{模式}
 
 可借鉴的模型创新：
 - {创新1}（{N} 篇使用）→ {适用性判断}
@@ -843,6 +873,89 @@ END FOR
 
 ---
 
+### 步骤 5.7：技术型章节结构确认
+
+一致性扫描完成后，为 `/method-end` 的后续凝练工作锁定成稿 md 的章节结构。
+
+#### 5.7.1 收集结构信息
+
+读取以下三类信息：
+
+1. **Benchmark 结构共性模式**：从 `structure/3_methodology/benchmark/cross_comparison.md` 提取：
+   - "技术型章节结构共性模式" 全文（这是结构建议的首要依据）
+   - 表 3 中各对标论文的逐章 `###`/`####` 层级结构
+   - SO-结构类建议（如有）
+2. **Idea 故事线**：从 `idea.md` §3（方法论选择）提取故事线总览和结论群架构
+3. **现有成稿 md 结构**：读取每个技术型成稿 md（`methodology.md`, `results.md`, `simulation.md`——仅存在的文件）的当前 `###`/`####` 标题
+
+#### 5.7.2 生成结构建议
+
+综合以上信息，为每个技术型成稿 md 生成建议的 `###`/`####` 层级结构。
+
+**建议依据优先级**：
+1. **Benchmark 结构共性模式**（首要依据）：直接引用 cross_comparison.md 中 "技术型章节结构共性模式" 的统计结论，采用 ≥50% 对标论文使用的小节划分方式作为默认建议
+2. Idea.md 的故事线架构（结论群→章节映射）
+3. _dev.md 的实际内容分布（确保每个 subsection 有足够素材支撑）
+
+> **注意**：在建议输出中，每条结构调整须标注 benchmark 依据（如 "4/6 篇对标论文采用此分节方式"），使用户能判断建议的可信度。
+
+**输出格式**（逐章展示）：
+
+```
+📐 技术型章节结构建议
+
+═══ methodology.md ═══
+现有结构:
+  ### 3.1 Methodology
+  ### 3.2 Problem description and assumptions
+  ### 3.3 Model N: Joint liability under traditional regime
+  ### 3.4 Model B: Precise attribution under blockchain
+
+建议结构:
+  ### 3.1 Methodology
+  ### 3.2 Problem description and assumptions
+    #### Supply chain structure and quality defect process
+    #### Game sequence and information structure
+    #### Assumptions
+  ### 3.3 Model N: Joint liability under traditional regime
+    #### Payoff functions
+    #### Nash equilibrium of the subgame
+    #### GC's optimal contract
+  ### 3.4 Model B: Precise attribution under blockchain
+    #### Payoff functions under precise attribution
+    #### Equilibrium solution
+    #### Unconstrained equivalence
+
+调整说明:
+- {为什么这样调整，引用 benchmark 依据}
+
+═══ results.md ═══
+...
+
+═══ simulation.md ═══
+...
+```
+
+#### 5.7.3 交互确认
+
+AskUserQuestion 逐章确认。用户可以：
+- 接受建议结构
+- 修改标题措辞、增删 subsection/subsubsection
+- 调整层级（`###` ↔ `####`）
+
+**循环**：用户不满意 → 修改结构 → 再次展示 → 直到用户确认。逐章确认，不要求一次性确认全部。
+
+#### 5.7.4 写入成稿 md
+
+用户确认后，将结构写入对应的成稿 md 文件：
+- 替换 `## 正文要点` 下的所有 `###`/`####` 标题
+- 每个标题下保留 `TODO: 从 {X}_dev.md 凝练`（如原来已有 TODO）或保留已有内容（如果之前已有部分填充）
+- **不修改** `## 必备元素` 和 `## 引用池` 部分
+
+> 写入的文件将纳入 Checkpoint C3 的 git add 范围。
+
+---
+
 ## 步骤 6：处理完成总结
 
 所有条目处理完毕（或用户主动退出循环）后，输出总结：
@@ -866,6 +979,9 @@ END FOR
 - {ID}: {描述}，脚本已生成于 {路径}
 
 💡 可重新运行 /method-audit 检查剩余问题
+
+📐 技术型章节结构确认：{已确认/未执行}
+{如已确认，列出各章节确认的 subsection 数量}
 ```
 
 更新 `structure/3_methodology/benchmark/method_audit_report.md` 末尾的 Summary 表，反映最新处理状态。
@@ -875,14 +991,18 @@ END FOR
 处理循环结束后，将所有被修改的文件统一备份。包含修改后的章节 md、更新后的审计报告、以及稳健性检验脚本/结果（如有 TYPE B 条目）。
 
 ```bash
-git add structure/3_methodology/methodology.md \
+git add structure/3_methodology/methodology_dev.md \
+       structure/4_results/results_dev.md \
+       structure/5_simulation/simulation_dev.md \
+       structure/3_methodology/methodology.md \
        structure/4_results/results.md \
+       structure/5_simulation/simulation.md \
        structure/3_methodology/benchmark/method_audit_report.md \
        data/robustness/
 git commit -m "Checkpoint: method-audit fixes applied"
 ```
 
-> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 methodology.md 未涉及），不加入 commit。
+> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 simulation_dev.md 未涉及），不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。
 
 ---
 

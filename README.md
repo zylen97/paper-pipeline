@@ -29,6 +29,7 @@
 | 技能 | 说明 |
 |:-----|:-----|
 | `/method-audit` | 对标已发表论文，审计方法论问题，提出结构/模型/图表的优化建议 |
+| `/method-end` | 从成熟过程文件(_dev.md)交互式凝练正文要点，填充技术型章节成稿(X.md) |
 | `/pen-outline` | 交互式构建章节大纲（论点 + 引文），为起草提供高质量输入 |
 | `/pen-draft` | 从大纲自动生成初稿，通过 journal-scout 和并行 sci-writer agent 完成 |
 | `/pen-polish` | 迭代打磨：strict-reviewer 反馈 → 用户确认 → 修改 → language-polisher 润色 |
@@ -72,6 +73,7 @@ Claude Code 会自动从 `~/.claude/skills/` 发现所有技能。
 - **不可跳步，可以回改**：阶段必须按顺序推进，但随时允许回溯修改
 - **交互式确认**：每个技能在关键决策点暂停，等待用户确认后再继续
 - **并行 Agent 加速**：计算密集步骤（文献筛选、方法论对标）分发并行子 agent 提速
+- **双轨写作**：叙述型章节（Introduction/Literature/Discussion）走 `/pen-outline` → `/pen-draft` 路径；技术型章节（Methodology/Results/Simulation）走 `/method-end` → `/pen-draft` 路径，两条路径汇合于 `/pen-draft` 生成 manuscript
 
 ## 许可证
 
