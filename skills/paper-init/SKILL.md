@@ -121,10 +121,11 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 模型设定（符号、假设、框架） | `methodology.md` |
-| `4_results/` | 均衡求解、命题、比较静态 | `results.md` |
-| `5_simulation/` | 仿真脚本、图表 | `simulation.md` |
+| `3_methodology/` | 模型设定（符号、假设、框架） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
+| `4_results/` | 均衡求解、命题、比较静态 | `results.md`（成稿）, `results_dev.md`（过程文件） |
+| `5_simulation/` | 仿真脚本、案例数据 | `simulation.md`（成稿）, `simulation_dev.md`（过程文件） |
 | `6_discussion/` | Discussion 素材 | `discussion.md` |
+| `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
 **survey-sem**：
@@ -134,9 +135,10 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 研究设计（框架、问卷、抽样） | `methodology.md` |
-| `4_results/` | 信效度、模型拟合、假设检验 | `results.md` |
+| `3_methodology/` | 研究设计（框架、问卷、抽样） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
+| `4_results/` | 信效度、模型拟合、假设检验 | `results.md`（成稿）, `results_dev.md`（过程文件） |
 | `5_discussion/` | Discussion 素材 | `discussion.md` |
+| `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
 **panel-regression**：
@@ -146,9 +148,10 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
 | `1_introduction/` | Introduction 素材 | `introduction.md` |
 | `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 研究设计（数据、变量、模型） | `methodology.md` |
-| `4_results/` | 回归结果、稳健性检验 | `results.md` |
+| `3_methodology/` | 研究设计（数据、变量、模型） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
+| `4_results/` | 回归结果、稳健性检验 | `results.md`（成稿）, `results_dev.md`（过程文件） |
 | `5_discussion/` | Discussion 素材 | `discussion.md` |
+| `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
 ## 执行步骤
@@ -170,12 +173,12 @@ gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation/figures structure/6_discussion submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures submission .claude/hooks
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures submission .claude/hooks
 ```
 
 ---
@@ -421,13 +424,16 @@ fi
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
 | 17 | `{METHOD_TYPE}/methodology.md.tmpl` | `structure/3_methodology/methodology.md` |
-| 18 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
+| 18 | `{METHOD_TYPE}/methodology_dev.md.tmpl` | `structure/3_methodology/methodology_dev.md` |
+| 19 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
+| 20 | `{METHOD_TYPE}/results_dev.md.tmpl` | `structure/4_results/results_dev.md` |
 
 **仅 modeling**：
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 19 | `modeling/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
+| 21 | `modeling/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
+| 22 | `modeling/simulation_dev.md.tmpl` | `structure/5_simulation/simulation_dev.md` |
 
 #### Discussion（目录编号因方法类型而异）
 
@@ -437,16 +443,55 @@ fi
 | survey-sem | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
 | panel-regression | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
 
+#### 图表管理文件（所有方法类型通用）
+
+| # | 操作 | 目标路径 |
+|---|------|---------|
+| 20 | 直接创建空注册表 | `structure/figures_tables/index.md` |
+| 21 | 直接创建空表格文件 | `structure/figures_tables/tables.tex` |
+| 22 | 空目录占位 | `structure/figures_tables/figures/.gitkeep` |
+
+**index.md 初始内容**：
+```markdown
+# 图表注册表 — {ID}
+
+> 所有图片存放于 `figures/` 子目录，所有表格统一写在 `tables.tex` 中。
+> 定稿时将 `tables.tex` 内容贴到 manuscript.tex 末尾。
+
+---
+
+## Figures
+
+| 编号 | 文件名 | 标题 | 所属章节 | 生成方式 | 素材来源 | 状态 |
+|:--:|:------|:-----|:--------|:---------|:--------|:--:|
+
+---
+
+## Tables
+
+| 编号 | 标题 | 所属章节 | 内容来源 | 状态 |
+|:--:|:-----|:--------|:--------|:--:|
+
+---
+
+## 说明
+
+- **状态定义**: planned → drafted → in-manuscript → finalized
+- **Figure 文件命名**: `figXX_shortname.pdf`
+- **tables.tex**: 所有表格的 LaTeX 代码统一存放，定稿时贴到 manuscript.tex 末尾
+- 新增/修改图表时，必须同步更新此注册表
+```
+
+**tables.tex 初始内容**：
+```latex
+% tables.tex -- {ID} all tables in one file
+% Paste content to the end of manuscript.tex when finalizing
+```
+
 #### 设置 hook 可执行权限
 
 ```bash
 chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
-```
-
-#### 空目录占位（仅 modeling）
-
-```bash
-touch structure/5_simulation/figures/.gitkeep
 ```
 
 ---

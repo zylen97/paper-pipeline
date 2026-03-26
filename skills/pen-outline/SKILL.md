@@ -63,7 +63,7 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
   ```
   ⚠️ "{section title}" 不属于叙述型章节。
   /outline 仅适用于叙述型章节（Introduction, Literature Review, Discussion）。
-  其他章节的素材应直接在章节 md 的 "## 完整素材" 中编写。
+  技术型章节应通过交互填充 X_dev.md（过程文件），再凝练到 X.md（成稿）。
   ```
 - **Conclusion** → 显示提示并退出：Conclusion 无对应 md 文件，不适用 /outline。
 

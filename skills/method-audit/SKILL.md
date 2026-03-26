@@ -37,22 +37,30 @@ description: "方法论优化：对标行业实践 → 审计方法问题 → �
   - 核心贡献声称
 - 不存在 → 警告但不停止（允许在没有 idea.md 的老项目上运行）
 
-### 0.3 读取技术规格书
+### 0.3 读取过程文件
 
-按 `$ARGUMENTS` 和 `{METHOD_TYPE}` 读取对应文件：
+按 `$ARGUMENTS` 和 `{METHOD_TYPE}` 读取**过程文件**（`X_dev.md`）：
 
 | 文件 | 路径 | 条件 |
 |------|------|------|
-| methodology.md | `structure/3_methodology/methodology.md` | 始终读取 |
-| results.md | `structure/4_results/results.md` | `$ARGUMENTS` 为空或含 "results" |
-| simulation.md | `structure/5_simulation/simulation.md` | 仅 modeling 类型 + `$ARGUMENTS` 为空或含 "simulation" |
+| methodology_dev.md | `structure/3_methodology/methodology_dev.md` | 始终读取 |
+| results_dev.md | `structure/4_results/results_dev.md` | `$ARGUMENTS` 为空或含 "results" |
+| simulation_dev.md | `structure/5_simulation/simulation_dev.md` | 仅 modeling 类型 + `$ARGUMENTS` 为空或含 "simulation" |
 
-**空文件检测**：如果文件内容全部是 TODO 占位符（没有实质内容），停止并提示：
+> **审计对象是过程文件（`X_dev.md`）**——完整的技术细节在这里。审计修复也回写到 `_dev.md`。审计完成后，用户从 `_dev.md` 凝练到成稿 `X.md`。
+
+**空文件检测**：如果 `_dev.md` 内容过少（不足以支撑审计），停止并提示：
 
 ```
-⚠️ {文件名} 尚未填写（全部为 TODO）。
-请先完成技术规格书的填写，再运行 /method-audit。
+⚠️ {文件名} 内容不足，无法审计。
+请先在过程文件中填充足够的技术内容，再运行 /method-audit。
 ```
+
+**跨文件一致性检查**：扫描所有 `_dev.md`，检查以下元素是否一致：
+- 符号名称和定义（methodology_dev.md 定义 → results_dev.md 和 simulation_dev.md 引用）
+- 假设编号（methodology_dev.md 定义 → results_dev.md 引用）
+- 命题编号（results_dev.md 定义 → simulation_dev.md 和 discussion.md 引用）
+- 不一致项标记为 🔴 MUST-FIX
 
 ### 0.4 识别具体方法
 
@@ -75,15 +83,16 @@ description: "方法论优化：对标行业实践 → 审计方法问题 → �
 
 ### 1.1 加载必备元素清单
 
-从 paper-init 模板中提取对应 `{METHOD_TYPE}` 的"必备元素"列表：
+读取各成稿 md 的 `## 必备元素` 列表，逐项检查对应的 `###` 小节是否有实质内容。同时检查以下维度是否覆盖：
 
 **modeling**：
-- [ ] methodology.md: Research method（方法选择论证 + 博弈场景/模型框架描述）
-- [ ] methodology.md: Modeling process（符号表 + 假设 + 模型公式 + 求解路线图）
-- [ ] results.md: Equilibrium analysis（命题 + 证明/推导 + 经济学直觉）
-- [ ] results.md: Comparative analysis（参数敏感性 / 情形对比 / 关键推论）
-- [ ] simulation.md: Numerical simulation（参数校准 + 取值来源论证）
-- [ ] simulation.md: Simulation results（图表 + 数值验证命题）
+- [ ] methodology.md: 方法选择论证（为什么用此方法 + 对比表）
+- [ ] methodology.md: 问题描述与假设（供应链结构 + 假设 + 符号表 → Table）
+- [ ] methodology.md: 各模型的收益函数 + 均衡求解结果
+- [ ] results.md: 命题（显式编号 + 证明思路 + 经济直觉）
+- [ ] results.md: 比较静态 / 参数敏感性（汇总表 → Table）
+- [ ] simulation.md: 参数校准（取值来源论证）
+- [ ] simulation.md: 仿真结果（图表 + 数值验证命题）
 
 **survey-sem**：
 - [ ] methodology.md: Data collection（目标群体 + 抽样方式 + 样本量论证 + 回收率）
@@ -119,9 +128,9 @@ description: "方法论优化：对标行业实践 → 审计方法问题 → �
 方法类型: {METHOD_TYPE} | 具体方法: {METHOD_DETAIL}
 
 methodology.md:
-  ✅ Research method — 方法选择论证完整，含对比表
-  ✅ Modeling process — 符号表 18 项，假设 4 个，模型公式完整
-  ⚠️ Modeling process — 求解路线图缺失（有公式但未说明求解步骤）
+  ✅ §3.1 方法选择论证 — 完整，含对比表
+  ✅ §3.2 问题描述与假设 — 符号表 18 项，假设 4 个
+  ⚠️ §3.3 Model A — 均衡结果有，但缺经济直觉解读
 
 results.md:
   ✅ Equilibrium analysis — 5 个命题，均有证明
@@ -340,6 +349,16 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 - {图表类型2}：...
 ```
 
+### 📌 Checkpoint C1：Git 备份对标分析（不可跳过）
+
+对标分析产出的 benchmark 报告和横向比对表是后续审计的基础数据，必须在进入审计前备份。
+
+```bash
+git add structure/3_methodology/benchmark/*_benchmark.md \
+       structure/3_methodology/benchmark/cross_comparison.md
+git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
+```
+
 ### 2.6 展示比对结果
 
 向用户展示比对的**关键发现**（摘要级别，不展示全表）：
@@ -534,7 +553,7 @@ AskUserQuestion（允许用户在进入审计前做策略性决定）：
 
 ### 4.1 报告格式
 
-将审计结果写入 `drafts/method_audit_report.md`（如 `drafts/` 不存在则创建）：
+将审计结果写入 `structure/3_methodology/benchmark/method_audit_report.md`：
 
 ```markdown
 # Method Audit Report — {PAPER_TITLE}
@@ -602,6 +621,15 @@ SO-F1: ...
 | 📐 对标借鉴 | {n} (结构{a} + 模型{b} + 图表{c}) | — |
 ```
 
+### 📌 Checkpoint C2：Git 备份审计报告（不可跳过）
+
+审计报告是后续逐条处理的依据，生成后立即备份。
+
+```bash
+git add structure/3_methodology/benchmark/method_audit_report.md
+git commit -m "Checkpoint: method-audit report generated"
+```
+
 ### 4.2 展示摘要（仅标题，不展开细节）
 
 ```
@@ -626,7 +654,7 @@ SO-F1: ...
 📐 SO-F1: {标题}（图表）
 ...
 
-报告已保存至 drafts/method_audit_report.md
+报告已保存至 structure/3_methodology/benchmark/method_audit_report.md
 ```
 
 ### 4.3 进入处理流程
@@ -724,6 +752,7 @@ FOR each item IN {QUEUE}:
 
   注：TYPE A = 简短补充（一两句话），TYPE C = 构建论证逻辑的较长段落。
   SO 条目固定为 TYPE A（改 md 的结构/标题/组织方式）。
+  **SO 条目涉及表格时**：如果 md 中已有表格素材，在处理循环中即时写入 `structure/figures_tables/tables.tex` + 更新 `index.md` 状态，遵循项目 CLAUDE.md 的"表格即时落地"规则。不得将表格制作推迟到 /pen-draft。
 
   # ────────────────────────────────
   # 5.3 用户确认
@@ -762,7 +791,8 @@ FOR each item IN {QUEUE}:
     - 用户选"手动执行"：生成脚本并保存到 `data/scripts/`，在 report 中标记 `⏳ Waiting for user analysis`，进入下一条（不阻塞循环）
 
   修改完成后：
-  - 更新 `drafts/method_audit_report.md`，在该条目的 `**建议**:` 之后追加状态标记行：
+  - **单条修复后一致性检查**：每次修改 `_dev.md` 后，立即检查本次修改是否导致同一文件内其他位置出现不一致（如改了符号定义但后续推导仍用旧符号、改了假设编号但命题引用未同步等）。发现不一致则当场修复，不留到后面。
+  - 更新 `structure/3_methodology/benchmark/method_audit_report.md`，在该条目的 `**建议**:` 之后追加状态标记行：
     - `**状态**: ✅ Fixed ({date})`
     - `**状态**: ⏭️ Skipped`
     - `**状态**: ⏳ Waiting for user analysis`
@@ -796,6 +826,23 @@ END FOR
 
 ---
 
+## 步骤 5.6：全文一致性扫描（不可跳过）
+
+处理循环结束后、生成总结前，对所有被修改的 `_dev.md` 文件做一次**系统性全文一致性扫描**：
+
+1. **文件内一致性**：逐个扫描每个被修改的 `_dev.md`，检查：
+   - 符号定义与后续引用是否一致（如 $\alpha$ 的定义是否与所有使用处匹配）
+   - 假设编号是否连续、引用是否正确
+   - 命题编号是否连续、证明中引用的命题号是否正确
+   - 公式编号（tag）是否连续、交叉引用是否正确
+   - 修改处的前后文逻辑是否衔接
+
+2. **文件间一致性**：跨 `_dev.md` 文件检查（同步骤 0.3 的跨文件一致性检查，但基于修改后的最新内容重新扫描）
+
+3. **发现不一致**：直接修复（不需要再走用户确认循环），修复后在总结中列出。
+
+---
+
 ## 步骤 6：处理完成总结
 
 所有条目处理完毕（或用户主动退出循环）后，输出总结：
@@ -821,7 +868,21 @@ END FOR
 💡 可重新运行 /method-audit 检查剩余问题
 ```
 
-更新 `drafts/method_audit_report.md` 末尾的 Summary 表，反映最新处理状态。
+更新 `structure/3_methodology/benchmark/method_audit_report.md` 末尾的 Summary 表，反映最新处理状态。
+
+### 📌 Checkpoint C3：Git 备份审计修复（不可跳过）
+
+处理循环结束后，将所有被修改的文件统一备份。包含修改后的章节 md、更新后的审计报告、以及稳健性检验脚本/结果（如有 TYPE B 条目）。
+
+```bash
+git add structure/3_methodology/methodology.md \
+       structure/4_results/results.md \
+       structure/3_methodology/benchmark/method_audit_report.md \
+       data/robustness/
+git commit -m "Checkpoint: method-audit fixes applied"
+```
+
+> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 methodology.md 未涉及），不加入 commit。
 
 ---
 

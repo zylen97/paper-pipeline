@@ -19,32 +19,52 @@
 
 - `pandoc_header.tex` 勿删改
 
+### 图表管理规则
+
+- **所有图片**存放于 `structure/figures_tables/figures/`，仿真脚本输出路径指向此处
+- **所有表格**的 LaTeX 代码统一写在 `structure/figures_tables/tables.tex` 中，定稿时贴到 manuscript.tex 末尾
+- **`index.md`** 是唯一注册表，记录每个图表的编号、标题、所属章节、状态
+- 各章节 md 中**不放图表内容**，只标注"此处引用 Table X / Fig. X"
+- 新增/修改图表时，必须同步更新 `index.md`
+- **表格即时落地**：当章节 md 中的表格内容定稿后，应立即写入 `tables.tex`（使用 /latex-table 或直接编写），并更新 `index.md` 状态为 `drafted`。manuscript.tex 正文中仅用 `Table~\ref{tab:xxx}` 引用，不嵌入表格代码。不得将表格制作推迟到 /pen-draft 或其他后续环节——/pen-draft 只管正文文字。
+
 ### 文件交互规则
 
-**层级**: idea.md（纲领：为什么/方向）→ 各章节 X.md（素材：完整细节）→ manuscript.tex（产出）
+**层级**: idea.md（纲领：为什么/方向）→ 各章节 X.md（成稿：正文要点）→ manuscript.tex（产出）
 
 **章节 md 的两种类型**:
 
 章节 md 分为两类，颗粒度要求不同：
 
-| 类型 | 章节 | md 中的标记 | 内容要求 | sci-writer 的任务 |
-|:-----|:-----|:-----------|:---------|:-----------------|
-| 叙述型 | Introduction, Literature Review, Discussion | `## 大纲` | 要点（论点 + citation key） | 把要点**展开**成论证段落 |
-| 技术型 | {TECHNICAL_SECTIONS} | `## 完整素材` | 所有公式、符号、假设、推导、数值结果 | **原样转译**为学术英文，不得修改任何技术内容 |
+| 类型 | 章节 | 文件 | 内容要求 | sci-writer 的任务 |
+|:-----|:-----|:-----|:---------|:-----------------|
+| 叙述型 | Introduction, Literature Review, Discussion | `X.md`（含 `## 大纲`） | 要点（论点 + citation key） | 把要点**展开**成论证段落 |
+| 技术型 | {TECHNICAL_SECTIONS} | `X.md`（成稿）+ `X_dev.md`（过程文件） | 成稿 md：按 manuscript 结构组织的正文要点（`###` = `\subsection`） | **原样转译**为学术英文，按 `###` 层级生成 `\subsection`，不做任何技术判断 |
 
-**md 书写语言**：中文表述，但以下内容用英文原文：citation key（`\citet{}`/`\citep{}`）、专用术语、公式符号
+**技术型双文件体系**：
+- **`X.md`（成稿文件）**：内容 = manuscript 正文要点。/pen-draft 只读这个文件。`###` 标题 = `\subsection`，`####` = `\subsubsection`。不含非正文材料（版本说明、中间推导、备注等）。
+- **`X_dev.md`（过程文件）**：研究工作台，记录详细推导、中间步骤、版本迭代、备注。格式自由。不被 /pen-draft 读取。
+
+**md 书写语言**：中文表述，但以下内容用英文原文：citation key（`\citet{}`/`\citep{}`）、专用术语、公式符号、`###` 标题（与 manuscript 一致）
 
 **叙述型颗粒度标准**：
 - 每个论点、每个要引用的文献（citation key）都必须写明
 - 可用 `/pen-outline` 自动生成，再根据需要修改
 
-**技术型颗粒度标准**：
-- 包含全部技术细节（公式、符号定义、假设条件、证明思路、参数取值等）
-- 表格内容写在 md 中，图表由用户单独处理（sci-writer 只写文字和公式，不处理图表插入）
+**技术型颗粒度标准**（验证原则：sci-writer 翻译时不需要做任何技术判断）：
+每个 `###` subsection 下必须包含：
+- 每一个会出现在正文中的公式（编号公式和关键行内公式）
+- 每一个命题/引理的完整陈述
+- 每一个证明的思路骨架（完整证明用 `> **Proof (→ Supplementary):**` 标记，sci-writer 外放至附录）
+- 每一个假设的文字表述 + 合理性论证
+- 每一个经济直觉/含义解读
+- 每一个模型间的对比说明
+- 表格和图表仅标注"此处引用 Table X / Fig. X"，内容在 `figures_tables/tables.tex`
 
 **技术型素材迭代工作流**:
-1. 日常对话中逐步填充技术细节到章节 md（公式、假设、推导、参数取值等），每次修改基于 md 现有内容进行增补或调整
-2. md 是唯一素材源——所有技术决策的最终结果都必须落入 md，不能只存在于对话中
+1. 步骤④（交互填充）：用户与 Claude 交互 → 填充 `X_dev.md`（过程文件），记录所有推导细节和研究过程
+2. 研究定稿后：从 `X_dev.md` 凝练正文要点 → 写入 `X.md`（成稿），按 manuscript subsection 结构组织
+3. `X.md` 是 /pen-draft 的唯一素材源——成稿 md 中的每一段内容都会出现在 manuscript 正文中
 
 **idea.md 规范**:
 - 修改必须先征得用户同意，不得自行回写

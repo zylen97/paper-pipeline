@@ -46,7 +46,7 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 - 这个章节有没有开始写
 - 大致在写什么内容
 - 叙述型章节（introduction/literature/discussion）的大纲是否已填充
-- 技术型章节（methodology/results 等）是否有实质素材
+- 技术型章节（methodology/results 等）：优先检查**成稿 md**（X.md）是否有实质内容（非 TODO）；同时检查**过程文件**（X_dev.md）是否存在及内容量，判断研究进展阶段
 
 同时注意 `2_literature/` 目录下的文献系统产物：
 - 是否有 `literature_search_plan.md`（检索规划）
