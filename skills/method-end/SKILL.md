@@ -275,6 +275,13 @@ FOR each unit IN {ALL_UNITS}:
   - 保持其他 subsection 不变
   - **写入内容不含引用建议表**——表格仅用于交互展示，不写入 md
 
+  **同步 bib**：写入成稿 md 后，立即将本 subsection 新增的 citation key 同步到项目 bib：
+  1. 从刚写入的内容中提取所有 `\citep{}`/`\citet{}` 中的 citation key（正则提取，去重）
+  2. 检查每个 key 是否已在项目 bib 中
+  3. 不在的 → 从 `master.bib` 中提取对应条目，追加到项目 bib 末尾
+  4. master.bib 中也找不到 → 跳过（该 key 可能是手动添加的老文献，已在项目 bib 中，或标记为 `(ref)` 的待补文献）
+  5. 显示同步结果：`📚 Bib 同步：{N} 个 key，新增 {M} 条到项目 bib`（M=0 时不显示）
+
   显示 "✓ [{progress}/{total}] {unit_title} — 已写入"
 
   # ────────────────────────────────

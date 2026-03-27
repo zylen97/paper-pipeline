@@ -173,12 +173,12 @@ gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude/hooks
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude/hooks
 ```
 
 ---

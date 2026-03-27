@@ -12,6 +12,32 @@
 - **主文件**: `manuscript.tex` · **文献**: `{ID}.bib`
 - **投稿附件**: `submission/`（{SUBMISSION_FILES}）
 
+## data/ 数据管理规范
+
+```
+data/
+├── raw/          # 原始数据（只读，不可修改）
+├── processed/    # 数据管道产出（清洗后的中间文件）
+├── scripts/      # 所有 R/Python 分析脚本（数据管道 + 主模型）
+├── models/       # 模型估计对象（.rds/.RData，用于 warm start 和交叉引用）
+├── results/      # 模型输出日志（.txt，人类可读的估计结果）
+├── robustness/   # 稳健性检验（脚本 + 结果 + 日志）
+└── _archive/     # 废弃的旧版本文件（不删，按原子目录归档）
+```
+
+**命名规范**：所有文件以项目编号为前缀（如 `{ID}_`）
+- 脚本：`{ID}_data_pipeline.R`、`{ID}_models.R`
+- 模型对象：`{ID}_m1.rds` ~ `{ID}_mN.rds`
+- 日志：与模型对象同名，`.txt` 后缀
+- 稳健性：`{ID}_rob_{检验名}.R`、`{ID}_rob_{检验名}.rds`
+
+**输出路径规则**：分析脚本的所有输出必须指向 `data/` 下的对应子目录，禁止输出到项目根目录。对于 RSiena 等通过 `projname` 参数控制输出路径的工具，`projname` 必须包含目标目录（如 `"data/results/{ID}_m3"`）。
+
+**脚本执行顺序**：
+1. `{ID}_data_pipeline.R` → 产出 `processed/*.rds`
+2. `{ID}_models.R` → 产出 `models/*.rds` + `results/*.txt`（依赖步骤 1）
+3. `robustness/{ID}_rob_*.R` → 产出 `robustness/*.rds`（依赖步骤 1+2）
+
 ## structure/ 组织说明
 项目研究素材按 manuscript 章节组织在 `structure/` 下：
 
