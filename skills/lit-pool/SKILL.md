@@ -350,7 +350,8 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 
 **注意**：
 - master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
-- `/pen-draft` 在写完每个 section 后，从 master.bib 中提取用到的条目追加到项目 bib
+- `/method-end` 和 `/pen-outline` 在确认要点写入章节 md 时，从 master.bib 提取新增 citation key 条目追加到项目 bib
+- `/pen-draft` 仅做 bib 验证（检查 key 是否存在），不负责同步
 
 ---
 

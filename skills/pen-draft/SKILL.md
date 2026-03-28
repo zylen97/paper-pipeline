@@ -274,8 +274,8 @@ You are writing **{Section Title}** for this manuscript.
 
 ## Instructions
 - Read `drafts/writing_brief.md` for journal conventions and style guidance
-- Read the manuscript file for overall structure awareness
 - Read the bib file for available citations
+- Do NOT read the manuscript file. All necessary context (structure, notation, prior subsection outputs) is provided in this prompt. Reading the manuscript risks being influenced by existing content that is being replaced.
 
 ## Research Context (from idea.md)
 {IDEA_CONTEXT}
@@ -351,40 +351,21 @@ Where a citation is clearly needed but no key is available, mark with (ref).
 
 Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
 
-### 4.2 更新 bib 文件（Python 脚本）
+### 4.2 Bib 验证（仅检查，不同步）
 
-**由 Python 脚本自动完成**，替代主 Agent 手动扫描 cite key 和 BibTeX 操作。
+> **Bib 同步已前移**：citation key 到项目 bib 的同步由 `/method-end`（步骤 2.6）和 `/pen-outline`（步骤 7）在确认要点时完成。`/pen-draft` 不再负责 bib 同步，仅做验证。
 
-适用于所有 Form。确定要扫描的 draft 文件后调用：
+适用于所有 Form。扫描 draft 文件中的 citation key，验证是否全部存在于项目 bib 中：
 
-```bash
-# 先预览
-python3 ~/.claude/skills/shared/tex_section.py update-bib \
-  --draft-files {要扫描的 final.md 文件路径...} \
-  --master-bib structure/2_literature/citation_pool/master.bib \
-  --project-bib {项目bib路径} \
-  --dry-run
-
-# 确认后正式执行（去掉 --dry-run）
-python3 ~/.claude/skills/shared/tex_section.py update-bib \
-  --draft-files {文件路径...} \
-  --master-bib structure/2_literature/citation_pool/master.bib \
-  --project-bib {项目bib路径}
-```
-
-**脚本职责**：
-1. 扫描 draft 文件中所有 `\citep{}`/`\citet{}` 的 citation key
-2. 与项目 bib 对比，找出未收录的新 key
-3. 从 master.bib 提取新 key 条目，追加到项目 bib
+1. 从 draft 文件提取所有 `\citep{}`/`\citet{}` 中的 citation key
+2. 检查每个 key 是否在项目 bib 中存在
+3. 如有缺失 key → 尝试从 master.bib 补充（兜底，正常流程不应触发）→ 显示警告提醒用户
 4. 质量检测：key 中的年份与 bib 条目 year 字段是否一致
-5. stdout 输出统计 + `VERIFY: PASS|FAIL`
 
 **draft 文件选择规则**：
 - Form 1：`{WORK_DIR}/final.md`
 - Form 2：所有子节的 `final.md`
 - Form 3：拼接后的 `{MULTI_BASE_DIR}/final.md`
-
-VERIFY 为 PASS 才继续。如有年份不一致（YEAR_MISMATCH），展示给用户确认。
 
 ## 步骤 5：完成提示
 
@@ -395,7 +376,7 @@ VERIFY 为 PASS 才继续。如有年份不一致（YEAR_MISMATCH），展示给
 - 工作目录路径 / 便捷入口路径
 - 字数统计
 - Key point coverage
-- Bib 更新报告：新增 N 条，M 个未找到
+- Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：运行 `/pen-polish` 进行审稿和润色
 
 ### Form 2
@@ -403,7 +384,7 @@ VERIFY 为 PASS 才继续。如有年份不一致（YEAR_MISMATCH），展示给
 - ✅ 全部 {N} 个 subsection 完成
 - 基础目录 `{MULTI_BASE_DIR}`
 - 汇总表：Subsection / 工作目录 / 便捷入口 / 字数 / Key point coverage
-- Bib 更新报告：新增 N 条，M 个未找到（列出未找到的 key）
+- Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：逐个或整体运行 `/pen-polish` 进行审稿和润色
 - ⚠️ 提醒手动合并到 manuscript.tex
 
@@ -414,6 +395,6 @@ VERIFY 为 PASS 才继续。如有年份不一致（YEAR_MISMATCH），展示给
 - 便捷入口路径
 - 汇总表：段落名称 / 字数
 - 总字数
-- Bib 更新报告：新增 N 条，M 个未找到（列出未找到的 key）
+- Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：运行 `/pen-polish` 进行审稿和润色
 - ⚠️ 提醒手动合并到 manuscript.tex

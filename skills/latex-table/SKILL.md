@@ -9,6 +9,12 @@ auto-invoke: true
 
 当用户要求创建、修改或格式化 LaTeX 表格时，遵循以下模板和规则。
 
+## 输出位置
+
+- **所有表格**统一写入 `structure/figures_tables/tables.tex`（追加到文件末尾）
+- 每次创建/修改表格后，**必须同步更新** `structure/figures_tables/index.md` 的 Tables 表格
+- 定稿时将 `tables.tex` 内容贴到 manuscript.tex 末尾
+
 ## 标准模板
 
 ```latex

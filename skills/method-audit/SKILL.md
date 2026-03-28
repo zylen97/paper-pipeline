@@ -263,6 +263,25 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
    - Simulation/Numerical Analysis 完整层级（若存在：参数设定→基准情景→敏感性分析→管理启示的组织方式）
    - 对于博弈论/建模论文额外记录：模型数量及命名方式、假设集中呈现还是分散嵌入、命题/引理的放置位置（正文 vs 附录）、证明的呈现方式（正文完整证明/正文sketch+附录完整/纯附录）
 7. **图表清单**：所有方法/结果相关图表（编号+标题+内容简述+呈现方式）
+8. **各 section 字数统计**：
+   统计论文每个一级 section 的估算字数（Introduction, Literature Review,
+   Methodology/Research Design, Results/Analysis, Discussion, Conclusion，
+   以及 Simulation/Numerical Analysis 如存在）。
+   - 统计方法：按 section 起止页计算正文面积，扣除图表、公式块、表格占位面积，
+     按每页约 600-800 词（单栏）或 1000-1200 词（双栏）估算
+   - 如果 section 内有 subsection，同时统计每个 subsection 的字数
+   - 输出格式：
+     | Section | Subsections | 估算字数 |
+     |:--------|:-----------|:---------|
+     | Introduction | — | {N} |
+     | Literature Review | {sub1}, {sub2}, ... | {N} |
+     | Methodology | {sub1}, {sub2}, ... | {N} |
+     | Results | {sub1}, {sub2}, ... | {N} |
+     | Simulation（如有） | {sub1}, {sub2}, ... | {N} |
+     | Discussion | {sub1}, {sub2}, ... | {N} |
+     | Conclusion | — | {N} |
+     | **正文合计** | | **{total}** |
+   注：字数为估算值（±10%），不含 Abstract、References、Appendix。
 
 {METHOD_TYPE 差异化补充——见下方}
 
@@ -331,6 +350,20 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 
 > 注：结构列须包含 subsubsection 级别（即 `####` 对应的层级），每级用缩进表示层级关系。对于博弈论/建模论文，Methodology 列须标注各模型的起止小节和假设集中区段。
 
+**表 4：各章节字数对比**
+
+```markdown
+| 论文 | Intro | Lit Review | Methodology | Results | Simulation | Discussion | Conclusion | 正文合计 |
+|:-----|:-----:|:---------:|:-----------:|:-------:|:----------:|:----------:|:----------:|:--------:|
+| **本文** | **TBD** | **TBD** | **TBD** | **TBD** | **{如适用}** | **TBD** | **TBD** | **TBD** |
+| {key1} | ... | ... | ... | ... | ... | ... | ... | ... |
+| ... |
+| **中位数** | {N} | {N} | {N} | {N} | {N/—} | {N} | {N} | {N} |
+| **范围** | {min}-{max} | ... | ... | ... | ... | ... | ... | ... |
+
+> Simulation 列：仅部分论文含独立 Simulation 章节，中位数基于含该章节的论文计算；无该章节的论文标 "—"。
+```
+
 末尾附 **行业基线总结**：
 
 ```markdown
@@ -368,6 +401,22 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 - {N}/{M} 篇包含独立数值分析章节
 - 常见小节划分：{参数设定→基准情景→敏感性分析→管理启示 等}
 - 图表密度：平均 {X} 张/章
+
+### 章节字数基线（基于 {M} 篇对标论文）
+
+| Section | 中位数 | 范围 | 占比 |
+|:--------|:-----:|:----:|:----:|
+| Introduction | {N} | {min}-{max} | {%} |
+| Literature Review | {N} | {min}-{max} | {%} |
+| Methodology | {N} | {min}-{max} | {%} |
+| Results | {N} | {min}-{max} | {%} |
+| Simulation（如适用） | {N} | {min}-{max} | {%} |
+| Discussion | {N} | {min}-{max} | {%} |
+| Conclusion | {N} | {min}-{max} | {%} |
+| **正文合计** | **{N}** | {min}-{max} | 100% |
+
+> 注：字数为估算值（±10%），基于 PDF 页面分析。不含 Abstract、References、Appendix。
+> Simulation 行仅基于含该独立章节的论文（{K}/{M} 篇），其余论文标 "—" 不参与统计。
 ```
 
 ### 📌 Checkpoint C1：Git 备份对标分析（不可跳过）
@@ -956,6 +1005,97 @@ AskUserQuestion 逐章确认。用户可以：
 
 ---
 
+### 步骤 5.8：各 section 字数目标确认
+
+结构确认完成后，基于 benchmark 字数基线确认各正文 section 的字数目标，写入各章节 md。
+
+#### 5.8.1 识别正文 section 列表
+
+根据 `{METHOD_TYPE}` 确定需要分配字数的 section：
+
+| METHOD_TYPE | Sections |
+|:------------|:---------|
+| modeling | Introduction, Literature Review, Methodology, Results, Simulation, Discussion（6 个） |
+| survey-sem | Introduction, Literature Review, Methodology, Results, Discussion（5 个） |
+| panel-regression | Introduction, Literature Review, Methodology, Results, Discussion（5 个） |
+
+**不含** Conclusion 和 Abstract（由 /finalize 处理，字数由期刊规范决定）。
+
+进一步验证：扫描 `structure/` 目录，确认每个 section 对应的 md 文件存在。不存在的 section → 从列表中移除并提示用户。
+
+#### 5.8.2 读取字数基线
+
+从 `structure/3_methodology/benchmark/cross_comparison.md` 的 `### 章节字数基线` 提取各 section 的中位数和范围。
+
+**无对标数据时**（降级模式 / cross_comparison.md 中无字数数据）：
+使用 Claude 知识中该期刊/领域的典型字数分布作为参考，明确标注"⚠️ 非 benchmark 依据，基于 Claude 知识估算"。
+
+#### 5.8.3 生成字数建议
+
+为每个 section 生成目标字数建议：
+
+- **默认值** = benchmark 中位数（取整到最近的 50）
+- **调整依据**（如某项偏离中位数，须在"调整理由"列说明）：
+  - 本文某 section 内容密度明显偏离 benchmark 均值（如 Results 含行为共演化分析，benchmark 中罕见）
+  - 目标期刊有明确的总字数/页数限制 → 总字数需适配，各 section 等比缩放
+  - 某 section 的 subsection 数量显著多于/少于 benchmark → 按比例调整
+
+#### 5.8.4 展示并确认
+
+```
+📊 各 section 字数目标（基于 {M} 篇 benchmark 论文）
+
+| Section | Benchmark 中位数 | Benchmark 范围 | 建议目标 | 调整理由 |
+|:--------|:---------------:|:-------------:|:-------:|:---------|
+| Introduction | {N} | {min}-{max} | {N} | — |
+| Literature Review | {N} | {min}-{max} | {N} | — |
+| Methodology | {N} | {min}-{max} | {N} | {如有} |
+| Results | {N} | {min}-{max} | {N} | {如有} |
+| {仅 modeling:} Simulation | {N} | {min}-{max} | {N} | {如有} |
+| Discussion | {N} | {min}-{max} | {N} | {如有} |
+| **正文合计** | **{N}** | | **{sum}** | |
+
+注：不含 Conclusion（由 /finalize 处理）和 Abstract。
+
+你可以调整各 section 的目标字数。确认后写入各章节 md。
+```
+
+AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 → 再次展示 → 直到确认。
+
+#### 5.8.5 写入各章节 md
+
+用户确认后，遍历以下文件（仅存在的文件），用 Edit 修改头部的 `目标字数` 行：
+
+| Section | 文件路径（Glob 匹配） |
+|:--------|:-------------------|
+| Introduction | `structure/1_introduction/introduction.md` |
+| Literature Review | `structure/2_literature/literature.md` |
+| Methodology | `structure/3_methodology/methodology.md` |
+| Results | `structure/4_results/results.md` |
+| Simulation | `structure/*simulation*/simulation.md`（仅 modeling 类型） |
+| Discussion | `structure/*discussion*/discussion.md` |
+
+替换规则：
+- 匹配 `> 目标字数:` 开头的行
+- 替换为 `> 目标字数: {N} words`（保留该行后面的括号说明，如 "（由 /pen-outline 分配各子节字数）"）
+- 如果是叙述型章节：`> 目标字数: {N} words（由 /pen-outline 分配各子节字数）`
+- 如果是技术型章节：`> 目标字数: {N} words`
+
+> 写入的文件将纳入 Checkpoint C3 的 git add 范围。
+
+显示确认：
+```
+✓ 字数目标已写入 {N} 个章节 md
+  - introduction.md: {N} words
+  - literature.md: {N} words
+  - methodology.md: {N} words
+  - results.md: {N} words
+  {仅 modeling:} - simulation.md: {N} words
+  - discussion.md: {N} words
+```
+
+---
+
 ## 步骤 6：处理完成总结
 
 所有条目处理完毕（或用户主动退出循环）后，输出总结：
@@ -982,6 +1122,9 @@ AskUserQuestion 逐章确认。用户可以：
 
 📐 技术型章节结构确认：{已确认/未执行}
 {如已确认，列出各章节确认的 subsection 数量}
+
+📊 章节字数目标：{已确认/未执行}
+{如已确认，逐行列出各 section 确认的目标字数}
 ```
 
 更新 `structure/3_methodology/benchmark/method_audit_report.md` 末尾的 Summary 表，反映最新处理状态。
@@ -997,12 +1140,15 @@ git add structure/3_methodology/methodology_dev.md \
        structure/3_methodology/methodology.md \
        structure/4_results/results.md \
        structure/5_simulation/simulation.md \
+       structure/1_introduction/introduction.md \
+       structure/2_literature/literature.md \
+       structure/*discussion*/discussion.md \
        structure/3_methodology/benchmark/method_audit_report.md \
        data/robustness/
 git commit -m "Checkpoint: method-audit fixes applied"
 ```
 
-> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 simulation_dev.md 未涉及），不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。
+> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 simulation_dev.md 未涉及），不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。叙述型章节 md（introduction.md、literature.md、discussion.md）在步骤 5.8 字数确认后可能被修改，也应纳入。
 
 ---
 

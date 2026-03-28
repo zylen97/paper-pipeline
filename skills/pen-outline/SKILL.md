@@ -482,8 +482,22 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 所有子节的要点确认完毕后，生成字数分配表供用户确认。
 
 **6.1 确定总字数**：
-- 使用默认值：Introduction=1200, Literature Review=1600, Discussion=1500
-- 用户可在确认时修改
+
+从 `{CHAPTER_MD_PATH}` 头部读取 `> 目标字数: {N} words` 中的数值。
+
+- **读到数值** → 使用该值（由 /method-audit step 5.8 基于 benchmark 写入）
+- **读到 TBD 或无法解析** → AskUserQuestion：
+  ```
+  ⚠️ {md文件名} 的目标字数尚未确定（仍为 TBD）。
+  建议先运行 /method-audit 基于 benchmark 论文确定各 section 字数。
+
+  (1) 手动指定字数（输入数字）
+  (2) 退出，先运行 /method-audit
+  ```
+  用户选 (1) → 使用用户指定值
+  用户选 (2) → 退出
+
+用户可在字数分配表确认（step 6.4）中修改总字数。
 
 **6.2 自动分配各子节字数**：
 - 基础分配 = 总字数 × (该子节要点数 / 全部要点数)
@@ -578,6 +592,13 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
    - 在 `## 大纲` 的最后一个 `###` 下写入完整定位表（markdown table 格式）
 
 6. 保留 `## 引用池` 等非大纲/非必备元素区块不变
+
+7. **同步 bib**：写入 md 后，立即将本章节新增的 citation key 同步到项目 bib：
+   1. 从刚写入的所有要点中提取所有 `\citep{}`/`\citet{}` 中的 citation key（正则提取，去重）
+   2. 检查每个 key 是否已在项目 bib 中
+   3. 不在的 → 从 `master.bib` 中提取对应条目，追加到项目 bib 末尾
+   4. master.bib 中也找不到 → 跳过（该 key 可能是手动添加的老文献，已在项目 bib 中，或标记为 `(ref)` 的待补文献）
+   5. 显示同步结果：`📚 Bib 同步：{N} 个 key，新增 {M} 条到项目 bib`（M=0 时不显示）
 
 **写入确认**：写入前 AskUserQuestion 展示即将写入的内容摘要：
 ```
