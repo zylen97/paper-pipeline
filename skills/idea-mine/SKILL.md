@@ -75,7 +75,7 @@ idea{NN}_{源论文研究领域}/
 - 存在 → 直接读取，跳过精读
 - 不存在 → 纳入精读队列
 
-每篇 PDF 启动 **1 个独立的 Agent**（subagent_type: general-purpose），1 篇 / 1 agent，避免单 agent 任务过重导致超时或失败时多篇连坐。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，每当 1 个 agent 完成（或失败重试后仍失败），立即从队列中取下一篇启动，直到所有论文处理完毕。不等整批完成再启动下一批。每个 Agent 的 prompt 如下：
+每篇 PDF 启动 **1 个独立的 Agent**（subagent_type: general-purpose, model: sonnet），1 篇 / 1 agent，避免单 agent 任务过重导致超时或失败时多篇连坐。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，每当 1 个 agent 完成（或失败重试后仍失败），立即从队列中取下一篇启动，直到所有论文处理完毕。不等整批完成再启动下一批。每个 Agent 的 prompt 如下：
 
 ```
 你是一名管理科学与工程方向的高级研究助理。请全文精读以下PDF论文，对每篇论文提取以下信息：
@@ -333,7 +333,7 @@ analyzed: {YYYY-MM-DD}
    - 距今 **> 30 天** → 重新调研，覆盖写入
 3. 如果不存在 → 新建调研，写入 `_journal-spec/{期刊全称}.md`
 
-每个需要生成画像（新建或过期）的期刊启动独立的 subagent（subagent_type: general-purpose），用 WebSearch 获取 Aims & Scope + 基于模型知识补充其余 3 项。已缓存的期刊直接读取文件。
+每个需要生成画像（新建或过期）的期刊启动独立的 subagent（subagent_type: general-purpose, model: sonnet），用 WebSearch 获取 Aims & Scope + 基于模型知识补充其余 3 项。已缓存的期刊直接读取文件。
 
 **失败处理**：如果某期刊的 WebSearch 未命中 Aims & Scope，则基于模型知识直接输出（在画像中标注"来源：模型知识，WebSearch 未命中"），不阻塞 pipeline。
 
@@ -410,7 +410,7 @@ updated: {YYYY-MM-DD}
 
 **目标**：将每个原始 idea 面向**其确认的目标期刊**做完整适配，每刊出 2 个差异化的适配版本。
 
-**实现方式**：每个 idea × 该 idea 的每个确认期刊 × 每个版本 = **1 个独立的主编 Agent**（subagent_type: general-purpose）。即版本 A 和版本 B 由**不同的 agent 独立生成**，避免单 agent 输出过长导致超时。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，完成一个补一个。共需启动 Σ(每个 idea 的确认期刊数) × 2 个 agent。主 agent 读取 `idea-raw/_step3_matching.md` 确定每个 idea 对应哪些期刊。
+**实现方式**：每个 idea × 该 idea 的每个确认期刊 × 每个版本 = **1 个独立的主编 Agent**（subagent_type: general-purpose, model: opus）。即版本 A 和版本 B 由**不同的 agent 独立生成**，避免单 agent 输出过长导致超时。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，完成一个补一个。共需启动 Σ(每个 idea 的确认期刊数) × 2 个 agent。主 agent 读取 `idea-raw/_step3_matching.md` 确定每个 idea 对应哪些期刊。
 
 **版本 A/B 不做差异化引导**——两个 agent 使用完全相同的 prompt，独立思考如何迁移。如果两个版本自然撞车，说明这个迁移方向是最有力的；如果自然分化，说明 idea 有多个可行切入点。不人为预设差异维度，让主编自由发挥。
 
@@ -486,7 +486,7 @@ TODO（阶段五审稿人 challenge 产出后回填）
 
 #### 第一轮：逐 idea 独立评分（并行轻量 agent）
 
-**实现方式**：每个 idea × 该 idea 的每个确认期刊 = **1 个独立的评分 Agent**（subagent_type: general-purpose）。每个 agent 只评审 **1 个 idea** 的 2 个适配版本，读取量极小（4 个文件），与阶段四主编 agent 工作量相当。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，完成一个补一个。共需启动 Σ(每个 idea 的确认期刊数) 个 agent。主 agent 读取 `idea-raw/_step3_matching.md` 确定每个 idea 对应哪些期刊。各 agent **互不知晓其他 idea 的评分结果**，确保独立性。
+**实现方式**：每个 idea × 该 idea 的每个确认期刊 = **1 个独立的评分 Agent**（subagent_type: general-purpose, model: opus）。每个 agent 只评审 **1 个 idea** 的 2 个适配版本，读取量极小（4 个文件），与阶段四主编 agent 工作量相当。采用**槽位制并发控制**：同时运行的 agent 数**不超过 8 个**，完成一个补一个。共需启动 Σ(每个 idea 的确认期刊数) 个 agent。主 agent 读取 `idea-raw/_step3_matching.md` 确定每个 idea 对应哪些期刊。各 agent **互不知晓其他 idea 的评分结果**，确保独立性。
 
 每个评分 agent 的人设根据阶段三的期刊画像**独立生成**。prompt 模板：
 
