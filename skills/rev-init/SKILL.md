@@ -18,32 +18,110 @@ description: "一次性初始化修改工作流（冻结基准 → 解析决定�
 
 ### 0a. 项目环境
 
-- 确认 `manuscript.tex` 存在（Glob `manuscript.tex`）。不存在 → 停止，提示用户
+- 确认主文件存在（Glob `manuscript.tex` 或 `main.tex`）。不存在 → 停止，提示用户
 - 确认当前目录是 git 仓库（`git status`）。不是 → 停止，提示用户初始化
-- 读取项目 CLAUDE.md，提取：期刊名、模板类型、bib 文件名、编译命令
 
-### 0b. 已有文件检查
+### 0b. 冷启动检测（遗留项目适配）
 
-- 检查 `revision/` 是否已存在
-  - 存在 → AskUserQuestion：「`revision/` 目录已存在：**1** = 归档到 `revision-archived/` 后重新初始化 / **2** = 停止」
-  - 用户确认归档 → `mv revision revision-archived`
-- 检查 `manuscript-original.tex` 是否已存在
-  - 存在 → 跳过 Step 1（冻结步骤）
-- 检查 `response-letter.tex` 是否已存在
-  - 存在 → AskUserQuestion：「`response-letter.tex` 已存在：**1** = 覆盖 / **2** = 保留现有」
+读取项目 CLAUDE.md → 检查是否包含关键字段（期刊名、模板类型、bib 文件名）。
+
+**如果 CLAUDE.md 不存在或缺少关键字段** → 进入冷启动模式：
+
+```
+📋 检测到项目尚未完整配置。请确认以下信息：
+
+1. 主文件: [自动检测结果，如 manuscript.tex]
+2. Bib 文件: [自动检测结果]
+3. 目标期刊: ?
+4. 出版社: [Elsevier / ASCE / Emerald / SAGE / IEEE / Wiley / 其他]
+5. 编译方式: [从 latexmkrc 或文件头检测，如 pdflatex / xelatex]
+6. 补充材料: [自动检测 supplemental-materials.tex / supplementary-materials.tex]
+7. 作者信息（用于 Cover Letter 署名）: ?
+```
+
+用户确认后，生成或更新 CLAUDE.md 的 `## 项目信息` 和 `## 核心配置` 部分。不生成 `structure/` 目录——遗留项目不需要写作阶段的脚手架。
+
+### 0c. 轮次检测
+
+自动推断当前修改轮次 `{ROUND}`：
+
+```
+检测逻辑（按优先级）：
+1. CLAUDE.md 的 ## 项目阶段 字段中有 revision-R{N} → ROUND = N（状态表示"当前在第 N 轮"）
+2. 统计已有的 revision-R*/ 归档目录 → ROUND = 最大编号 + 1
+3. 存在 manuscript-original.tex（旧格式）且无 revision-R*/ 归档 → ROUND = 1（遗留项目首次使用新系统）
+4. 以上都没有 → ROUND = 1（全新项目）
+```
+
+展示检测结果并 AskUserQuestion 确认：
+
+```
+🔍 检测到当前应为第 {ROUND} 轮修改（R{ROUND}）。
+
+确认？或输入正确的轮次编号。
+```
+
+### 0d. Git Checkpoint — 归档前快照
+
+在任何文件移动或覆盖之前，先保存当前状态：
+
+```bash
+git add -A && git commit -m "R${ROUND} pre-init: snapshot before archiving R$((ROUND-1)) files" --allow-empty
+```
+
+> 这是安全网。如果后续归档或初始化出错，可以 `git reset --hard HEAD~1` 回到此状态。
+
+### 0e. 已有文件处理（基于轮次）
+
+**如果 `revision/` 已存在**（上一轮留下的）：
+- `ROUND == 1` 且 `revision/` 非空 → AskUserQuestion：「`revision/` 目录已存在：**1** = 归档后重新初始化 / **2** = 停止」
+- `ROUND >= 2` → 自动归档：
+  ```bash
+  ARCHIVE_DIR="revision-R$((ROUND-1))"
+  # 防止重复运行时目标已存在
+  if [ -d "$ARCHIVE_DIR" ]; then
+    echo "⚠️ $ARCHIVE_DIR 已存在（上次 rev-init 可能中断）"
+    # AskUserQuestion：1 = 删除旧归档后重新归档 / 2 = 停止
+    rm -rf "$ARCHIVE_DIR"
+  fi
+  mv revision "$ARCHIVE_DIR"
+  mkdir -p revision/drafts
+  ```
+  归档后 `revision-R1/`（或 `revision-R2/` 等）保留完整的上一轮工作文件
+- `ROUND == 1` 且用户确认归档 → `mv revision revision-R0`（同样检查目标是否已存在）
+
+**如果 `response-letter.tex` 已存在**：
+- `ROUND >= 2` → 归档：`mv response-letter.tex response-letter-R$((ROUND-1)).tex`
+- `ROUND == 1` 且已有实质内容 → AskUserQuestion：覆盖 / 保留
+
+**遗留兼容**：如果存在 `manuscript-original.tex`（旧格式）且 `ROUND == 1`：
+- 不重复冻结，直接复用为 R0 基准
+- 创建 `.revision-baseline` 指向它
 
 ---
 
 ## Step 1: 冻结基准
 
-（仅在 `manuscript-original.tex` 不存在时执行）
+冻结当前 `manuscript.tex` 为本轮的 diff 基准：
 
 ```bash
-cp manuscript.tex manuscript-original.tex
-git add manuscript-original.tex && git commit -m "Freeze baseline for latexdiff"
+# 基准文件名：manuscript-R{ROUND-1}.tex
+BASELINE="manuscript-R$((ROUND-1)).tex"
+
+# 遗留兼容：如果已有 manuscript-original.tex 且 ROUND=1，复用它
+if [ "$ROUND" = "1" ] && [ -f "manuscript-original.tex" ]; then
+    BASELINE="manuscript-original.tex"
+else
+    cp manuscript.tex "$BASELINE"
+fi
+
+# 写入 .revision-baseline 供 make-diff.sh 读取
+echo "$BASELINE" > .revision-baseline
+
+git add "$BASELINE" .revision-baseline && git commit -m "R${ROUND}: Freeze baseline ($BASELINE) for latexdiff"
 ```
 
-告知用户：`manuscript-original.tex` 已冻结，此后**永远不得修改**。
+告知用户：`{BASELINE}` 已冻结，此后**永远不得修改**。
 
 ---
 
@@ -259,6 +337,15 @@ AskUserQuestion：
 
 **迭代直到用户输入 1**——这是整个初始化最关键的交互点。
 
+### Git Checkpoint — 分类聚类确认后
+
+分类和聚类方案用户确认后立即保存（这是最昂贵的交互产物）：
+
+```bash
+git add revision/comment-letter.md revision/comment-letter-clean.md && \
+git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & clustering"
+```
+
 ### 特殊情况
 
 **矛盾意见**：两位审稿人要求互相矛盾 → 放入同一 Cluster，标注 "⚠️ 矛盾"，要求用户做取舍决策。
@@ -326,14 +413,36 @@ AskUserQuestion：
 
 ## Step 10: 更新 CLAUDE.md
 
+### 10a. 追加/更新修改工作流配置
+
 AskUserQuestion：是否自动追加修改工作流配置到项目 CLAUDE.md？
 
 如用户选是，追加：修改工作流节（上下文文件、skills、闭环步骤）+ Response Letter 格式规范。
 
+### 10b. 更新项目阶段字段
+
+在 CLAUDE.md 中查找 `## 项目阶段` 部分：
+- 已存在 → 更新 `状态` 和 `更新时间`
+- 不存在 → 在文件末尾追加
+
+```markdown
+## 项目阶段
+- 状态: revision-R{ROUND}
+- 更新时间: {TODAY}
+- 基准文件: {BASELINE}
+- 轮次历史:
+  - R{ROUND}: {TODAY}（{DECISION_TYPE}）
+```
+
+如果是 R2+，保留之前的轮次历史记录，追加新行。
+
 ---
 
-## Step 11: 编译 + 提交 + 摘要
+## Step 11: 编译 + Git Checkpoint（最终）+ 摘要
 
 1. 编译验证：`latexmk -pvc- -pv- response-letter.tex` + `latexmk manuscript.tex`
-2. Git 提交所有新文件
-3. 展示摘要：文件树 + Cluster 总览 + 推荐执行顺序 + 下一步指引（`/rev-respond {first anchor ID}`）
+2. Git 提交所有初始化产物：
+   ```bash
+   git add -A && git commit -m "R${ROUND} rev-init: complete initialization (guide + response skeleton + general responses)"
+   ```
+3. 展示摘要：文件树 + 当前轮次 R{ROUND} + Cluster 总览 + 推荐执行顺序 + 下一步指引（`/rev-respond {first anchor ID}`）

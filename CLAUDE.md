@@ -62,9 +62,11 @@
 - 冲突处理：同key追加b/c后缀
 - 示例：`parker2018i`, `brandenburger2007b`, `guo2018a`
 
-### 个人科研项目目录
-- 路径：`/Users/zylen/Library/CloudStorage/Dropbox/02-Research/Zylen paper`
-- 所有以 `zy` 编号的论文项目都在此目录下
+### 科研项目目录
+- **个人项目**：`/Users/zylen/Library/CloudStorage/Dropbox/02-Research/Zylen paper`
+  - 所有以 `zy` 编号的论文项目都在此目录下
+- **合作项目（GYM group）**：`/Users/zylen/Library/CloudStorage/Dropbox/02-Research/_GYM group dropbox/_gym paper`
+  - 与导师/合作伙伴共同推进的论文项目，包括 `dj`、`zz` 等编号
 
 ### LaTeX 编译配置
 - LaTeX Workshop 配置统一在 VS Code 全局 User Settings（`~/Library/Application Support/Code/User/settings.json`）管理，不在项目级生成 `.vscode/settings.json`
@@ -101,16 +103,22 @@
 ⑦ 各章节 md 定稿后逐章写入 manuscript.tex
    · /pen-draft → /pen-polish
     ↓
-⑧ /finalize（Conclusion → Abstract → Cover Letter）
+⑧ /finalize（Conclusion → Abstract → Cover Letter → Structure 清理）
+   · 清理施工脚手架：删除叙述型章节目录/md、技术章节整个目录、drafts/
+   · 保留：0_global/、2_literature/（除literature.md）、figures_tables/
     ↓
 ⑨ /pre-submit（投稿终检）
     ↓
 ─── 投稿 ───
     ↓
-⑩ /rev-init → /rev-respond（审稿修改）
+⑩ /rev-init → /rev-respond（审稿修改，支持多轮 R1/R2/R3...）
+   · rev-init 自动检测轮次、冻结正确基准、归档上一轮
+   · 遗留项目（无 paper-init 结构）通过冷启动模式接入
+   · 项目阶段字段（CLAUDE.md ## 项目阶段）自动维护
 ```
 
 - **核心原则**：产出必须先落入章节 md，用户确认后才写入 manuscript.tex
 - **前进不可跳步，回改随时允许**
+- **定稿后 source of truth 转移**：`/finalize` 完成后，manuscript.tex 成为唯一正本，structure 中仅保留 `0_global/`、`2_literature/`（除 literature.md）、`figures_tables/`，其余目录及 `drafts/` 全部清理，后续修改直接改 tex + idea.md
 - 工具类 skill 不入流程：`/resume`（上下文加载）、`/web-access`（联网操作）
 

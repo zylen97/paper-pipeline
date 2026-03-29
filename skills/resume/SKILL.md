@@ -24,6 +24,16 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 - 方法、目标期刊、模板类型
 - structure/ 的目录结构表（确认有哪些章节目录）
 
+### 阶段字段快速定位
+
+优先读取 CLAUDE.md 的 `## 项目阶段` 部分（如存在）：
+- `状态: writing` → 科研写作阶段（pipeline ①-⑨，含 finalize 和 pre-submit）
+- `状态: submitted` → 已投稿，等待审稿
+- `状态: revision-R{N}` → 第 N 轮修改（额外读取基准文件名和轮次历史）
+- `状态: accepted` → 已录用
+
+如果有阶段字段，后续步骤可以有的放矢：writing 阶段重点看 structure/，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
+
 ---
 
 ## 步骤 2：读取研究纲领
@@ -47,6 +57,8 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 - 大致在写什么内容
 - 叙述型章节（introduction/literature/discussion）的大纲是否已填充
 - 技术型章节（methodology/results 等）：优先检查**成稿 md**（X.md）是否有实质内容（非 TODO）；同时检查**过程文件**（X_dev.md）是否存在及内容量，判断研究进展阶段
+
+> **清理后状态识别**：如果 `structure/1_introduction/` 目录不存在且 `drafts/` 目录不存在，说明已完成 `/finalize` Phase 4 清理。此时跳过本步骤，在步骤 4 中直接从 `manuscript.tex` 判断所有章节的完成状态，并在输出中注明"已完成定稿清理，manuscript.tex 为唯一正本"。
 
 同时注意 `2_literature/` 目录下的文献系统产物：
 - 是否有 `literature_search_plan.md`（检索规划）
@@ -77,10 +89,15 @@ git log --oneline -15 --date=short --format="%ad %s"
 
 ## 步骤 6：修改阶段检测（条件执行）
 
-如果存在 `revision/` 目录，说明项目处于审稿修改阶段，额外读取：
+如果存在 `revision/` 目录或 CLAUDE.md 阶段字段为 `revision-R*`，说明项目处于审稿修改阶段，额外读取：
 
 - `revision/comment-letter-clean.md`（审稿意见清单）
 - `revision/revision-guide.md`（修改策略，如存在）
+- `.revision-baseline`（如存在，读取当前基准文件名以确认轮次）
+- 扫描 `revision-R*/` 目录（如存在，统计历史轮次数）
+- `response-letter.tex` 中 `[TO BE FILLED]` 数量 → 计算完成进度
+
+如果检测到多轮历史（如 `revision-R1/` 目录存在），在输出中说明当前是第几轮、上一轮完成了多少条。
 
 ---
 

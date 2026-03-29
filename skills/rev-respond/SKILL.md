@@ -453,10 +453,10 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 
 **报告生成**：
 
-1. **确认 baseline 文件**：检查 `revision/baseline/` 目录（由 `/rev-init` 冻结），找到基准稿 `manuscript_baseline.tex`
-   - 不存在 → 警告并跳过
+1. **确认 baseline 文件**：读取 `.revision-baseline` 获取基准文件名（如 `manuscript-R0.tex`）；不存在则 fallback 到 `manuscript-original.tex`（遗留格式）
+   - 均不存在 → 警告并跳过
 
-2. **逐 section 差异对比**：对比 `revision/baseline/manuscript_baseline.tex` 和当前 `manuscript.tex`
+2. **逐 section 差异对比**：对比基准文件和当前 `manuscript.tex`
    - 提取每个 `\section{}` 的内容，逐 section diff
    - 统计：新增字数、删除字数、净变化
 
@@ -466,7 +466,7 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 # Revision Summary
 
 > Generated: {date}
-> Baseline: revision/baseline/manuscript_baseline.tex
+> Baseline: {BASELINE}（从 .revision-baseline 读取）
 > Current: manuscript.tex
 
 ## Overview

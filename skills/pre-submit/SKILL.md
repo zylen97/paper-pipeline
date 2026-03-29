@@ -246,6 +246,8 @@ latexmk {MAIN_TEX} 2>&1 | tail -50
 
 ## 步骤 8：生成报告
 
+写入前确保目录存在（`/finalize` Phase 4 可能已清理 `drafts/`）：`mkdir -p drafts/`
+
 将所有检查结果写入 `drafts/pre_submit_report.md`：
 
 ```markdown

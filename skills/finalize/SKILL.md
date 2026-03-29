@@ -1,21 +1,22 @@
 ---
-description: "定稿收尾三步曲：Conclusion → Abstract → Cover Letter，交互式逐块确认 + language-polisher 润色（Finalize）"
+description: "定稿收尾四步曲：Conclusion → Abstract → Cover Letter → Structure 清理，交互式逐块确认 + language-polisher 润色（Finalize）"
 ---
 
 # Finalize — 定稿收尾
 
-论文主体完成后的收尾流程，按固定顺序完成三个阶段：
+论文主体完成后的收尾流程，按固定顺序完成四个阶段：
 
 ```
-Phase 1: Conclusion → Phase 2: Abstract → Phase 3: Cover Letter
+Phase 1: Conclusion → Phase 2: Abstract → Phase 3: Cover Letter → Phase 4: Structure 清理
 ```
 
-每个 Phase 独立交互、逐块确认。前一阶段的产出作为后一阶段的输入。
+Phase 1-3 为写作阶段，独立交互、逐块确认，前一阶段的产出作为后一阶段的输入。Phase 4 为清理阶段，拆除施工脚手架。每个 Phase 完成后 git checkpoint。
 
 **输入** `$ARGUMENTS`：可选，指定从哪个阶段开始。示例：
-- `/finalize` — 从 Phase 1 开始，完整走三步
+- `/finalize` — 从 Phase 1 开始，完整走四步
 - `/finalize abstract` — 从 Phase 2 开始（跳过 Conclusion，适用于 Conclusion 已写好的情况）
-- `/finalize cover-letter` — 只做 Phase 3
+- `/finalize cover-letter` — 从 Phase 3 开始
+- `/finalize cleanup` — 只做 Phase 4（Structure 清理）
 
 ---
 
@@ -36,12 +37,14 @@ Phase 1: Conclusion → Phase 2: Abstract → Phase 3: Cover Letter
 
 - 读取 `{MAIN_TEX}` 全文 → `{MANUSCRIPT_CONTENT}`
 - 读取 `structure/0_global/idea.md` → `{IDEA_CONTEXT}`（RQ、Gap、贡献点、方法框架）
-- 读取 `structure/3_methodology/methodology.md` → `{METHOD_CONTEXT}`
-- 读取 `structure/4_results/results.md` → `{RESULTS_CONTEXT}`
-- 读取 `structure/5_simulation/simulation.md` → `{SIMULATION_CONTEXT}`（仅 modeling，不存在则跳过）
-- 读取 Discussion 对应的 structure md → `{DISCUSSION_CONTEXT}`（Glob `structure/*discussion*/*.md`）
+- 读取 `structure/3_methodology/methodology.md` → `{METHOD_CONTEXT}`（不存在则从 `{MANUSCRIPT_CONTENT}` 中提取 Methodology 章节）
+- 读取 `structure/4_results/results.md` → `{RESULTS_CONTEXT}`（不存在则从 `{MANUSCRIPT_CONTENT}` 中提取 Results 章节）
+- 读取 `structure/5_simulation/simulation.md` → `{SIMULATION_CONTEXT}`（仅 modeling，不存在则从 `{MANUSCRIPT_CONTENT}` 中提取，仍无则跳过）
+- 读取 Discussion 对应的 structure md → `{DISCUSSION_CONTEXT}`（Glob `structure/*discussion*/*.md`，不存在则从 `{MANUSCRIPT_CONTENT}` 中提取 Discussion 章节）
 
-**空文件检测**：如果 results.md 仍为 TODO → 停止，提示先完成论文主体。
+> 注：Phase 4 清理后章节 `.md` 不再存在，重跑 finalize 时自动 fallback 到 manuscript.tex 提取。
+
+**空文件检测**：如果 `{RESULTS_CONTEXT}` 为空或仍为 TODO（无论来源是 `.md` 还是 `.tex`）→ 停止，提示先完成论文主体。
 
 ### 0.3 读取 Writing Brief
 
@@ -54,6 +57,7 @@ Phase 1: Conclusion → Phase 2: Abstract → Phase 3: Cover Letter
 - 空 → 从 Phase 1 开始
 - `abstract` → 从 Phase 2 开始，检查 manuscript.tex 中 Conclusion 是否已有内容（非 TODO）
 - `cover-letter` → 从 Phase 3 开始，检查 Abstract 是否已有内容
+- `cleanup` → 直接跳到 Phase 4（跳过步骤 0.2-0.3 的上下文加载，Phase 4 不需要章节内容）
 
 跳过阶段时，前置内容不存在 → 警告但允许继续。
 
@@ -85,7 +89,7 @@ Block C: 局限性与未来研究（2-3 个局限 + 对应的未来方向）
 
 对每个 Block：
 
-1. **提议**：基于 idea.md + results.md + simulation.md 的具体内容，生成**中文要点**
+1. **提议**：基于 `{IDEA_CONTEXT}` + `{RESULTS_CONTEXT}` + `{SIMULATION_CONTEXT}` 的具体内容，生成**中文要点**
 2. **用户确认**：AskUserQuestion，循环直到满意
 3. **暂存**：记录确认的中文要点，全部 Block 确认后统一转英文
 
@@ -195,6 +199,12 @@ Read `drafts/writing_brief.md` for journal conventions and style guidance.
 
 用户确认 → 用 Edit 工具将内容写入 `{MAIN_TEX}` 的 `\section{Conclusion` 下（替换 TODO 或现有内容）。
 
+### 1.7 Git Checkpoint
+
+```bash
+git add -A && git commit -m "finalize: write Conclusion"
+```
+
 ---
 
 ## Phase 2: Abstract
@@ -271,6 +281,12 @@ Block 5: Implications（理论/实践价值，1-2 句）
 展示润色后的英文摘要。用户确认 → 写入 `{MAIN_TEX}` 的 `\begin{abstract}...\end{abstract}` 之间。
 
 同时提醒用户检查 Keywords（`\begin{keyword}` 或 `\keywords{}`），如果仍为 TODO 则提议 4-6 个关键词供确认。
+
+### 2.8 Git Checkpoint
+
+```bash
+git add -A && git commit -m "finalize: write Abstract and Keywords"
+```
 
 ---
 
@@ -369,9 +385,89 @@ Block 1-4 逐块提议中文要点 → 用户确认。称呼和标准结尾自�
 cd submission && latexmk coverletter.tex 2>&1 | tail -20
 ```
 
+### 3.8 Git Checkpoint
+
+```bash
+git add -A && git commit -m "finalize: write Cover Letter"
+```
+
 ---
 
-## 步骤 Final：完成提示
+## Phase 4: Structure 清理
+
+> Pipeline 的施工脚手架——叙述型章节目录、技术章节目录、`drafts/` 目录——在 manuscript.tex 定稿后不再是 source of truth，保留它们只会制造一致性负担。此阶段拆除脚手架，仅保留 `0_global/`（idea.md）、`2_literature/`（citation_pool 等）、`figures_tables/`。
+
+### 4.1 扫描并生成清理清单
+
+扫描 `structure/` 和项目根目录，列出待删除项：
+
+```
+🗑️ 即将删除（施工脚手架）：
+
+structure/1_introduction/          ← 叙述型章节，整个目录
+structure/*discussion*/            ← 叙述型章节，整个目录（modeling: 6_discussion/, 其他: 5_discussion/）
+structure/2_literature/literature.md  ← 叙述型章节 md
+structure/3_methodology/           ← 技术章节，整个目录（含 _dev.md）
+structure/4_results/               ← 技术章节，整个目录（含 _dev.md）
+structure/5_simulation/            ← 技术章节，整个目录（仅 modeling，不存在则跳过）
+drafts/                            ← 写作中间产物（writing_brief 等，需要时自动重建）
+
+✅ 保留不动：
+structure/0_global/                ← idea.md + 项目资产
+structure/2_literature/（除 literature.md）  ← search plan、direction reports、citation_pool/
+structure/figures_tables/          ← 图表资产
+```
+
+> 注意：只列出实际存在的文件/目录。不存在的项不显示。
+
+### 4.2 用户确认
+
+AskUserQuestion：
+
+```
+📋 以上是 Structure 清理清单。
+
+- 确认执行 → 输入 "ok"
+- 跳过清理 → 输入 "skip"
+- 调整清单 → 指出要保留或额外删除的项
+```
+
+用户输入 "skip" → 跳过整个 Phase 4，直接进入步骤 Final。
+
+### 4.3 执行清理
+
+用户确认后，用 Bash 工具逐项删除：
+
+```bash
+# 叙述型章节目录（discussion 编号因方法类型而异：modeling=6, 其他=5）
+rm -rf structure/1_introduction/
+rm -rf structure/*discussion*/
+
+# 叙述型章节 md
+rm -f structure/2_literature/literature.md
+
+# 技术章节——整个目录（含 _dev.md，推导过程保留在 git history 中）
+rm -rf structure/3_methodology/
+rm -rf structure/4_results/
+rm -rf structure/5_simulation/
+
+# 写作中间产物
+rm -rf drafts/
+```
+
+### 4.4 Git Checkpoint
+
+```bash
+git add -A && git commit -m "chore: clean up structure scaffolding after finalize"
+```
+
+---
+
+## 步骤 Final：更新阶段 + 完成提示
+
+在 CLAUDE.md 中查找 `## 项目阶段` 部分：
+- 已存在 → 更新 `更新时间: {TODAY}`（状态保持 `writing` 不变——finalize 仍属于写作阶段）
+- 不存在 → 不追加（遗留项目不强制）
 
 ```
 ✅ 定稿收尾完成！
@@ -379,6 +475,7 @@ cd submission && latexmk coverletter.tex 2>&1 | tail -20
 📄 Conclusion: {WORD_COUNT_CONC} 词 → manuscript.tex
 📄 Abstract: {WORD_COUNT_ABS} 词 → manuscript.tex
 📄 Cover Letter: {WORD_COUNT_CL} 词 → submission/coverletter.tex
+🗑️ Structure 清理完成（施工脚手架已拆除）
 
 下一步：
 - 运行 /pre-submit 做投稿前终检
@@ -401,9 +498,8 @@ cd submission && latexmk coverletter.tex 2>&1 | tail -20
 - 写入文件：英文 LaTeX
 
 ### 不越界
-- 不修改论文主体（Introduction, Literature Review, Methodology, Results, Discussion）
-- 不修改 bib 文件
-- 只写 Conclusion、Abstract、Cover Letter 三个部分
+- Phase 1-3：不修改论文主体（Introduction, Literature Review, Methodology, Results, Discussion），不修改 bib 文件，只写 Conclusion、Abstract、Cover Letter
+- Phase 4：只删除指定的脚手架文件，不修改任何保留文件的内容
 
 ### 署名信息
 Cover letter 中的署名来源优先级：

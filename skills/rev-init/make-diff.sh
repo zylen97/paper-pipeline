@@ -1,6 +1,6 @@
 #!/bin/bash
 # make-diff.sh — Generate color-coded diff PDF
-# Compares manuscript-original.tex vs manuscript.tex
+# Compares baseline (from .revision-baseline) vs manuscript.tex
 # Output: manuscript-track-changes.pdf (blue=additions, red strikethrough=deletions)
 #
 # Known limitations of latexdiff:
@@ -15,7 +15,16 @@ export PATH="/Library/TeX/texbin:$PATH"
 PROJ_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJ_DIR"
 
-ORIGINAL="manuscript-original.tex"
+# Read baseline from .revision-baseline (multi-round support)
+# Fallback chain: .revision-baseline → manuscript-original.tex (legacy)
+if [ -f ".revision-baseline" ]; then
+    ORIGINAL="$(cat .revision-baseline | tr -d '[:space:]')"
+elif [ -f "manuscript-original.tex" ]; then
+    ORIGINAL="manuscript-original.tex"
+else
+    echo "[diff] ERROR: No baseline found. Run /rev-init first."
+    exit 1
+fi
 MODIFIED="manuscript.tex"
 PREAMBLE="tools/latexdiff-preamble.tex"
 DIFF_TEX="manuscript-track-changes.tex"
