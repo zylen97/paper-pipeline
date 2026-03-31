@@ -34,11 +34,13 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 
 验证格式：`R` + 数字 + `-` + 数字或 `m`+数字。无效 → 停止，提示正确格式。
 
-### 0b. 前置环境检查
+### 0b. 前置环境检查 + 轮次检测
+
+从 CLAUDE.md 的 `## 项目阶段` 字段提取当前轮次 `{ROUND}`（如 `revision-R2` → `ROUND=2`）。当前轮次的工作目录为 `revision-R{ROUND}/`。
 
 检查 `/rev-init` 是否已执行：
-- 确认 `revision/comment-letter-clean.md` 存在
-- 确认 `revision/revision-guide.md` 存在
+- 确认 `revision-R{ROUND}/comment-letter-clean.md` 存在
+- 确认 `revision-R{ROUND}/revision-guide.md` 存在
 - 确认 `response-letter.tex` 存在
 
 任一文件缺失 → **停止**，提示用户："请先运行 `/rev-init` 初始化修改工作流。"
@@ -46,8 +48,8 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 ### 0c. 读取项目上下文
 
 依次读取以下文件：
-1. `revision/comment-letter-clean.md` → 定位该 Comment 的完整评论文本
-2. `revision/revision-guide.md` → 找到所属 Cluster、核心问题、修改计划、锚点信息
+1. `revision-R{ROUND}/comment-letter-clean.md` → 定位该 Comment 的完整评论文本
+2. `revision-R{ROUND}/revision-guide.md` → 找到所属 Cluster、核心问题、修改计划、锚点信息
 3. `manuscript.tex` → 全文（重点关注与该 Comment 相关的 section）
 4. 项目 `.bib` 文件 → 可用引用（从 CLAUDE.md 或 `manuscript.tex` 的 `\bibliography{}` 确认文件名）
 5. `response-letter.tex` → 定位该 Comment 的填写位置，同时检查哪些 Comment 的 `[TO BE FILLED]` 已被替换（= 已完成）
@@ -55,7 +57,7 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 
 ### 0d. 检查同 Cluster 上下文
 
-扫描 `revision/drafts/` 目录：
+扫描 `revision-R{ROUND}/drafts/` 目录：
 - 查找同 Cluster 的 `Proposal_*.md` 和 `Comment_*.md`
 - 如有 → 读取已确认的策略和回复，保持一致性
 - 判断交叉引用类型：
@@ -64,7 +66,7 @@ description: "交互式逐条审稿回复闭环（策略对齐 → 内容起草 
 
 ### 0e. 防护检查
 
-- `revision/drafts/Proposal_{Comment_ID}.md` 或 `Comment_{Comment_ID}.md` 已存在 → AskUserQuestion："该 Comment 已有草稿文件：**1** = 覆盖重做 / **2** = 跳过"
+- `revision-R{ROUND}/drafts/Proposal_{Comment_ID}.md` 或 `Comment_{Comment_ID}.md` 已存在 → AskUserQuestion："该 Comment 已有草稿文件：**1** = 覆盖重做 / **2** = 跳过"
 - `response-letter.tex` 中该 Comment 的 `\response{[TO BE FILLED]}` 已被替换（即已有实质回复内容）→ 警告用户，AskUserQuestion："该 Comment 已有回复内容：**1** = 覆盖重做 / **2** = 跳过"
 - 该 Cluster 依赖的其他 Cluster 尚未完成（检查方法：revision-guide.md 中依赖 Cluster 的 Comments 在 response-letter.tex 中仍有 `[TO BE FILLED]`）→ 警告（非阻断）："⚠️ C2 依赖 C1，但 C1 尚未完成。建议先处理 C1。"
 
@@ -125,7 +127,7 @@ AskUserQuestion：
 
 ### 1c. 保存确认的策略
 
-写入 `revision/drafts/Proposal_{Comment_ID}.md`：
+写入 `revision-R{ROUND}/drafts/Proposal_{Comment_ID}.md`：
 
 ```markdown
 # 策略提案 — {Comment ID}
@@ -187,7 +189,7 @@ AskUserQuestion：
 - `\response{}` 在 `\manuscriptquote{}` 之前关闭，之后重新打开
 - `\response{}` **内部不能有空行**（会导致 `\par` 错误）
 - `\lineref{}` 放在 `\manuscriptquote{}` 的**内容末尾**
-- 行号写入当前值或 `[TBD]`，不回头更新旧的 lineref
+- `\lineref{}` **一律写 `\lineref{Lines [TBD]}`**，不在逐条处理时填真实行号。原因：`\lineref{}` 中的行号 = 编译后 PDF 的 running line numbers（由模板 cls 自动生成），不是 .tex 源文件行号；且每次改稿后行号会漂移。所有 Comment 完成后在 Round 4e 批量回填
 - Section 引用格式：`the ``Introduction'' section`（section 名称加引号，小写 section）
 
 **引用格式**（response-letter.tex 不使用 natbib）：
@@ -203,7 +205,7 @@ AskUserQuestion：
 - "This is a constructive observation. We address it as follows."
 - "The reviewer raises a valid concern about [具体问题]."
 - "Thank you for the careful examination of [具体方面]."
-- 检查 `revision/drafts/` 中已有回复，确保不重复
+- 检查 `revision-R{ROUND}/drafts/` 中已有回复，确保不重复
 
 **跨审稿人引用规则**：
 - **同审稿人内**：可直接引用，如 "As discussed in our response to Comment #1-1 above, ..."
@@ -275,7 +277,7 @@ AskUserQuestion：
 
 ### 2c. 保存确认的草稿
 
-写入 `revision/drafts/Comment_{Comment_ID}.md`：
+写入 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`：
 
 ```markdown
 # Comment {Comment_ID} 回复
@@ -394,7 +396,7 @@ AskUserQuestion：
 
 ### 3d. 更新草稿文件
 
-用润色后的最终版本覆盖 `revision/drafts/Comment_{Comment_ID}.md` 中的 Part 2（回复正文）和 Part 3（原稿修改）。
+用润色后的最终版本覆盖 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md` 中的 Part 2（回复正文）和 Part 3（原稿修改）。
 
 ---
 
@@ -402,13 +404,13 @@ AskUserQuestion：
 
 ### 4a. 应用稿件修改
 
-从 `revision/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 3 原稿修改，使用 Edit 工具逐条应用（manuscript.tex 和/或 supplemental-materials.tex）。
+从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 3 原稿修改，使用 Edit 工具逐条应用（manuscript.tex 和/或 supplemental-materials.tex）。
 
 **铁律**：仅改确认内容，不做额外修改。
 
 ### 4b. 填写回复信
 
-从 `revision/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 2 回复正文，在 `response-letter.tex` 中定位该 Comment 的 `\response{[TO BE FILLED]}`，替换为润色后的回复文本。
+从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 2 回复正文，在 `response-letter.tex` 中定位该 Comment 的 `\response{[TO BE FILLED]}`，替换为润色后的回复文本。
 
 如果该 Comment 的 `\response{[TO BE FILLED]}` 找不到（可能已被提前填写），告知用户并跳过。
 
@@ -438,7 +440,7 @@ AskUserQuestion：
 如用户输入 1：
 ```bash
 git add manuscript.tex response-letter.tex \
-       revision/drafts/
+       revision-R{ROUND}/drafts/
 # 仅在修改了补充材料时才 add
 git add supplemental-materials.tex 2>/dev/null || true
 git commit -m "C{N} {Comment_ID}: {brief description}"
@@ -460,7 +462,7 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
    - 提取每个 `\section{}` 的内容，逐 section diff
    - 统计：新增字数、删除字数、净变化
 
-3. **生成修改摘要**（写入 `revision/revision_summary.md`）：
+3. **生成修改摘要**（写入 `revision-R{ROUND}/revision_summary.md`）：
 
 ```markdown
 # Revision Summary
@@ -496,9 +498,16 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 | ... | ... | ... | ... |
 ```
 
-4. **展示报告** 给用户，提示：
+4. **批量回填 `\lineref{}` 行号**：
+   - 编译 `manuscript.tex` 生成最终 PDF
+   - 打开 PDF，逐条定位每个 `\manuscriptquote{}` 对应段落的 PDF running line numbers
+   - 在 `response-letter.tex` 中将所有 `\lineref{Lines [TBD]}` 替换为真实 PDF 行号
+   - 同步更新 `revision-R{ROUND}/drafts/Comment_*.md` 中的 `[TBD]`
+   - 重新编译 `response-letter.tex` 确认无误
+
+5. **展示报告** 给用户，提示：
 ```
-📊 所有审稿意见已回复完毕！修改摘要已保存至 revision/revision_summary.md
+所有审稿意见已回复完毕！修改摘要已保存至 revision-R{ROUND}/revision_summary.md
 
 下一步：
 - 检查 response-letter.pdf 和 manuscript.pdf

@@ -73,22 +73,13 @@ git add -A && git commit -m "R${ROUND} pre-init: snapshot before archiving R$((R
 
 ### 0e. 已有文件处理（基于轮次）
 
-**如果 `revision/` 已存在**（上一轮留下的）：
-- `ROUND == 1` 且 `revision/` 非空 → AskUserQuestion：「`revision/` 目录已存在：**1** = 归档后重新初始化 / **2** = 停止」
-- `ROUND >= 2` → 自动归档：
-  ```bash
-  ARCHIVE_DIR="revision-R$((ROUND-1))"
-  # 防止重复运行时目标已存在
-  if [ -d "$ARCHIVE_DIR" ]; then
-    echo "⚠️ $ARCHIVE_DIR 已存在（上次 rev-init 可能中断）"
-    # AskUserQuestion：1 = 删除旧归档后重新归档 / 2 = 停止
-    rm -rf "$ARCHIVE_DIR"
-  fi
-  mv revision "$ARCHIVE_DIR"
-  mkdir -p revision/drafts
-  ```
-  归档后 `revision-R1/`（或 `revision-R2/` 等）保留完整的上一轮工作文件
-- `ROUND == 1` 且用户确认归档 → `mv revision revision-R0`（同样检查目标是否已存在）
+**检查 `revision-R{ROUND}/` 是否已存在**（可能是上次 rev-init 中断留下的）：
+- 已存在 → AskUserQuestion：「`revision-R{ROUND}/` 目录已存在：**1** = 删除后重新初始化 / **2** = 停止」
+- 不存在 → 继续
+
+**如果 `revision/` 存在**（遗留项目的旧格式目录）：
+- `ROUND == 1` → `mv revision revision-R0`（归档为 R0）
+- `ROUND >= 2` → 警告用户存在旧格式目录，建议手动处理
 
 **如果 `response-letter.tex` 已存在**：
 - `ROUND >= 2` → 归档：`mv response-letter.tex response-letter-R$((ROUND-1)).tex`
@@ -128,7 +119,7 @@ git add "$BASELINE" .revision-baseline && git commit -m "R${ROUND}: Freeze basel
 ## Step 2: 创建目录 + 复制工具 + 配置 Hook
 
 ```bash
-mkdir -p tools revision/drafts .claude/hooks
+mkdir -p tools revision-R${ROUND}/drafts .claude/hooks
 ```
 
 从 `~/.claude/skills/rev-init/` 读取以下文件并写入项目：
@@ -193,14 +184,14 @@ AskUserQuestion：
 
 ```
 请提供审稿决定信的来源：
-  [1] 已粘贴到 revision/comment-letter.md
+  [1] 已粘贴到 revision-R${ROUND}/comment-letter.md
   [2] 直接在此处粘贴原文
   [3] 从文件路径读取
 ```
 
-- 选 1 → 读取 `revision/comment-letter.md`，确认非空
-- 选 2 → 用户粘贴内容 → 写入 `revision/comment-letter.md`
-- 选 3 → 用户提供路径 → 读取 → 写入 `revision/comment-letter.md`
+- 选 1 → 读取 `revision-R${ROUND}/comment-letter.md`，确认非空
+- 选 2 → 用户粘贴内容 → 写入 `revision-R${ROUND}/comment-letter.md`
+- 选 3 → 用户提供路径 → 读取 → 写入 `revision-R${ROUND}/comment-letter.md`
 
 ---
 
@@ -208,7 +199,7 @@ AskUserQuestion：
 
 ### 4a. 通读原始决定信
 
-主 Agent 读取 `revision/comment-letter.md` 全文，理解整体结构。不同期刊/投稿系统的格式差异极大，需要 LLM 的语义理解能力来正确识别结构，不可使用硬编码脚本。
+主 Agent 读取 `revision-R${ROUND}/comment-letter.md` 全文，理解整体结构。不同期刊/投稿系统的格式差异极大，需要 LLM 的语义理解能力来正确识别结构，不可使用硬编码脚本。
 
 ### 4b. 结构识别
 
@@ -232,7 +223,7 @@ AskUserQuestion：
 
 ### 4d. 生成 comment-letter-clean.md
 
-读取 `comment-letter-clean.md.tmpl` 模板格式，生成 `revision/comment-letter-clean.md`，包含：
+读取 `comment-letter-clean.md.tmpl` 模板格式，生成 `revision-R${ROUND}/comment-letter-clean.md`，包含：
 - 头部元信息（决定类型、日期、截止日期、编辑姓名）
 - Editor / AE / 每位 Reviewer 各有独立标题
 - 每条意见有 ID 前缀（`**R1-1.**`、`**R1-m1.**`）
@@ -342,7 +333,7 @@ AskUserQuestion：
 分类和聚类方案用户确认后立即保存（这是最昂贵的交互产物）：
 
 ```bash
-git add revision/comment-letter.md revision/comment-letter-clean.md && \
+git add revision-R${ROUND}/comment-letter.md revision-R${ROUND}/comment-letter-clean.md && \
 git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & clustering"
 ```
 
@@ -358,7 +349,7 @@ git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & 
 
 基于用户确认的聚类方案，读取模板并生成：
 
-1. **`revision/revision-guide.md`**：读取 `revision-guide.md.tmpl`，填充全部 9 个 Section
+1. **`revision-R${ROUND}/revision-guide.md`**：读取 `revision-guide.md.tmpl`，填充全部 9 个 Section
    - Section 3 行号表：用 `grep -n "\\section\|\\subsection" manuscript.tex` 获取
    - Section 4 意见清单：从 comment-letter-clean.md 导入，回填 Cluster 列
    - Section 5 Cluster 分析：从确认的聚类方案填充
@@ -378,7 +369,10 @@ git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & 
 5. AE（如有）→ 粘贴意见原文
 6. 每位 Reviewer：
    - General Assessment 原文
-   - 每条 Comment → `\reviewercomment{}` + 原文 + `\responseheader` + `\response{[TO BE FILLED]}` + `\bigskip`
+   - 每条 Comment → `\reviewercomment{Comment \#N-K.}` + 换行 + 审稿人原文（不加粗） + `\responseheader` + `\response{[TO BE FILLED]}` + `\bigskip`
+     - `\reviewercomment{}` 内**只放编号**（如 `Comment \#2-1.`），不要自编标题
+     - 如果审稿人原文自带标题/编号（如 "Major Comment 1: ..."），则将其原样作为 `\reviewercomment{}` 的内容
+     - 审稿人意见正文作为普通文本（不加粗）另起一行
 
 写入 `response-letter.tex`。
 
@@ -407,7 +401,7 @@ git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & 
 
 一次性展示所有 general responses → AskUserQuestion 确认。
 
-确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision/drafts/Response_*.md`。
+确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision-R${ROUND}/drafts/Response_*.md`。
 
 ---
 

@@ -1,6 +1,9 @@
 {
   "env": {
-    "PATH": "/Library/TeX/texbin:/Users/zylen/.local/bin:/Users/zylen/anaconda3/bin:/Users/zylen/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    "PATH": "/opt/homebrew/bin:/opt/homebrew/sbin:/Library/TeX/texbin:/Users/zylen/.local/bin:/Users/zylen/anaconda3/bin:/Users/zylen/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "DYLD_FALLBACK_LIBRARY_PATH": "/opt/homebrew/lib",
+    "TESSDATA_PREFIX": "/opt/homebrew/share/tessdata",
+    "R_LIBS_USER": "/opt/homebrew/lib/R/4.5/site-library"
   },
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
