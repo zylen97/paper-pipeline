@@ -474,7 +474,7 @@ git push
 ## 步骤 Final：更新阶段 + 完成提示
 
 在 CLAUDE.md 中查找 `## 项目阶段` 部分：
-- 已存在 → 更新 `更新时间: {TODAY}`（状态保持 `writing` 不变——finalize 仍属于写作阶段）
+- 已存在 → 更新 `更新时间: {TODAY}`（状态保持 `drafting` 不变——投稿前终检 `/pre-submit` 完成后才转为 `submitted`）
 - 不存在 → 不追加（遗留项目不强制）
 
 ```

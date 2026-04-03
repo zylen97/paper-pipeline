@@ -120,9 +120,26 @@
    · 项目阶段字段（CLAUDE.md ## 项目阶段）自动维护
 ```
 
-### 技术章节开发中的 idea-refine 软提醒
+### 项目阶段与 Proactive 提醒
 
-在步骤④技术章节开发过程中，主 agent 遇到以下情况时，**建议**（非强制）用户考虑运行 `/idea-refine`：
+项目 CLAUDE.md 的 `## 项目阶段` 字段标记当前所处阶段。主 agent 在每个 session 开始时（或 `/resume` 后）读取阶段，并据此主动建议相关 skill：
+
+| 阶段 | 覆盖步骤 | Proactive 提醒 |
+|:-----|:---------|:---------------|
+| `foundation` | ①-⑤.5 | 建议 `/idea-refine`（idea 变动时）、`/method-audit`（技术章节成形时）、`/method-end`（_dev.md 成熟时） |
+| `drafting` | ⑥-⑨ | 建议 `/pen-outline`（叙述章节开始时）、`/pen-draft`（outline 完成时）、`/pen-polish`（初稿完成时）、`/finalize`（全部章节写入 tex 后） |
+| `submitted` | 等待审稿 | 无主动提醒 |
+| `revision-R{N}` | ⑩ | 建议 `/rev-respond`（有未完成的审稿回复时） |
+
+**阶段转换规则**（由 skill 自动执行，不可跳级）：
+- `foundation` → `drafting`：`/method-end` 完成所有技术型章节后提示转换
+- `drafting` → `submitted`：`/pre-submit` 检查全部通过后提示转换
+- `submitted` → `revision-R1`：`/rev-init` 自动更新
+- `revision-R{N}` → `revision-R{N+1}`：`/rev-init` 自动更新
+
+### foundation 阶段的 idea-refine 软提醒
+
+在 `foundation` 阶段的步骤④技术章节开发过程中，主 agent 遇到以下情况时，**建议**（非强制）用户考虑运行 `/idea-refine`：
 - 核心模型结构发生重大变化（如模型阶段数变化、博弈类型变化）
 - 新增或删除研究变量
 - 用户表达犹豫或不确定（如"这样行不行""我不太确定""要不要换个方法"）

@@ -6,7 +6,7 @@
 
 ## 流水线概览
 
-整个流水线分为 5 个阶段，每个技能通过斜杠命令（如 `/lit-plan`）在 Claude Code 中调用。
+整个流水线分为 6 个阶段，每个技能通过斜杠命令（如 `/lit-plan`）在 Claude Code 中调用。
 
 ### 阶段一：选题与初始化
 
@@ -24,7 +24,13 @@
 | `/lit-tag` | 为筛选后的文献打功能标签（BG/LR/GAP/...），按研究问题分类 |
 | `/lit-pool` | 汇总标签文献为引用池，含引用场景、分级排序，并生成 `master.bib` |
 
-### 阶段三：写作
+### 阶段三：Idea 精炼
+
+| 技能 | 说明 |
+|:-----|:-----|
+| `/idea-refine` | 交互式研究 idea 与方法设计迭代审稿（idea-reviewer 审稿 → 用户确认 → 修改 → 循环至满意） |
+
+### 阶段四：写作
 
 | 技能 | 说明 |
 |:-----|:-----|
@@ -34,14 +40,14 @@
 | `/pen-draft` | 从大纲自动生成初稿，通过 journal-scout 和并行 sci-writer agent 完成 |
 | `/pen-polish` | 迭代打磨：strict-reviewer 反馈 → 用户确认 → 修改 → language-polisher 润色 |
 
-### 阶段四：定稿
+### 阶段五：定稿
 
 | 技能 | 说明 |
 |:-----|:-----|
-| `/finalize` | 定稿三步曲：Conclusion → Abstract → Cover Letter，交互式确认 + 语言润色 |
+| `/finalize` | 定稿四步曲：Conclusion → Abstract → Cover Letter → Structure 清理，交互式确认 + 语言润色 |
 | `/pre-submit` | 投稿前终检：引用完整性、自引率、格式合规、图表规范、符号一致性 |
 
-### 阶段五：修改
+### 阶段六：修改
 
 | 技能 | 说明 |
 |:-----|:-----|
@@ -56,6 +62,7 @@
 | `/figure` | 学术图表全流程：自动判断 TikZ/Python/R，创建或美化图表，Eagle 风格参考 |
 | `/latex-table` | LaTeX 表格格式化与模板（兼容 Elsarticle） |
 | `/web-access` | 联网操作：搜索、网页抓取、登录后操作、浏览器 CDP |
+| `/peer-review` | 作为期刊审稿人阅读待审稿件 PDF，按用户审稿风格自动生成审稿意见 |
 
 ## 安装
 

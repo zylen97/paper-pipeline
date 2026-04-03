@@ -27,12 +27,13 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 ### 阶段字段快速定位
 
 优先读取 CLAUDE.md 的 `## 项目阶段` 部分（如存在）：
-- `状态: writing` → 科研写作阶段（pipeline ①-⑨，含 finalize 和 pre-submit）
+- `状态: foundation` → idea + 文献 + 技术型章节开发阶段（pipeline ①-⑤.5）。重点看 structure/ 中的 _dev.md 进展、idea.md 版本、citation pool 是否就绪
+- `状态: drafting` → 叙述型章节撰写 + 全文定稿阶段（pipeline ⑥-⑨）。重点看各章节 md 和 manuscript.tex 的填充进度
 - `状态: submitted` → 已投稿，等待审稿
 - `状态: revision-R{N}` → 第 N 轮修改（额外读取基准文件名和轮次历史）
 - `状态: accepted` → 已录用
 
-如果有阶段字段，后续步骤可以有的放矢：writing 阶段重点看 structure/，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
+如果有阶段字段，后续步骤可以有的放矢：foundation 阶段重点看 _dev.md 和 idea.md，drafting 阶段重点看章节 md 和 manuscript.tex，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
 
 ---
 

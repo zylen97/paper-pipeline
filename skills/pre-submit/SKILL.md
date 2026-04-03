@@ -322,8 +322,16 @@ Section 3 使用 `$\lambda$`，Section 4 使用 `$\Lambda$`（同一概念？）
 
 如果 🔴 = 0，提示：
 ```
-✅ 检查通过！如尚未运行 /finalize，建议先运行以完成 Conclusion/Abstract/Cover Letter。
+✅ 检查通过！论文已准备好投稿。
+
+更新项目阶段为 submitted？
+(1) 确认（更新 CLAUDE.md 阶段为 submitted）
+(2) 暂不更新（还有其他调整）
 ```
+
+AskUserQuestion 等待用户确认。用户选 (1) → 在 CLAUDE.md 中更新 `状态: submitted`、`更新时间: {TODAY}`。用户选 (2) → 不更新。
+
+> 这是 pre-submit 唯一的写操作——仅更新项目阶段元数据，不改稿件内容。
 
 如果 🔴 > 0，提示：
 ```

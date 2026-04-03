@@ -461,7 +461,30 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 →
 - 叙述型章节：运行 /pen-outline 构建要点
 ```
 
-### 4.2 Git checkpoint
+### 4.2 阶段转换检查
+
+当本次 `/method-end` 处理了**所有**技术型章节（非单章节模式）且全部凝练完成时：
+
+```
+🎯 所有技术型章节已凝练定稿。
+项目即将从 foundation 阶段进入 drafting 阶段（叙述型章节撰写）。
+
+确认转换？
+(1) 确认，更新项目阶段为 drafting
+(2) 暂不转换（仍有技术内容需要调整）
+```
+
+AskUserQuestion 等待用户确认。
+
+用户选 (1) → 在 CLAUDE.md 中更新 `## 项目阶段`：
+- `状态: drafting`
+- `更新时间: {TODAY}`
+
+用户选 (2) → 不更新，保持 `foundation`。
+
+> 单章节模式下不触发此检查——用户可能只是补充某一章，不代表全部完成。
+
+### 4.3 Git checkpoint
 
 ```bash
 git add {所有被修改的成稿 md 文件}
