@@ -319,7 +319,54 @@ python3 ~/.claude/skills/lit-pool/generate_master_report.py \
 3. Gap 真实性评估
 4. 引用池充足性（按标签）
 5. 补检建议（如有）
-6. **下一步建议**：用户审阅 master_report.md → 确认/调整 idea.md → 进入步骤③ idea定稿 → 步骤④ 填充各章节md
+6. **下一步建议**：用户审阅 master_report.md + method_landscape.md → 运行 `/idea-refine` 迭代优化 idea → 进入步骤④ 技术章节开发
+
+---
+
+## 步骤 7.5：生成方法论综述报告 method_landscape.md
+
+**设计原理**：从 `citation_pool/METHOD.md` 的结构化引用数据中，综合文献方向报告和 idea.md 的方法设计，生成一份面向技术章节开发的方法论地图。该报告是 `/idea-refine` 和技术章节开发的关键输入。
+
+### 7.5.1 主 Agent 综合写作（不开 subAgent）
+
+主 Agent 读取以下文件：
+1. `structure/2_literature/citation_pool/METHOD.md`（METHOD-基础 + METHOD-先例）
+2. `structure/0_global/idea.md`（§3 方法论选择论证）
+3. `structure/2_literature/direction*_report.md`（方法相关方向的完整报告）
+
+写入 `structure/2_literature/method_landscape.md`，结构如下：
+
+```markdown
+# 方法论综述报告
+
+> **生成日期**: {YYYY-MM-DD}
+> **数据来源**: citation_pool/METHOD.md ({N}篇) + direction reports
+> **定位**: 为技术章节开发和 /idea-refine 提供方法论基础
+
+## 1. 建模策略综述
+{综述相关研究采用的建模方法、模型类型、求解策略，按频率/主流程度排列}
+
+## 2. 变量选取共性与差异
+{核心变量、控制变量、调节/中介变量的通行做法，标注本研究的选取与主流的异同}
+
+## 3. 数据与样本通行做法
+{数据来源、样本规模、采样策略的行业惯例}
+
+## 4. 方法创新空间
+{哪些方法路径已被充分探索（做烂了），哪些还有创新机会，结合本研究情境的具体建议}
+
+## 5. 与本研究方法设计的对照
+{逐条对比 idea.md §3 的方法选择与文献中的主流做法，标出差异点和可借鉴点}
+```
+
+### 7.5.2 质量要求
+
+- 每个章节必须引用具体文献（citation key），不得泛泛而谈
+- §4 创新空间必须结合本研究的具体情境，不是通用建议
+- §5 对照必须逐条对应 idea.md §3 的内容
+- 总字数 1000-2000 字（中文）
+
+---
 
 ## 步骤 8：生成 master.bib（Python 脚本）
 
@@ -373,7 +420,7 @@ rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _scree
 
 > **命名约定**：pipeline 中所有中间文件/目录以 `_` 前缀命名，永久产出不以 `_` 开头。这样清理时用通配符 `_*` 即可，不需要逐个枚举文件名。
 >
-> **永久保留的文件**：direction reports（文献+标签）、screening_summary_report.md（筛选统计）、tag_report.md（标签统计）、citation_pool/（引用池）、master.bib（BibTeX）、literature_search_plan.md（检索方案）。
+> **永久保留的文件**：direction reports（文献+标签）、screening_summary_report.md（筛选统计）、tag_report.md（标签统计）、citation_pool/（引用池）、master.bib（BibTeX）、method_landscape.md（方法论综述）、literature_search_plan.md（检索方案）。
 
 ### 📌 Checkpoint 3：Git 备份文献管线最终交付物（不可跳过）
 
@@ -383,8 +430,9 @@ rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _scree
 git add structure/2_literature/citation_pool/ \
        structure/2_literature/master.bib \
        structure/2_literature/master_report.md \
+       structure/2_literature/method_landscape.md \
        structure/2_literature/screening_summary_report.md
-git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib)"
+git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + method_landscape)"
 ```
 
 > **为什么**：这是 lit-plan → lit-review → lit-tag → lit-pool 四步管线的最终交付物，直接喂给下游 pen-draft 写作。

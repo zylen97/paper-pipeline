@@ -81,12 +81,15 @@
     ↓
 ② /lit-plan → 用户WoS检索 → /lit-review → /lit-tag → /lit-pool
     ↓
-③ idea定稿（Gap/RQ/方法论确认，回写idea.md）
+②.5 /idea-refine（idea-reviewer 迭代审稿 → idea + 方法设计同步优化，直至满意）
+    ↓
+③ idea定稿（/idea-refine 完成后确认 idea.md 最终版本，锁定 Gap/RQ/方法框架）
     ↓
 ④ 技术型章节（用户与Claude交互填充）
    · 交互过程填入 X_dev.md（过程文件，格式自由，记录推导细节）
    · 过程中使用 /figure · /latex-table（图表即时落地到 figures_tables/）
    · 过程中可能微调 idea.md 细节（大方向不变）
+   · 关键节点可随时 /idea-refine 重新评估（见软提醒规则）
     ↓
 ⑤ /method-audit（审计 _dev.md + 对标借鉴，修复回写 _dev.md）
    → 末尾确认技术型章节的 section 结构（Step 5.7）
@@ -117,8 +120,18 @@
    · 项目阶段字段（CLAUDE.md ## 项目阶段）自动维护
 ```
 
+### 技术章节开发中的 idea-refine 软提醒
+
+在步骤④技术章节开发过程中，主 agent 遇到以下情况时，**建议**（非强制）用户考虑运行 `/idea-refine`：
+- 核心模型结构发生重大变化（如模型阶段数变化、博弈类型变化）
+- 新增或删除研究变量
+- 用户表达犹豫或不确定（如"这样行不行""我不太确定""要不要换个方法"）
+- 一个 subsection 的 _dev.md 完成时
+
+提醒方式：一句话建议 + 用户自行决定是否执行，不打断工作流。
+
 - **核心原则**：产出必须先落入章节 md，用户确认后才写入 manuscript.tex
 - **前进不可跳步，回改随时允许**
-- **定稿后 source of truth 转移**：`/finalize` 完成后，manuscript.tex 成为唯一正本，structure 中仅保留 `0_global/`、`2_literature/`（除 literature.md）、`figures_tables/`、技术章节中的 `benchmark/`（method-audit 产出），其余 md、临时文件及 `drafts/` 全部清理，后续修改直接改 tex + idea.md
+- **定稿后 source of truth 转移**：`/finalize` 完成后，manuscript.tex 成为唯一正本，structure 中仅保留 `0_global/`（idea.md + idea-refine/）、`2_literature/`（除 literature.md，含 method_landscape.md）、`figures_tables/`、技术章节中的 `benchmark/`（method-audit 产出），其余 md、临时文件及 `drafts/` 全部清理，后续修改直接改 tex + idea.md
 - 工具类 skill 不入流程：`/resume`（上下文加载）、`/web-access`（联网操作）
 

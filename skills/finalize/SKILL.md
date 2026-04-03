@@ -395,7 +395,7 @@ git add -A && git commit -m "finalize: write Cover Letter"
 
 ## Phase 4: Structure 清理
 
-> Pipeline 的施工脚手架——叙述型章节目录、技术章节 md、`drafts/` 目录——在 manuscript.tex 定稿后不再是 source of truth，保留它们只会制造一致性负担。此阶段拆除脚手架，仅保留 `0_global/`（idea.md）、`2_literature/`（citation_pool 等）、`figures_tables/`，以及技术章节中 `/method-audit` 产出的 `benchmark/` 子目录。
+> Pipeline 的施工脚手架——叙述型章节目录、技术章节 md、`drafts/` 目录——在 manuscript.tex 定稿后不再是 source of truth，保留它们只会制造一致性负担。此阶段拆除脚手架，仅保留 `0_global/`（idea.md + idea-refine/）、`2_literature/`（citation_pool、method_landscape.md 等）、`figures_tables/`，以及技术章节中 `/method-audit` 产出的 `benchmark/` 子目录。
 
 ### 4.1 扫描并生成清理清单
 
@@ -417,8 +417,8 @@ structure/5_simulation/_citation_paths.json
 drafts/                            ← 写作中间产物（writing_brief 等，需要时自动重建）
 
 ✅ 保留不动：
-structure/0_global/                ← idea.md + 项目资产
-structure/2_literature/（除 literature.md）  ← search plan、direction reports、citation_pool/
+structure/0_global/                ← idea.md + idea-refine/（迭代审稿轨迹）+ 项目资产
+structure/2_literature/（除 literature.md）  ← search plan、direction reports、citation_pool/、method_landscape.md
 structure/figures_tables/          ← 图表资产
 structure/3_methodology/benchmark/ ← /method-audit 产出（对标论文 + 审计报告），如存在则保留
 ```

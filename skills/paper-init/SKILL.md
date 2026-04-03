@@ -706,7 +706,8 @@ git push -u origin main
    **如果执行了 idea-mine 导入**：
    - 审阅 `structure/0_global/idea.md`，确认 Gap/RQ/贡献是否需要调整
    - 运行 `/lit-plan` 规划文献检索方向
-   - WoS 检索完成后运行 `/lit-review`(筛选) → `/lit-tag`(打标签) → `/lit-pool`(引用池)
+   - WoS 检索完成后运行 `/lit-review`(筛选) → `/lit-tag`(打标签) → `/lit-pool`(引用池 + 方法论综述)
+   - 文献工作流完成后运行 `/idea-refine` 迭代优化 idea 和方法设计，直至满意
    - 填写 _dev.md 过程文件后运行 `/method-audit`（方法论审计 + 结构确认）
    - 审计通过后运行 `/method-end`（从 _dev.md 凝练到成稿 md）
    - 技术型章节：`/method-end` → `/pen-draft`(初稿) → `/pen-polish`(打磨)
