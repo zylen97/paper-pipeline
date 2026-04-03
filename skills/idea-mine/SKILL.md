@@ -674,6 +674,45 @@ pipeline 完成后，用户选定 idea 时由主 agent 根据 challenge 直接�
 4. 根据期刊的 `@publisher` 标签从 journals.md 推断出版社
 5. `mkdir -p {path}` → `cd {path}` → 运行 `/paper-init {ID}`
 6. paper-init 成功后，将 idea.md 写入 `structure/0_global/idea.md`
+7. **打包 idea-mine 上下文到新项目**（见下方详细说明）
+
+#### Step 7：打包 idea-mine 上下文
+
+将 idea-mine 项目中与该 idea 相关的所有上下文材料复制到新项目的 `structure/0_global/idea-context/` 目录，为后续 idea 细化、文献规划和方法讨论提供完整参考。
+
+**目录结构**：
+
+```
+structure/0_global/
+├── idea.md                        ← 正式的 idea 方案（§5 已回填 challenge）
+└── idea-context/                  ← idea-mine 上下文包（本步骤生成）
+    ├── source_paper.pdf           ← 原始论文 PDF（从 papers/ 复制并重命名）
+    ├── paper_note.md              ← 精读报告（从 paper-notes/ 复制）
+    ├── migration_analysis.md      ← 从 _step3_matching.md 提取该 idea 的迁移方向预判段落
+    ├── adaptations/               ← 该 idea 的所有期刊适配版本
+    │   ├── idea_{NN}_{主题}_{期刊1}.md
+    │   ├── idea_{NN}_{主题}_{期刊2}.md
+    │   └── ...
+    └── reviews/                   ← 该 idea 的所有审稿评审
+        ├── review_{期刊1}_P{NN}.md
+        ├── review_{期刊2}_P{NN}.md
+        └── ...
+```
+
+**具体操作**：
+
+1. **创建目录**：`mkdir -p {path}/structure/0_global/idea-context/adaptations {path}/structure/0_global/idea-context/reviews`
+2. **复制原始论文 PDF**：从 idea-mine 项目的 `papers/` 目录中找到该 idea 对应的论文 PDF，复制到 `idea-context/source_paper.pdf`。论文文件名从 `paper-notes/{论文名}.md` 的 frontmatter `paper` 字段获取
+3. **复制精读报告**：将 `paper-notes/{论文名}.md` 复制到 `idea-context/paper_note.md`
+4. **提取迁移方向预判**：从 `idea-raw/_step3_matching.md` 中提取该 idea 对应的迁移方向预判段落（包括匹配表中该行 + "## 迁移方向预判"中该 idea 的完整内容），写入 `idea-context/migration_analysis.md`
+5. **复制所有适配版本**：将 `ideas/idea_{NN}_*.md`（该 idea 编号的所有期刊适配文件）复制到 `idea-context/adaptations/`
+6. **复制所有审稿评审**：将 `idea-review/review_*_P{NN}.md`（该 idea 编号的所有单篇评审文件）复制到 `idea-context/reviews/`
+
+**用途说明**：这些上下文材料在新项目中的作用：
+- `source_paper.pdf` + `paper_note.md`：随时回查原文方法细节和核心假设，支撑 idea 细化讨论
+- `migration_analysis.md`：迁移方向的理论差异和假设变化，供 `/lit-plan` 设计检索方向时参考
+- `adaptations/`：横向对比不同期刊的叙事策略差异，帮助打磨目标期刊版本
+- `reviews/`：审稿人的 challenge 和预防性回应，指导方法论设计和风险规避
 
 **到此为止**，后续的文献工作流（/lit-plan → /lit-review → /lit-tag → /lit-pool）由用户在项目目录中自行启动。
 
@@ -684,3 +723,13 @@ pipeline 完成后，用户选定 idea 时由主 agent 根据 challenge 直接�
 - `idea-review/` — 第一轮单 idea 评审（`review_{期刊缩写}_P{NN}.md`）+ 第二轮期刊汇总（`review_{期刊缩写}.md`）
 - `paper-notes/` — 论文精读报告（可缓存复用）
 - `idea-raw/` — 筛选清单（`_step1_candidates.md`）、评分（`_step2_scores.md`）和期刊匹配（`_step3_matching.md`）
+
+### 初始化时打包到新项目的文件
+
+用户选定 idea 并运行初始化后，以下文件被复制到新项目 `structure/0_global/idea-context/`：
+
+- `source_paper.pdf` — 原始论文 PDF
+- `paper_note.md` — 精读报告
+- `migration_analysis.md` — 该 idea 的迁移方向预判（从 `_step3_matching.md` 提取）
+- `adaptations/idea_{NN}_*.md` — 该 idea 的所有期刊适配版本
+- `reviews/review_*_P{NN}.md` — 该 idea 的所有审稿评审

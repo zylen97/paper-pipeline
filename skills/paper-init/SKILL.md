@@ -12,12 +12,43 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 - `$ARGUMENTS` 的值为：`$ARGUMENTS`
 - 如果为空或未提供，使用 AskUserQuestion 询问论文编号
-- `{ID}` 将用于所有命名：`{ID}.bib`、`paper_{ID}`（GitHub 仓库名）等
+- `{ID}` 将用于所有命名：`{ID}.bib`、`paper_{ID}`（GitHub 仓库名）、`{ID}_latexfile/`（内层目录名）等
+
+此外，使用 AskUserQuestion 询问**外层项目文件夹名** `{OUTER_DIR}`（如 `zy18_供应链数字化转型溢出_IJPE`）。
+
+## 项目目录结构（两层嵌套）
+
+论文项目采用两层嵌套结构：
+
+```
+{OUTER_DIR}/                  ← 外层项目文件夹（不纳入 git）
+├── raw literature/           ← 原始文献 PDF（不纳入 git）
+└── {ID}_latexfile/           ← 内层 LaTeX 项目（git 仓库）
+    ├── .git/
+    ├── CLAUDE.md
+    ├── manuscript.tex
+    ├── structure/
+    └── ...
+```
+
+- **外层文件夹**：放原始文献等非 git 管理内容，在 `{PROJECT_PARENT_DIR}` 下创建（见下方说明）
+- **内层 `{ID}_latexfile/`**：git 仓库，包含所有 LaTeX 文件、structure/ 三层文档系统、submission/ 等
+- 后续所有步骤（Step 2-5）的工作目录均为 `{ID}_latexfile/`
+
+### 项目创建位置 `{PROJECT_PARENT_DIR}`
+
+项目创建位置取决于当前工作目录：
+
+- **如果当前在 idea-mine 批次目录**（自动检测：目录下同时存在 `ideas/`、`idea-review/`、`papers/`）：当前目录不适合建项目。根据全局 CLAUDE.md 中的科研项目目录配置，自动推导 `{PROJECT_PARENT_DIR}`：
+  - 如果当前路径包含 `Zylen paper`：`{PROJECT_PARENT_DIR}` = 路径中 `Zylen paper` 对应的完整目录（如 `~/Dropbox/02-Research/Zylen paper`）
+  - 如果当前路径包含 `_gym paper`：`{PROJECT_PARENT_DIR}` = 路径中 `_gym paper` 对应的完整目录
+  - 其他情况：使用 AskUserQuestion 询问项目创建位置
+- **如果当前不在 batch 目录**：`{PROJECT_PARENT_DIR}` = 当前工作目录
 
 ## 前置检查
 
-1. 确认当前工作目录为项目根目录
-2. 检查目录是否为空（或仅有 `.git`）。如果已有文件，**停止并询问用户**，避免覆盖已有项目
+1. 检测当前目录是否为 idea-mine 批次目录（`ideas/` + `idea-review/` + `papers/` 同时存在），确定 `{PROJECT_PARENT_DIR}`
+2. 检查 `{PROJECT_PARENT_DIR}/{OUTER_DIR}` **是否已存在**。如果已存在，**停止并询问用户**，避免覆盖
 3. 确认 `gh` CLI 可用（`gh --version`）
 4. 确认 `latexmk` 可用（`latexmk --version`）
 
@@ -59,6 +90,62 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 - 是否创建 `structure/5_simulation/` 目录（仅 modeling）
 - 使用哪套 methodology/results 模板
 - CLAUDE.md 中 structure 表格的内容
+
+## Idea-mine 导入（可选）
+
+**自动检测**：如果前置检查中已检测到当前目录为 idea-mine 批次目录，则自动启用导入，`{BATCH_DIR}` = 当前工作目录，跳过下方的询问。
+
+**手动触发**：如果当前目录不是 batch 目录，使用 AskUserQuestion 询问：
+
+```
+是否从 idea-mine 批次导入源材料？
+  [1] 是 — 从 idea-mine 批次复制源论文、paper note、idea 文件和审稿评分
+  [2] 否 — 跳过，从空白 idea.md 开始
+```
+
+如果选择"是"且当前不在 batch 目录，额外询问 `{BATCH_DIR}`（idea-mine 批次目录的绝对路径）。
+
+**无论哪种方式启用导入，都需收集以下参数**：
+
+- `{PAPER_ID}`：源论文编号（如 `12`，对应 P12）
+- `{IDEA_SHORT}`：idea 简称（如 `绿色创新溢出`，用于匹配文件名中的 `idea_{PAPER_ID}_{IDEA_SHORT}_*.md`）
+
+### 导入内容与目标位置
+
+所有导入内容放入外层项目文件夹的 `idea-mine-ref/` 子目录（与 `raw literature/`、`{ID}_latexfile/` 同级），作为立项参考资料（不纳入 git）：
+
+```
+{OUTER_DIR}/
+├── raw literature/           ← 源论文 PDF 复制到这里
+├── idea-mine-ref/            ← idea-mine 产出复制到这里
+│   ├── paper-note.md         ← paper note（重命名为统一名称）
+│   ├── idea_12_绿色创新溢出_IJPE.md   ← 所有期刊版本的 idea 文件
+│   ├── idea_12_绿色创新溢出_JCP.md
+│   ├── idea_12_绿色创新溢出_...md
+│   ├── review_IJPE_P12.md    ← 所有期刊版本的审稿评分
+│   ├── review_JCP_P12.md
+│   └── review_..._P12.md
+└── {ID}_latexfile/
+    └── structure/0_global/idea.md  ← 从选中的 idea 文件重组写入
+```
+
+### 导入操作（在 Step 1 创建目录后、Step 2 之前执行）
+
+1. **复制源论文 PDF**：在 `{BATCH_DIR}/papers/` 中根据 `{BATCH_DIR}/paper-notes/` 的文件列表匹配源论文编号对应的 PDF，复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
+   - 匹配方式：`{BATCH_DIR}/paper-notes/` 中的文件按目录顺序排列，第 `{PAPER_ID}` 个文件对应的作者名即为源论文。在 `{BATCH_DIR}/papers/` 中找到同名（仅扩展名不同 `.pdf` vs `.md`）的 PDF 复制
+
+2. **复制 paper note**：将匹配到的 `{BATCH_DIR}/paper-notes/{对应文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+
+3. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+
+4. **复制所有 review 文件**：`{BATCH_DIR}/idea-review/review_*_P{PAPER_ID}.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+
+5. **重组写入 idea.md**：读取用户选中的那个 idea 文件（由目标期刊决定，如 `idea_12_绿色创新溢出_IJPE.md`），将其 §1-§5 的内容按 `idea.md.tmpl` 的结构重组写入 `{ID}_latexfile/structure/0_global/idea.md`，映射规则：
+   - idea 文件 §1 灵感来源 → idea.md §1 灵感来源 & 参考论文
+   - idea 文件 §2 行业背景/Gap/RQ → idea.md §2（行业背景、文献不足、Gap→Objective→RQ 表格）
+   - idea 文件 §3 方法论 → idea.md §3 方法论选择论证（只保留方向和论证，具体公式/推导不放）
+   - idea 文件 §4 贡献意图 → idea.md §4 贡献意图（理论+实践分开）
+   - idea 文件 §5 风险评估 → idea.md §5 风险评估表格
 
 ## 模板目录
 
@@ -160,16 +247,41 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ---
 
-### Step 1: Git 初始化 + GitHub 仓库
+### Step 1: 创建项目目录 + Git 初始化 + GitHub 仓库
 
 ```bash
-git init  # 如果尚未初始化
+# 在 {PROJECT_PARENT_DIR} 下创建外层项目文件夹和内层 LaTeX 项目目录
+mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile"
+mkdir "{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature"
+
+# 如果启用 idea-mine 导入，还需创建参考资料目录
+mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref"   # 仅当导入时
+
+# 进入内层目录，后续所有操作都在这里
+cd "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile"
+git init
 gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 ```
 
 ---
 
+### Step 1.5: Idea-mine 导入执行（条件步骤，仅当选择导入时执行）
+
+按照上方「Idea-mine 导入」章节的操作 1-4 执行文件复制。操作 5（重组写入 idea.md）在 Step 3 创建骨架文件后执行——因为需要先有 `idea.md.tmpl` 生成的空文件，再用 idea-mine 内容覆盖。
+
+具体：
+1. 匹配并复制源论文 PDF → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
+2. 复制 paper note → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+3. 复制所有 idea 文件（glob `idea_{PAPER_ID}_{IDEA_SHORT}_*.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+4. 复制所有 review 文件（glob `review_*_P{PAPER_ID}.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+
+> **操作 5（重组写入 idea.md）放在 Step 3 末尾执行**，见 Step 3 末尾的「Idea-mine 内容写入」。
+
+---
+
 ### Step 2: 创建目录结构
+
+> 以下命令均在 `{ID}_latexfile/` 内执行。
 
 **modeling**：
 ```bash
@@ -184,6 +296,8 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 ---
 
 ### Step 3: 创建所有骨架文件
+
+> 以下所有文件的目标路径均相对于 `{ID}_latexfile/`。
 
 **所有 `{ID}` → 实际论文编号，`{TODAY}` → 当前日期，`{STRUCTURE_TABLE}` → 方法类型表格。**
 
@@ -494,9 +608,29 @@ fi
 chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
 ```
 
+#### Idea-mine 内容写入（条件步骤，仅当选择导入时执行）
+
+此步骤对应「Idea-mine 导入」章节的操作 5。在 Step 3 所有模板文件创建完成后执行：
+
+读取用户选中的 idea 文件（目标期刊对应的版本，如 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/idea_{PAPER_ID}_{IDEA_SHORT}_{TARGET_JOURNAL}.md`），按以下映射关系重组内容，**覆盖写入**已由模板生成的 `structure/0_global/idea.md`：
+
+| idea 文件章节 | → idea.md 章节 | 处理方式 |
+|:-------------|:--------------|:---------|
+| §1 灵感来源 | §1 灵感来源 & 参考论文 | 保留主论文摘要 + 迁移动机 + 迁移方向选择 |
+| §2 行业背景 | §2 行业背景与实践难题 | 直接迁移 |
+| §2 Gap 分析 | §2 文献不足（简述） | 压缩为每个 Gap 1-2 句话的简述 |
+| §2 RQ | §2 Gap→Objective→RQ 表格 | 重组为表格形式，从每个 Gap 提炼 Objective |
+| §3 方法论 | §3 方法论选择论证 | 只保留方法选择的论证和总体框架描述，**不放具体公式和推导细节**（那些属于 methodology_dev.md） |
+| §4 贡献意图 | §4 贡献意图 | 拆分为理论贡献和实践贡献，精简为要点式 |
+| §5 风险评估 | §5 风险评估 | 转为表格形式（风险/等级/应对） |
+
+> **注意**：idea.md 只放"为什么"和"方向"，不含具体公式/推导/数值。idea 文件 §3 中的详细模型设定（决策变量定义、收益函数、求解过程等）不写入 idea.md，后续填入 `methodology_dev.md`。
+
 ---
 
 ### Step 4: 编译验证
+
+> 在 `{ID}_latexfile/` 内执行。
 
 ```bash
 latexmk manuscript.tex
@@ -507,6 +641,8 @@ latexmk manuscript.tex
 ---
 
 ### Step 5: Git 初始提交 + 推送
+
+> 在 `{ID}_latexfile/` 内执行。
 
 根据 {PUBLISHER} 调整 git add 的文件列表：
 
@@ -551,21 +687,34 @@ git push -u origin main
 
 向用户报告：
 
-1. **创建完成** — 列出所有生成的文件（树状图）
+1. **创建完成** — 列出两层目录结构的树状图（外层文件夹 + `{ID}_latexfile/` 内部文件）
 2. **GitHub 仓库** — `https://github.com/zylen97/paper_{ID}`（Private）
 3. **出版社** — `{PUBLISHER}`
 4. **研究方法类型** — `{METHOD_TYPE}`
 5. **编译验证** — ✅ 通过
 6. **项目结构说明**：
+   - 外层 `{OUTER_DIR}/`：放原始文献 PDF 等非 git 管理内容（`raw literature/`）
+   - 内层 `{ID}_latexfile/`：git 仓库，包含 LaTeX 文件和 `structure/` 三层文档系统
    - `structure/` 三层文档系统：idea.md（纲领）→ 各章节md（素材）→ manuscript.tex（产出）
    - 研究推进顺序见 `CLAUDE.md` 中的"研究推进顺序"
-7. **下一步操作建议**：
-   - 填写 `CLAUDE.md` 中的 TODO 项目信息（英文标题、方法、目标期刊）
-   - 开始撰写 `structure/0_global/idea.md`（研究纲领）
-   - idea 确定后运行 `/lit-plan` 规划文献检索方向
+7. **Idea-mine 导入报告**（如果执行了导入）：
+   - 列出复制到 `raw literature/` 的源论文 PDF 文件名
+   - 列出复制到 `idea-mine-ref/` 的所有文件（paper note、idea 文件 × N 个期刊版本、review 文件 × N 个期刊版本）
+   - 说明 `idea.md` 已从选中的 idea 文件重组写入，版本号设为 v0.1
+8. **下一步操作建议**：
+
+   **如果执行了 idea-mine 导入**：
+   - 审阅 `structure/0_global/idea.md`，确认 Gap/RQ/贡献是否需要调整
+   - 运行 `/lit-plan` 规划文献检索方向
    - WoS 检索完成后运行 `/lit-review`(筛选) → `/lit-tag`(打标签) → `/lit-pool`(引用池)
    - 填写 _dev.md 过程文件后运行 `/method-audit`（方法论审计 + 结构确认）
    - 审计通过后运行 `/method-end`（从 _dev.md 凝练到成稿 md）
    - 技术型章节：`/method-end` → `/pen-draft`(初稿) → `/pen-polish`(打磨)
    - 叙述型章节：`/pen-outline`(大纲) → `/pen-draft`(初稿) → `/pen-polish`(打磨)
    - 论文主体定稿后运行 `/finalize`(Conclusion → Abstract → Cover Letter) → `/pre-submit`(投稿终检) → 投稿
+
+   **如果未导入（空白项目）**：
+   - 填写 `CLAUDE.md` 中的 TODO 项目信息（英文标题、方法、目标期刊）
+   - 开始撰写 `structure/0_global/idea.md`（研究纲领）
+   - idea 确定后运行 `/lit-plan` 规划文献检索方向
+   - 后续同上

@@ -10,7 +10,7 @@ description: "定稿收尾四步曲：Conclusion → Abstract → Cover Letter �
 Phase 1: Conclusion → Phase 2: Abstract → Phase 3: Cover Letter → Phase 4: Structure 清理
 ```
 
-Phase 1-3 为写作阶段，独立交互、逐块确认，前一阶段的产出作为后一阶段的输入。Phase 4 为清理阶段，拆除施工脚手架。每个 Phase 完成后 git checkpoint。
+Phase 1-3 为写作阶段，独立交互、逐块确认，前一阶段的产出作为后一阶段的输入。Phase 4 为清理阶段，拆除施工脚手架。每个 Phase 完成后 git checkpoint，Phase 4 额外执行 git push。
 
 **输入** `$ARGUMENTS`：可选，指定从哪个阶段开始。示例：
 - `/finalize` — 从 Phase 1 开始，完整走四步
@@ -395,7 +395,7 @@ git add -A && git commit -m "finalize: write Cover Letter"
 
 ## Phase 4: Structure 清理
 
-> Pipeline 的施工脚手架——叙述型章节目录、技术章节目录、`drafts/` 目录——在 manuscript.tex 定稿后不再是 source of truth，保留它们只会制造一致性负担。此阶段拆除脚手架，仅保留 `0_global/`（idea.md）、`2_literature/`（citation_pool 等）、`figures_tables/`。
+> Pipeline 的施工脚手架——叙述型章节目录、技术章节 md、`drafts/` 目录——在 manuscript.tex 定稿后不再是 source of truth，保留它们只会制造一致性负担。此阶段拆除脚手架，仅保留 `0_global/`（idea.md）、`2_literature/`（citation_pool 等）、`figures_tables/`，以及技术章节中 `/method-audit` 产出的 `benchmark/` 子目录。
 
 ### 4.1 扫描并生成清理清单
 
@@ -407,15 +407,20 @@ git add -A && git commit -m "finalize: write Cover Letter"
 structure/1_introduction/          ← 叙述型章节，整个目录
 structure/*discussion*/            ← 叙述型章节，整个目录（modeling: 6_discussion/, 其他: 5_discussion/）
 structure/2_literature/literature.md  ← 叙述型章节 md
-structure/3_methodology/           ← 技术章节，整个目录（含 _dev.md）
-structure/4_results/               ← 技术章节，整个目录（含 _dev.md）
-structure/5_simulation/            ← 技术章节，整个目录（仅 modeling，不存在则跳过）
+structure/3_methodology/*.md        ← 技术章节 md（methodology.md, methodology_dev.md）
+structure/3_methodology/_citation_paths.json
+structure/4_results/*.md            ← 技术章节 md（results.md, results_dev.md）
+structure/4_results/_citation_paths.json
+structure/5_simulation/*.md         ← 技术章节 md（仅 modeling，不存在则跳过）
+structure/5_simulation/_citation_paths.json
+注：技术章节目录中的 benchmark/ 子目录（/method-audit 产出）保留不删
 drafts/                            ← 写作中间产物（writing_brief 等，需要时自动重建）
 
 ✅ 保留不动：
 structure/0_global/                ← idea.md + 项目资产
 structure/2_literature/（除 literature.md）  ← search plan、direction reports、citation_pool/
 structure/figures_tables/          ← 图表资产
+structure/3_methodology/benchmark/ ← /method-audit 产出（对标论文 + 审计报告），如存在则保留
 ```
 
 > 注意：只列出实际存在的文件/目录。不存在的项不显示。
@@ -446,19 +451,22 @@ rm -rf structure/*discussion*/
 # 叙述型章节 md
 rm -f structure/2_literature/literature.md
 
-# 技术章节——整个目录（含 _dev.md，推导过程保留在 git history 中）
-rm -rf structure/3_methodology/
-rm -rf structure/4_results/
-rm -rf structure/5_simulation/
+# 技术章节——只删 md 和临时文件，保留 benchmark/ 等研究资产
+rm -f structure/3_methodology/*.md structure/3_methodology/_citation_paths.json
+rm -f structure/4_results/*.md structure/4_results/_citation_paths.json
+rm -f structure/5_simulation/*.md structure/5_simulation/_citation_paths.json
+# 如果技术章节目录删完 md 后只剩空目录（无 benchmark/ 等子目录），则删除空目录
+find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null
 
 # 写作中间产物
 rm -rf drafts/
 ```
 
-### 4.4 Git Checkpoint
+### 4.4 Git Checkpoint & Push
 
 ```bash
 git add -A && git commit -m "chore: clean up structure scaffolding after finalize"
+git push
 ```
 
 ---
@@ -476,6 +484,7 @@ git add -A && git commit -m "chore: clean up structure scaffolding after finaliz
 📄 Abstract: {WORD_COUNT_ABS} 词 → manuscript.tex
 📄 Cover Letter: {WORD_COUNT_CL} 词 → submission/coverletter.tex
 🗑️ Structure 清理完成（施工脚手架已拆除）
+🚀 已推送至远程仓库
 
 下一步：
 - 运行 /pre-submit 做投稿前终检

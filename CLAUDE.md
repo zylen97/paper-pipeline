@@ -104,8 +104,8 @@
    · /pen-draft → /pen-polish
     ↓
 ⑧ /finalize（Conclusion → Abstract → Cover Letter → Structure 清理）
-   · 清理施工脚手架：删除叙述型章节目录/md、技术章节整个目录、drafts/
-   · 保留：0_global/、2_literature/（除literature.md）、figures_tables/
+   · 清理施工脚手架：删除叙述型章节目录/md、技术章节md及临时文件、drafts/
+   · 保留：0_global/、2_literature/（除literature.md）、figures_tables/、技术章节中的benchmark/（method-audit产出）
     ↓
 ⑨ /pre-submit（投稿终检）
     ↓
@@ -119,6 +119,6 @@
 
 - **核心原则**：产出必须先落入章节 md，用户确认后才写入 manuscript.tex
 - **前进不可跳步，回改随时允许**
-- **定稿后 source of truth 转移**：`/finalize` 完成后，manuscript.tex 成为唯一正本，structure 中仅保留 `0_global/`、`2_literature/`（除 literature.md）、`figures_tables/`，其余目录及 `drafts/` 全部清理，后续修改直接改 tex + idea.md
+- **定稿后 source of truth 转移**：`/finalize` 完成后，manuscript.tex 成为唯一正本，structure 中仅保留 `0_global/`、`2_literature/`（除 literature.md）、`figures_tables/`、技术章节中的 `benchmark/`（method-audit 产出），其余 md、临时文件及 `drafts/` 全部清理，后续修改直接改 tex + idea.md
 - 工具类 skill 不入流程：`/resume`（上下文加载）、`/web-access`（联网操作）
 
