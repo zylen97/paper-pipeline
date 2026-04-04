@@ -1,5 +1,5 @@
 ---
-description: "根据研究idea规划文献检索方向，生成WoS检索式与配额分配（Literature Search Planning）"
+description: "根据研究idea规划文献检索方向，生成WoS/CNKI检索式与配额分配（Literature Search Planning）"
 ---
 
 # Lit-Plan — 文献检索规划
@@ -22,6 +22,23 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 ### 0.1 解析预算
 - 从 `$ARGUMENTS` 提取数字 → `{TOTAL_BUDGET}`（默认360）
 - 有效范围：100-500。超出范围 → 提示用户确认
+
+### 0.1b 解析检索平台与配额（wos+cnki 模式）
+- 从 `$ARGUMENTS` 检测 `--cnki` 标志（**唯一触发方式**，不自动检测项目类型）
+- 检测到 `--cnki` 后，**向用户交互确认中英文配额**：
+
+  > 检测到 CNKI 模式。请确认中英文文献配额：
+  > - 英文文献（WoS）预计多少篇？
+  > - 中文文献（CNKI）预计多少篇？
+  >
+  > 参考：申请书/学位论文通常英文 150-250 篇 + 中文 80-150 篇
+
+- 用户回复后设置：
+  - `{WOS_BUDGET}` = 用户指定的英文篇数
+  - `{CNKI_BUDGET}` = 用户指定的中文篇数
+  - `{TOTAL_BUDGET}` = WOS_BUDGET + CNKI_BUDGET
+  - `{SEARCH_PLATFORMS}` = `wos+cnki`
+- 纯 WoS 模式下（未检测到 `--cnki`），直接使用 `$ARGUMENTS` 中的数字作为 `{TOTAL_BUDGET}`，不触发交互
 
 ### 0.2 获取项目上下文
 - 读取 `CLAUDE.md` → 提取项目编号、英文标题、一句话概括、方法、目标期刊
@@ -86,6 +103,44 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 - 预估检索量：50-500篇为理想范围。< 50 → 放宽条件；> 500 → 收紧条件
 - 合并逻辑相近的子方向（属于同一学术社群的文献）以减少方向总数
 
+### CNKI 检索式设计原则（仅 wos+cnki 模式）
+
+当 `{SEARCH_PLATFORMS} = wos+cnki` 时，每个方向在 WoS 检索式之后，额外生成一条 **CNKI 专业检索式**。
+
+#### 语法规范（CNKI 专业检索）
+- **字段代码**: `SU`=主题, `TI`=题名, `KY`=关键词, `AB`=摘要, `FT`=全文, `AU`=作者, `AF`=机构, `JN`=文献来源, `YE`=年, `FU`=基金, `CLC`=分类号
+- **推荐字段**: `SU %=`（主题相关匹配），内置主题词表和同义词扩展，检索效果最佳
+- **精确匹配**: `KY =`（关键词）、`TI =`（题名）、`AU =`（作者）
+- **模糊匹配**: `TI %`（题名分词）、`AB %`（摘要分词）
+- **同字段内组合**: `*`(与)、`+`(或)、`-`(非)，检索词用英文单引号括起
+  - 示例: `SU %= '供应链韧性 * 制造业'`
+- **跨字段组合**: `AND`、`OR`、`NOT`，前后必须有空格
+  - 示例: `SU %= 供应链韧性 AND KY = 制造业`
+- **年份限制**: `YE BETWEEN ('2020', '2026')`
+- **无通配符**: CNKI 不支持 `*` 截断（与 WoS 不同），用 `%` 模糊匹配替代
+- **比 WoS 简洁**: `SU %=` 已内置同义词扩展，不需要像 WoS 那样手动列大量 OR 同义词
+- **复制粘贴到**: CNKI 高级检索页 → 切换到"专业检索"标签页
+
+#### CNKI 检索式设计要点
+1. **一个方向仅一条 CNKI 检索式**，与 WoS 检索式一一对应
+2. **关键词翻译**: 将 WoS 检索式中的英文关键词翻译为对应的中文学术术语
+3. **不做机械翻译**: 中文学术界的术语用法可能与英文不同（如 "supply chain resilience" 在中文里更常用"供应链韧性"而非"供应链弹性"），选择中文学术界通行的表达
+4. **利用 CNKI 智能匹配**: `SU %=` 已自动扩展同义词，检索式应比 WoS 更简洁
+5. **预估检索量**: CNKI 的中文文献量通常比 WoS 大，可适当收紧条件
+
+#### 每个方向的输出格式（wos+cnki 模式）
+WoS 检索式块后紧跟 CNKI 检索式块：
+
+```wos
+TS=("supply chain resilience" OR "supply chain robustness") AND TS=("manufacturing" OR "industry")
+```
+> WoS检索说明：...
+
+```cnki
+SU %= '供应链韧性 * 制造业' AND YE BETWEEN ('2020', '2026')
+```
+> CNKI检索说明：{与WoS的差异，如术语选择、范围调整}
+
 ### 建筑工程领域术语规范（Construction/AEC domain）
 当研究涉及建筑工程管理领域时，检索式中**禁止**单独使用 `"construction"` 或 `"building*"`，因为这两个词歧义极大（如 "construction of a model"、"building a framework"），会捞到大量无关文献，增加不必要的筛选工作。
 
@@ -142,11 +197,22 @@ description: "根据研究idea规划文献检索方向，生成WoS检索式与�
 
 ### 2.2 调用配额计算脚本
 
+**纯 WoS 模式**：
 ```bash
 python3 ~/.claude/skills/lit-plan/quota_calc.py \
   --directions structure/2_literature/_directions.json \
   --budget {TOTAL_BUDGET}
 ```
+
+**wos+cnki 双轨模式**：
+```bash
+python3 ~/.claude/skills/lit-plan/quota_calc.py \
+  --directions structure/2_literature/_directions.json \
+  --budget-wos {WOS_BUDGET} \
+  --budget-cnki {CNKI_BUDGET}
+```
+
+双轨模式下，脚本对同一组方向分别运行两次配额分配（WoS budget 和 CNKI budget），输出每方向独立的 `wos_quota`/`wos_tiers` 和 `cnki_quota`/`cnki_tiers`。
 
 **脚本职责**（`quota_calc.py`）：
 1. 按标签 Pool 目标（BG=50, LR=150, GAP=75, METHOD=60, DISC=65）计算 tag_share
@@ -171,7 +237,9 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 - 后续步骤从 `_quota_result.json` 读取配额数据填入输出文件
 
 ### 2.4 清理临时文件
-配额写入 `literature_search_plan.md` 后，删除 `_directions.json` 和 `_quota_result.json`
+配额写入 `literature_search_plan.md` 后，删除 `_directions.json`。
+
+> **注意**：`_quota_result.json` **不在此步骤删除**——它需要在 `/lit-review` 的 `merge_screening.py` 中被读取（双轨模式下用于中英文独立截断）。该文件在 `/lit-pool` 步骤 9 随其他 `_*` 中间文件统一清理。
 
 ---
 
@@ -201,7 +269,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 # {项目编号} 文献检索方案
 
 > **日期**: {YYYY-MM-DD}
-> **检索平台**: Web of Science (WOS) Core Collection
+> **检索平台**: {SEARCH_PLATFORMS = wos 时写 "Web of Science (WOS) Core Collection"；wos+cnki 时写 "Web of Science (WOS) Core Collection + CNKI 总库（专业检索）"}
 > **总预算**: {TOTAL_BUDGET}篇
 > **目标期刊**: {从CLAUDE.md提取}
 > **Idea成熟度**: {IDEA_MATURITY}（mature / exploratory）
@@ -214,7 +282,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 > **论文角色**: {该方向文献的角色说明}
 > **功能标签**: {通过5问清单判断，如 LR + GAP-RQ1 + DISC-RQ1}
 > **优先级**: **{P1/P2/P3}**
-> **配额**: {N}篇（核心≤{x} / 重要≤{y} / 备选≤{z}）
+> **配额**: {纯WoS模式: "{N}篇（核心≤{x} / 重要≤{y} / 备选≤{z}）"; 双轨模式: "WoS {X}篇 + CNKI {Y}篇"}
 
 \```
 {WoS检索式}
@@ -265,7 +333,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 2. 配额分配
 3. 标签覆盖检查结果
 4. 建议的检索顺序
-5. 提醒用户：去WoS检索后将RIS文件放入 `structure/2_literature/`，然后调用 `/lit-review`
+5. 提醒用户：去WoS检索后将RIS文件放入 `structure/2_literature/`；如启用CNKI，从CNKI导出EndNote格式(.enw)也放入同目录，然后调用 `/lit-review`
 
 ---
 

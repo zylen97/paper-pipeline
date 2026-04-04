@@ -230,6 +230,14 @@ def ris_to_bibtex(paper: dict, ris: dict) -> str:
         lines.append(f"  pages = {{{pages}}},")
     if doi:
         lines.append(f"  doi = {{{doi}}},")
+
+    # 检测中文文献标记（由 cnki_enw_to_ris.py 转换时添加 N1  - LA:zh）
+    n1_vals = ris.get("N1", [])
+    if isinstance(n1_vals, str):
+        n1_vals = [n1_vals]
+    if any("LA:zh" in v for v in n1_vals):
+        lines.append(f"  language = {{chinese}},")
+
     lines.append("}")
 
     return "\n".join(lines)

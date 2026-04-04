@@ -6,7 +6,11 @@ quota_calc.py — 文献检索配额计算（lit-plan §2）
 替代主 Agent 的心算，避免算术错误。
 
 用法:
+    # 纯英文模式
     python3 quota_calc.py --directions directions.json --budget 360
+
+    # 中英文双轨模式
+    python3 quota_calc.py --directions directions.json --budget-wos 200 --budget-cnki 100
 
 输入 JSON 格式 (directions.json):
     {
@@ -247,11 +251,26 @@ def main():
     parser = argparse.ArgumentParser(description="Calculate literature search quotas")
     parser.add_argument("--directions", required=True,
                         help="JSON file with direction data")
-    parser.add_argument("--budget", type=int, default=360,
-                        help="Total budget (default: 360)")
+    parser.add_argument("--budget", type=int, default=None,
+                        help="Total budget for WoS-only mode (default: 360)")
+    parser.add_argument("--budget-wos", type=int, default=None,
+                        help="WoS budget (dual-budget mode)")
+    parser.add_argument("--budget-cnki", type=int, default=None,
+                        help="CNKI budget (dual-budget mode)")
     parser.add_argument("--output", default=None,
                         help="Output JSON path (default: same dir as input / _quota_result.json)")
     args = parser.parse_args()
+
+    # 判断模式
+    dual_mode = args.budget_wos is not None and args.budget_cnki is not None
+    if dual_mode:
+        wos_budget = args.budget_wos
+        cnki_budget = args.budget_cnki
+        total_budget = wos_budget + cnki_budget
+    else:
+        total_budget = args.budget or 360
+        wos_budget = total_budget
+        cnki_budget = 0
 
     # 读取输入
     try:
@@ -266,71 +285,107 @@ def main():
         print("ERROR: No directions found in input JSON", file=sys.stderr)
         sys.exit(1)
 
-    # 计算
-    result = calculate_quotas(directions, args.budget)
+    # 计算 WoS 配额
+    wos_result = calculate_quotas(directions, wos_budget)
+    wos_errors = verify(wos_result, directions)
 
-    # 校验
-    errors = verify(result, directions)
+    # 计算 CNKI 配额（双轨模式）
+    cnki_result = None
+    cnki_errors = []
+    if dual_mode:
+        cnki_result = calculate_quotas(directions, cnki_budget)
+        cnki_errors = verify(cnki_result, directions)
 
     # 输出 JSON
     output_path = args.output or str(Path(args.directions).parent / "_quota_result.json")
     output_data = {
-        "total_budget": args.budget,
+        "total_budget": total_budget,
+        "wos_budget": wos_budget,
+        "cnki_budget": cnki_budget,
+        "dual_mode": dual_mode,
         "directions": []
     }
     for d in directions:
         did = d["id"]
-        output_data["directions"].append({
+        wos_q = wos_result["quotas"][did]
+        dir_entry = {
             "id": did,
             "name": d["name"],
             "tags": d["tags"],
             "priority": d.get("priority", "P2"),
-            "raw_demand": result["raw_demands"][did],
-            "quota": result["quotas"][did],
-            "tier_caps": result["tiers"][did],
-        })
-    output_data["pool_targets"] = result["pool_targets"]
-    output_data["coverage"] = {k: [f"D{x}" for x in v] for k, v in result["coverage"].items()}
+            "raw_demand": wos_result["raw_demands"][did],
+            "wos_quota": wos_q,
+            "wos_tiers": wos_result["tiers"][did],
+        }
+        if dual_mode:
+            cnki_q = cnki_result["quotas"][did]
+            dir_entry["cnki_quota"] = cnki_q
+            dir_entry["cnki_tiers"] = cnki_result["tiers"][did]
+            dir_entry["quota"] = wos_q + cnki_q
+        else:
+            dir_entry["cnki_quota"] = 0
+            dir_entry["quota"] = wos_q
+        output_data["directions"].append(dir_entry)
+    output_data["pool_targets"] = wos_result["pool_targets"]
+    output_data["coverage"] = {k: [f"D{x}" for x in v] for k, v in wos_result["coverage"].items()}
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
     # ===== stdout 结构化摘要 =====
     print("=== QUOTA CALCULATION ===")
-    print(f"Total budget: {args.budget}")
+    if dual_mode:
+        print(f"Mode: dual (WoS={wos_budget} + CNKI={cnki_budget} = {total_budget})")
+    else:
+        print(f"Mode: WoS-only (budget={wos_budget})")
     print(f"Directions: {len(directions)}")
     print()
 
     # Pool 目标
     print("Pool targets:")
-    for tag, target in sorted(result["pool_targets"].items()):
+    for tag, target in sorted(wos_result["pool_targets"].items()):
         print(f"  {tag}: {target}")
     print()
 
     # 计算过程
-    print("| 方向 | 服务标签 | raw_demand | 配额 | 核心 | 重要 | 备选 |")
-    print("|:-----|:---------|:---------:|:----:|:----:|:----:|:----:|")
+    if dual_mode:
+        print("| 方向 | 服务标签 | WoS配额 | CNKI配额 | 合计 | WoS(核/重/备) | CNKI(核/重/备) |")
+        print("|:-----|:---------|:------:|:-------:|:---:|:------------:|:-------------:|")
+    else:
+        print("| 方向 | 服务标签 | raw_demand | 配额 | 核心 | 重要 | 备选 |")
+        print("|:-----|:---------|:---------:|:----:|:----:|:----:|:----:|")
     for d in directions:
         did = d["id"]
         tags_str = "+".join(sorted({normalize_tag(t) for t in d["tags"]}))
-        rd = result["raw_demands"][did]
-        q = result["quotas"][did]
-        t = result["tiers"][did]
-        print(f"| D{did} {d['name'][:12]} | {tags_str} | {rd} | {q}篇 | ≤{t['core']} | ≤{t['important']} | ≤{t['backup']} |")
-    print(f"| **合计** | | | **{sum(result['quotas'].values())}篇** | | | |")
+        wos_q = wos_result["quotas"][did]
+        wt = wos_result["tiers"][did]
+        if dual_mode:
+            cnki_q = cnki_result["quotas"][did]
+            ct = cnki_result["tiers"][did]
+            print(f"| D{did} {d['name'][:12]} | {tags_str} | {wos_q}篇 | {cnki_q}篇 | {wos_q+cnki_q}篇 | ≤{wt['core']}/{wt['important']}/{wt['backup']} | ≤{ct['core']}/{ct['important']}/{ct['backup']} |")
+        else:
+            rd = wos_result["raw_demands"][did]
+            print(f"| D{did} {d['name'][:12]} | {tags_str} | {rd} | {wos_q}篇 | ≤{wt['core']} | ≤{wt['important']} | ≤{wt['backup']} |")
+    if dual_mode:
+        tw = sum(wos_result["quotas"].values())
+        tc = sum(cnki_result["quotas"].values())
+        print(f"| **合计** | | **{tw}篇** | **{tc}篇** | **{tw+tc}篇** | | |")
+    else:
+        print(f"| **合计** | | | **{sum(wos_result['quotas'].values())}篇** | | | |")
     print()
 
     # 标签覆盖
     print("Tag coverage:")
-    for tag, dirs in sorted(result["coverage"].items()):
+    for tag, dirs in sorted(wos_result["coverage"].items()):
         status = "✅" if dirs else "❌"
         print(f"  {tag}: {status} ({len(dirs)} directions: {', '.join(f'D{d}' for d in dirs)})")
     print()
 
     # 校验结果
-    if errors:
+    all_errors = wos_errors + [f"[CNKI] {e}" for e in cnki_errors]
+    if all_errors:
         print("=== VERIFY: FAIL ===")
-        for e in errors:
+        for e in all_errors:
             print(f"  ❌ {e}")
         sys.exit(1)
     else:

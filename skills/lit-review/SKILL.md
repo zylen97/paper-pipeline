@@ -1,5 +1,5 @@
 ---
-description: "分析RIS文献、生成方向报告与总报告、筛选精简文献池（Literature Review & Screening Pipeline）"
+description: "分析RIS文献（含CNKI转换）、生成方向报告与总报告、筛选精简文献池（Literature Review & Screening Pipeline）"
 ---
 
 # Lit-Review — 文献分析与筛选
@@ -19,6 +19,30 @@ description: "分析RIS文献、生成方向报告与总报告、筛选精简文
 - 读取 `structure/2_literature/literature_search_plan.md`
 - 不存在 → 停止，提示用户先运行 `/lit-plan`
 - 提取：`{TOTAL_BUDGET}`（总预算）、方向列表、每方向的配额、优先级
+
+### 0.2b 检查并转换 CNKI 导出文件（仅需时执行）
+
+扫描 `structure/2_literature/` 下的 `.enw` 文件：
+
+- **无 `.enw` 文件** → 跳过此步骤
+- **有 `.enw` 文件** → 调用转换脚本（支持多个输入文件一次性转换）：
+  ```bash
+  python3 ~/.claude/skills/lit-review/cnki_enw_to_ris.py \
+    --input structure/2_literature/*.enw \
+    --output structure/2_literature/cnki_combined.ris \
+    --skip-newspaper
+  ```
+  或按方向逐个转换：
+  ```bash
+  python3 ~/.claude/skills/lit-review/cnki_enw_to_ris.py \
+    --input structure/2_literature/direction1_cnki.enw \
+    --output structure/2_literature/direction1_cnki.ris \
+    --skip-newspaper
+  ```
+- 展示转换报告（总条数、成功转换数、年份缺失数），等待用户确认
+- 转换完成后，后续步骤统一处理 `.ris` 文件，无需区分来源
+- **判断依据**：是否有 `.enw` 文件存在即可，无需读取上游检索平台配置
+- **注意**：`.enw` 文件的命名应与方向对应（如 `direction1_cnki.enw`），或由用户在确认时指定对应关系
 
 ### 0.2 加载研究上下文
 - 读取 `CLAUDE.md` → 项目编号、标题、方法、目标期刊
@@ -163,6 +187,12 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
 5. 按配额筛选：核心≤{x}篇，重要≤{y}篇，备选≤{z}篇
 6. 如果高相关文献超出配额，优先保留：高被引 > 近5年 > 顶刊 > 方法论对标
 
+## 中文文献处理
+文献可能包含中文标题和摘要（来自CNKI数据库）。请按同样标准筛选：
+- 入选理由仍用中文撰写
+- 文献标题、作者名、期刊名保持原文（中文或英文均可）
+- 无摘要的中文文献标注"⚠️仅凭标题，建议人工复核"
+
 ## 输出格式（模板填空 + 结构分离）
 
 > **设计原理**：Agent 只输出条目级内容（照模板格式填空），不写任何 section headers、元数据或淘汰表格。Python 脚本 `format_batches.py` 从 `_dispatch_plan.json` 读取元数据，按「级别」字段分组，确定性生成标准 markdown 表格。这样 Agent 的输出零结构，格式偏移风险接近 0。
@@ -270,6 +300,8 @@ python3 ~/.claude/skills/lit-review/merge_screening.py \
 6. 生成 `screening_summary_report.md`
 7. 生成 `_screening_merged.json`（全局结构化数据，供步骤 5 使用）
 8. stdout 输出校验摘要
+
+> **双轨模式下的独立截断**：当 `structure/2_literature/_quota_result.json` 存在且 `dual_mode: true` 时，脚本自动启用中英文独立截断——通过检测文献标题/作者中的中文字符区分来源，WoS 和 CNKI 文献在同方向内按各自的配额上限独立截断后再合并。这确保中英文文献各自遵守数量约束，互不挤占。纯 WoS 模式下此机制不生效。
 
 ### 2.4 主Agent校验脚本输出
 脚本 stdout 格式：

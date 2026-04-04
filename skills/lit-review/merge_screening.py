@@ -49,6 +49,34 @@ def dedup_key(paper: dict) -> str:
 
 TIER_ORDER = {"core": 0, "important": 1, "backup": 2}
 
+
+def _is_cnki_paper(paper: dict) -> bool:
+    """Detect CNKI origin by checking for CJK characters in title/author/journal."""
+    for field in ("title", "first_author", "journal"):
+        val = paper.get(field, "")
+        if any('\u4e00' <= c <= '\u9fff' for c in val):
+            return True
+    return False
+
+
+def _truncate_by_tier(papers: list[dict], quota: int) -> list[dict]:
+    """Truncate a sorted paper list to quota with tier-level caps."""
+    core_cap = max(1, int(quota * 0.25))
+    imp_cap = max(1, int(quota * 0.40))
+    bak_cap = max(1, int(quota * 0.35))
+
+    result = []
+    counts = {"core": 0, "important": 0, "backup": 0}
+    caps = {"core": core_cap, "important": imp_cap, "backup": bak_cap}
+
+    for p in papers:
+        tier = p.get("tier", "backup")
+        if counts[tier] < caps[tier] and len(result) < quota:
+            result.append(p)
+            counts[tier] += 1
+
+    return result
+
 # Direction name maps are built dynamically from batch JSON data.
 # No hardcoded project-specific names.
 DIR_FULLNAME_MAP: dict[int, str] = {}  # populated in main() from batch data
@@ -257,32 +285,37 @@ def read_batches(batch_dir: str) -> list[dict]:
 # merge within direction
 # ---------------------------------------------------------------------------
 
-def merge_direction(papers: list[dict], quota: int) -> list[dict]:
-    """Dedup within direction, sort by tier, truncate to quota."""
+def merge_direction(papers: list[dict], quota: int,
+                    wos_quota: int | None = None,
+                    cnki_quota: int | None = None) -> list[dict]:
+    """Dedup within direction, sort by tier, truncate to quota.
+
+    If wos_quota and cnki_quota are provided (dual-track mode),
+    WoS and CNKI papers are truncated independently within their
+    own pools, then concatenated.
+    """
+    # Dedup: keep higher-tier version on collision
     seen = {}
     for p in papers:
         key = dedup_key(p)
         if key not in seen or TIER_ORDER.get(p.get("tier", "backup"), 2) < TIER_ORDER.get(seen[key].get("tier", "backup"), 2):
             seen[key] = p
-    merged = list(seen.values())
-    merged.sort(key=lambda x: TIER_ORDER.get(x.get("tier", "backup"), 2))
+    unique = sorted(seen.values(),
+                    key=lambda x: TIER_ORDER.get(x.get("tier", "backup"), 2))
 
-    # Tier-level caps: core ≤ 25%, important ≤ 40%, backup ≤ 35%
-    core_cap = max(1, int(quota * 0.25))
-    imp_cap = max(1, int(quota * 0.40))
-    bak_cap = max(1, int(quota * 0.35))
+    # Tag CNKI origin
+    for p in unique:
+        p["is_cnki"] = _is_cnki_paper(p)
 
-    result = []
-    counts = {"core": 0, "important": 0, "backup": 0}
-    caps = {"core": core_cap, "important": imp_cap, "backup": bak_cap}
+    # Dual-track: truncate WoS and CNKI pools independently
+    if wos_quota is not None and cnki_quota is not None and cnki_quota > 0:
+        wos_papers = [p for p in unique if not p["is_cnki"]]
+        cnki_papers = [p for p in unique if p["is_cnki"]]
+        return _truncate_by_tier(wos_papers, wos_quota) + \
+               _truncate_by_tier(cnki_papers, cnki_quota)
 
-    for p in merged:
-        tier = p.get("tier", "backup")
-        if counts[tier] < caps[tier] and len(result) < quota:
-            result.append(p)
-            counts[tier] += 1
-
-    return result
+    # WoS-only mode (backward compatible)
+    return _truncate_by_tier(unique, quota)
 
 
 # ---------------------------------------------------------------------------
@@ -420,21 +453,44 @@ def main():
         if d not in DIR_FULLNAME_MAP and batch.get("direction_name"):
             DIR_FULLNAME_MAP[d] = batch["direction_name"]
 
-    # 4. Merge within each direction
+    # 4. Try to load dual-track quotas from _quota_result.json
+    dual_quotas: dict[int, dict] = {}
+    qr_path = os.path.join(os.path.dirname(args.plan_file), "_quota_result.json")
+    if os.path.exists(qr_path):
+        try:
+            with open(qr_path, encoding="utf-8") as f:
+                qr = json.load(f)
+            if qr.get("dual_mode"):
+                for d_entry in qr["directions"]:
+                    dual_quotas[d_entry["id"]] = {
+                        "wos_quota": d_entry["wos_quota"],
+                        "cnki_quota": d_entry.get("cnki_quota", 0),
+                    }
+                print(f"INFO: Loaded dual-track quotas from {qr_path}", file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: Could not parse {qr_path}: {e}", file=sys.stderr)
+
+    # 5. Merge within each direction
     merged_papers: dict[int, list[dict]] = {}
     for d in sorted(dir_papers.keys()):
         quota = quotas.get(d, 999)
-        merged_papers[d] = merge_direction(dir_papers[d], quota)
+        if d in dual_quotas:
+            merged_papers[d] = merge_direction(
+                dir_papers[d], quota,
+                wos_quota=dual_quotas[d]["wos_quota"],
+                cnki_quota=dual_quotas[d]["cnki_quota"])
+        else:
+            merged_papers[d] = merge_direction(dir_papers[d], quota)
 
-    # 5. Cross-direction dedup (count only, keep all)
+    # 6. Cross-direction dedup (count only, keep all)
     merged_papers, dup_count, unique_count = cross_dedup(merged_papers)
 
-    # 6. Budget check
+    # 7. Budget check
     total_selected = sum(len(ps) for ps in merged_papers.values())
     budget = args.budget if args.budget > 0 else 99999
     budget_status = "PASS" if total_selected <= budget else "FAIL"
 
-    # 7. Generate direction reports
+    # 8. Generate direction reports
     output_dir = Path(args.output_dir)
     for d, papers in merged_papers.items():
         fullname = DIR_FULLNAME_MAP.get(d, f"方向{d}")
@@ -444,12 +500,12 @@ def main():
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(report)
 
-    # 8. Generate summary report
+    # 9. Generate summary report
     summary = generate_summary(merged_papers, dup_count, unique_count, dir_total_items)
     with open(output_dir / "screening_summary_report.md", "w", encoding="utf-8") as f:
         f.write(summary)
 
-    # 9. Generate merged JSON
+    # 10. Generate merged JSON
     merged_json = {
         "directions": {},
         "cross_direction_duplicates": dup_count,
@@ -460,7 +516,7 @@ def main():
     with open(output_dir / "_screening_merged.json", "w", encoding="utf-8") as f:
         json.dump(merged_json, f, ensure_ascii=False, indent=2)
 
-    # 10. Stdout summary for main agent validation
+    # 11. Stdout summary for main agent validation
     print("=== MERGE SUMMARY ===")
     print(f"Batch files parsed: {expected_count}/{expected_count}")
     for d in sorted(merged_papers.keys()):

@@ -27,10 +27,67 @@ import unicodedata
 from collections import defaultdict
 from pathlib import Path
 
+# 中文拼音支持（可选依赖）
+try:
+    from pypinyin import lazy_pinyin
+    HAS_PINYIN = True
+except ImportError:
+    HAS_PINYIN = False
+
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
+# 中文复姓列表
+_COMPOUND_SURNAMES = {
+    "欧阳", "司马", "上官", "诸葛", "司徒", "令狐", "宇文", "长孙",
+    "慕容", "皇甫", "东方", "端木", "公孙", "南宫", "独孤", "赫连",
+}
+
+# 中文常见虚词（用于标题首实词提取时跳过）
+_CN_STOP = set("的了是在有和与及其对从以为被把将而也都能要不")
+
+
+def _is_cjk(char: str) -> bool:
+    """判断单个字符是否为 CJK 汉字。"""
+    return '\u4e00' <= char <= '\u9fff'
+
+
+def _has_cjk(s: str) -> bool:
+    """判断字符串是否包含 CJK 汉字。"""
+    return any(_is_cjk(c) for c in s)
+
+
+def chinese_surname_to_pinyin(name: str) -> str:
+    """中文姓氏转拼音。支持复姓（欧阳→ouyang）。
+    pypinyin 不可用时 fallback 到 Unicode 码位。"""
+    if not name:
+        return "unknown"
+    if not HAS_PINYIN:
+        return "cn" + format(ord(name[0]), 'x')
+    # 检查复姓
+    for cs in _COMPOUND_SURNAMES:
+        if name.startswith(cs):
+            result = ''.join(lazy_pinyin(cs))
+            if result:
+                return result
+    # 单姓
+    result = ''.join(lazy_pinyin(name[0]))
+    return result if result else "cn" + format(ord(name[0]), 'x')
+
+
+def chinese_title_initial(title: str) -> str:
+    """中文标题取首个实词的拼音首字母。"""
+    for ch in title:
+        if _is_cjk(ch) and ch not in _CN_STOP:
+            if HAS_PINYIN:
+                py = lazy_pinyin(ch)
+                return py[0][0] if py and py[0] else 'x'
+            else:
+                return 'x'
+    return 'x'
+
 
 # 英文常见停用词（用于 citation key 生成时跳过）
 STOP_WORDS = {
@@ -64,30 +121,42 @@ def dedup_key(author: str, year: int, title: str) -> str:
 def generate_citation_key(author: str, year: int, title: str) -> str:
     """按全局规则生成 citation key: auth.lower + year + shorttitle(1,1)。
     格式：第一作者姓氏小写 + 四位年份 + 标题首个实词首字母小写。
-    示例：Akcomak (2023) "What drives network evolution?" → akcomak2023w
+    示例：
+      Akcomak (2023) "What drives network evolution?" → akcomak2023w
+      陶鸠 (2026) "价值创造与资源重构" → tao2026j
+      欧阳明 (2025) "数字化转型" → ouyang2025s
     """
     # 提取第一作者姓氏
-    # 处理 "Smith, John" 或 "Smith" 或 "Smith J." 等格式
-    fa = author.split(",")[0].split(";")[0].strip()
+    fa_raw = author.split(",")[0].split(";")[0].strip()
     # 去掉可能的名缩写（如 "Smith J." → "Smith"）
-    fa = re.sub(r"\s+[A-Z]\.?$", "", fa)
-    fa = fa.strip().lower()
-    # 只保留字母
-    fa = re.sub(r"[^a-z]", "", fa)
+    fa_raw = re.sub(r"\s+[A-Z]\.?$", "", fa_raw).strip()
+
+    # 判断是否中文作者
+    if _has_cjk(fa_raw):
+        fa = chinese_surname_to_pinyin(fa_raw)
+    else:
+        fa = fa_raw.lower()
+        fa = re.sub(r"[^a-z]", "", fa)
+
     if not fa:
         fa = "unknown"
 
-    # 提取标题首个实词的首字母
+    # 提取标题首个实词的首字母（先尝试英文）
     title_words = re.findall(r"[a-zA-Z]+", title.lower())
     first_content_word = ""
     for w in title_words:
         if w not in STOP_WORDS:
             first_content_word = w[0]
             break
+    # 英文标题 fallback
     if not first_content_word and title_words:
         first_content_word = title_words[0][0]
+    # 中文标题 fallback
     if not first_content_word:
-        first_content_word = "x"
+        if _has_cjk(title):
+            first_content_word = chinese_title_initial(title)
+        else:
+            first_content_word = "x"
 
     return f"{fa}{year}{first_content_word}"
 
@@ -330,7 +399,7 @@ def plan_agents(tag_groups: dict[str, list[dict]], limit: int) -> list[dict]:
 # 校验
 # ---------------------------------------------------------------------------
 
-CK_PATTERN = re.compile(r"^[a-z]+\d{4}[a-z][a-z]?$")
+CK_PATTERN = re.compile(r"^[a-z][a-z0-9]*\d{4}[a-z][a-z]?$")
 
 
 def verify(papers: list[dict], tag_groups: dict[str, list[dict]],

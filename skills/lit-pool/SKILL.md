@@ -131,6 +131,7 @@ subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严
 3. **生成引用场景**：基于入选理由 + 研究上下文，改写为写作视角
    - 入选理由 = "为什么留下这篇"（筛选视角）
    - 引用场景 = "这篇可以支撑什么论点"（写作视角）
+4. **中文文献处理**：文献可能为中文（来自CNKI数据库）。引用场景仍用中文撰写。citation key 必须原样复制，不可修改
 
 ## 输出格式（模板填空 + 结构分离）
 
@@ -365,6 +366,7 @@ python3 ~/.claude/skills/lit-pool/generate_master_report.py \
 - §4 创新空间必须结合本研究的具体情境，不是通用建议
 - §5 对照必须逐条对应 idea.md §3 的内容
 - 总字数 1000-2000 字（中文）
+- 如包含中文文献（CNKI来源），在引用时注明"（国内学者）"以区分国内外研究脉络
 
 ---
 
@@ -399,6 +401,8 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 - master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
 - `/method-end` 和 `/pen-outline` 在确认要点写入章节 md 时，从 master.bib 提取新增 citation key 条目追加到项目 bib
 - `/pen-draft` 仅做 bib 验证（检查 key 是否存在），不负责同步
+
+> **中文文献 BibTeX 提示**：CNKI 来源文献的 BibTeX 条目自动包含 `language = {chinese}` 字段。LaTeX 编译需使用 xelatex/lualatex + UTF-8 编码以正确渲染中文。
 
 ---
 
