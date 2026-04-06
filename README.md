@@ -81,7 +81,7 @@ A companion Flutter Web PWA for browsing journal papers on mobile:
 Clone this repo to the Claude Code config directory:
 
 ```bash
-git clone https://github.com/zylen97/claude-config.git ~/.claude
+git clone https://github.com/zylen97/paper-pipeline.git ~/.claude
 ```
 
 Claude Code auto-discovers all skills from `~/.claude/skills/`.
