@@ -15,13 +15,15 @@
 \definecolor{bgrose}{HTML}{f0e2e2}
 \definecolor{bggray}{HTML}{ececec}
 \definecolor{bggreen}{HTML}{e2ede6}
+\definecolor{indigo}{HTML}{6366F1}
+\definecolor{indigolight}{HTML}{c7d2fe}
+\definecolor{bgindigo}{HTML}{eef2ff}
 
 \begin{document}
 \begin{tikzpicture}[
   font=\small,
   >=Stealth,
   every node/.style={inner sep=0pt},
-  % --- node styles ---
   skill/.style={
     draw=steelblue, thick, rectangle, rounded corners=3pt,
     fill=steelbluelight!50, align=center, inner sep=6pt,
@@ -52,11 +54,16 @@
     minimum width=2.4cm, minimum height=0.9cm,
     font=\small\bfseries,
   },
+  skillindigo/.style={
+    draw=indigo, thick, rectangle, rounded corners=3pt,
+    fill=indigolight!50, align=center, inner sep=6pt,
+    minimum width=2.4cm, minimum height=0.9cm,
+    font=\small\bfseries,
+  },
   desc/.style={font=\scriptsize\color{black!60}, align=center},
   arr/.style={->, thick, steelblue!80},
   arrdash/.style={->, thick, dashed, morandigray},
   phase/.style={font=\normalsize\bfseries, text=black!70},
-  phaselabel/.style={font=\footnotesize, text=black!50, align=left},
 ]
 
 %% ============================================================
@@ -64,10 +71,13 @@
 %% ============================================================
 \node[phase] at (0, 1.2) {Phase 1: Idea \& Init};
 
-\node[skillgold] (ideamine) at (0, 0) {/idea-mine};
+\node[skillindigo] (ideascout) at (0, 0) {/idea-scout};
+\node[desc, below=2pt of ideascout] {28 FT50/UTD24\\OpenAlex + App};
+
+\node[skillgold] (ideamine) at (0, -2.2) {/idea-mine};
 \node[desc, below=2pt of ideamine] {PDF $\to$ idea.md};
 
-\node[skill] (paperinit) at (0, -2.2) {/paper-init};
+\node[skill] (paperinit) at (0, -4.4) {/paper-init};
 \node[desc, below=2pt of paperinit] {project skeleton\\Git + GitHub};
 
 %% ============================================================
@@ -129,18 +139,21 @@
 %% ============================================================
 %% CROSS-CUTTING: Utility Skills (bottom)
 %% ============================================================
-\node[phase] at (4.5, -9.6) {Cross-cutting Utilities};
+\node[phase] at (5.5, -9.6) {Cross-cutting Utilities};
 
 \node[skillgray] (resume) at (0, -10.6) {/resume};
 \node[desc, below=2pt of resume] {context loader};
 
 \node[skillgray] (figure) at (3, -10.6) {/figure};
-\node[desc, below=2pt of figure] {TikZ + Python/R\\Eagle integration};
+\node[desc, below=2pt of figure] {TikZ + Python/R\\Eagle reference};
 
-\node[skillgray] (latextable) at (6, -10.6) {/latex-table};
-\node[desc, below=2pt of latextable] {table formatting\\auto-invoke};
+\node[skillgray] (figharvest) at (6, -10.6) {/figure-harvest};
+\node[desc, below=2pt of figharvest] {Elsevier CDN\\batch download};
 
-\node[skillgray] (webaccess) at (9, -10.6) {/web-access};
+\node[skillgray] (latextable) at (9, -10.6) {/latex-table};
+\node[desc, below=2pt of latextable] {table formatting};
+
+\node[skillgray] (webaccess) at (12, -10.6) {/web-access};
 \node[desc, below=2pt of webaccess] {browser CDP\\search \& fetch};
 
 %% ============================================================
@@ -148,10 +161,11 @@
 %% ============================================================
 
 % Phase 1 internal
+\draw[arr] (ideascout) -- node[right, desc] {selected.json} (ideamine);
 \draw[arr] (ideamine) -- (paperinit);
 
 % Phase 1 -> Phase 2
-\draw[arr] (paperinit) -- node[above, desc] {idea.md} (litplan);
+\draw[arr] (paperinit.east) -- ++(0.8,0) |- node[above, desc, pos=0.3] {idea.md} (litplan.west);
 
 % Phase 2 internal
 \draw[arr] (litplan) -- (litreview);
@@ -192,14 +206,18 @@
 
 % method-audit optional entry from methodology.md
 \draw[arrdash] ([yshift=4pt]paperinit.east) -- ++(1.5,0) |- ([xshift=-6pt]methodaudit.west);
-\node[desc] at (2.6, -0.6) {\textit{methodology.md}};
+\node[desc] at (2.6, -2.8) {\textit{\_dev.md}};
+
+% figure-harvest -> figure (feeds Eagle library)
+\draw[arrdash] (figharvest.north) -- ++(0, 0.5) -| ([xshift=4pt]figure.north);
+\node[desc] at (4.5, -9.8) {\textit{Eagle}};
 
 %% ============================================================
 %% BACKGROUND REGIONS
 %% ============================================================
 \begin{scope}[on background layer]
   % Phase 1
-  \node[fit=(ideamine)(paperinit), inner sep=14pt, fill=bggold!40, rounded corners=6pt] {};
+  \node[fit=(ideascout)(paperinit), inner sep=14pt, fill=bggold!40, rounded corners=6pt] {};
   % Phase 2
   \node[fit=(litplan)(litpool), inner sep=14pt, fill=bgblue!50, rounded corners=6pt] {};
   % Phase 3

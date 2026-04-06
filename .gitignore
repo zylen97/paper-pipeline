@@ -1,10 +1,9 @@
-# Only track config files that matter: commands, agents, CLAUDE.md, settings
+# Only track skills, agents, and docs
 # Ignore everything else by default
 *
 
 # Track these
 !.gitignore
-!CLAUDE.md
 !README.md
 !assets/
 !assets/*
@@ -25,10 +24,17 @@
 !skills/**/*.sh
 !skills/**/*.tex
 !skills/**/*.py
+!skills/**/*.json
 !config/
 !config/**
-!settings.json
-!settings.local.json
+!skills_pipeline.pdf
+!skills_pipeline.tex
+
+# Sensitive files — never track
+CLAUDE.md
+settings.json
+settings.local.json
+memory/
 
 # Never track these even if unignored above
 *.backup

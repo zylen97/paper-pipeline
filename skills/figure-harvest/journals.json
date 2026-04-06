@@ -1,0 +1,151 @@
+{
+  "journals": [
+    {
+      "id": "AEI",
+      "name": "Advanced Engineering Informatics",
+      "slug": "advanced-engineering-informatics",
+      "tags": ["建工", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "AIC",
+      "name": "Automation in Construction",
+      "slug": "automation-in-construction",
+      "tags": ["建工", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "BAE",
+      "name": "Building and Environment",
+      "slug": "building-and-environment",
+      "tags": ["建工", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "CIT",
+      "name": "Cities",
+      "slug": "cities",
+      "tags": ["城市"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "CIE",
+      "name": "Computers & Industrial Engineering",
+      "slug": "computers-and-industrial-engineering",
+      "tags": ["工业工程", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "ESWA",
+      "name": "Expert Systems with Applications",
+      "slug": "expert-systems-with-applications",
+      "tags": ["工业工程", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "HI",
+      "name": "Habitat International",
+      "slug": "habitat-international",
+      "tags": ["城市", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "IJDRR",
+      "name": "International Journal of Disaster Risk Reduction",
+      "slug": "international-journal-of-disaster-risk-reduction",
+      "tags": ["应急", "城市", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "IJPE",
+      "name": "International Journal of Production Economics",
+      "slug": "international-journal-of-production-economics",
+      "tags": ["工业工程"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "IJPM",
+      "name": "International Journal of Project Management",
+      "slug": "international-journal-of-project-management",
+      "tags": ["项目管理", "建工"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "JBE",
+      "name": "Journal of Building Engineering",
+      "slug": "journal-of-building-engineering",
+      "tags": ["建工", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "JBR",
+      "name": "Journal of Business Research",
+      "slug": "journal-of-business-research",
+      "tags": ["创新"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "JCP",
+      "name": "Journal of Cleaner Production",
+      "slug": "journal-of-cleaner-production",
+      "tags": ["城市", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "LUP",
+      "name": "Land Use Policy",
+      "slug": "land-use-policy",
+      "tags": ["城市", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "LAUP",
+      "name": "Landscape and Urban Planning",
+      "slug": "landscape-and-urban-planning",
+      "tags": ["城市", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "RESS",
+      "name": "Reliability Engineering & System Safety",
+      "slug": "reliability-engineering-and-system-safety",
+      "tags": ["工业工程", "应急", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "SS",
+      "name": "Safety Science",
+      "slug": "safety-science",
+      "tags": ["应急", "工业工程", "建工"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "SCS",
+      "name": "Sustainable Cities and Society",
+      "slug": "sustainable-cities-and-society",
+      "tags": ["城市", "建工", "可持续", "智能化"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "TECH",
+      "name": "Technovation",
+      "slug": "technovation",
+      "tags": ["工业工程", "创新"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "TFSC",
+      "name": "Technological Forecasting and Social Change",
+      "slug": "technological-forecasting-and-social-change",
+      "tags": ["创新", "可持续"],
+      "publisher": "elsevier"
+    },
+    {
+      "id": "TRE",
+      "name": "Transportation Research Part E",
+      "slug": "transportation-research-part-e-logistics-and-transportation-review",
+      "tags": ["工业工程"],
+      "publisher": "elsevier"
+    }
+  ]
+}

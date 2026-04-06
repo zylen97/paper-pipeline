@@ -1,87 +1,123 @@
-# 科研论文写作技能系统（Claude Code Skills）
+# Academic Paper Writing Skills (Claude Code)
 
-基于 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 的模块化技能系统，覆盖学术论文写作全生命周期——从选题挖掘到审稿回复。
+A modular skill system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) covering the full academic paper lifecycle — from idea discovery to revision response.
 
-![技能流水线](assets/skills_pipeline.png)
+![Skills Pipeline](assets/skills_pipeline.png)
 
-## 流水线概览
+## Pipeline Overview
 
-整个流水线分为 6 个阶段，每个技能通过斜杠命令（如 `/lit-plan`）在 Claude Code 中调用。
+The pipeline spans 7 phases. Each skill is invoked via slash command (e.g., `/lit-plan`) in Claude Code.
 
-### 阶段一：选题与初始化
+### Phase 1: Idea Discovery & Initialization
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/idea-mine` | 从一组 PDF 论文中挖掘可迁移的研究 idea，经审稿人式质控后输出 idea.md |
-| `/paper-init` | 初始化论文项目骨架：出版社模板 + Git/GitHub + 三层文档系统 |
+| Skill | Description |
+|:------|:------------|
+| `/idea-scout` | Scan 28 FT50/UTD24 journals via OpenAlex API, translate abstracts, push to [Idea Scout App](https://zylen97.github.io/idea-scout/) for manual browsing & selection |
+| `/idea-mine` | Deep-dive selected PDFs to extract transferable research ideas, output `idea.md` with reviewer-grade quality control |
+| `/paper-init` | Initialize project skeleton: publisher templates + Git/GitHub + 3-layer document system |
 
-### 阶段二：文献
+### Phase 2: Literature
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/lit-plan` | 规划文献检索方向，生成 Web of Science 检索式与配额分配 |
-| `/lit-review` | 筛选 RIS 导出文献，生成各方向报告与总报告 |
-| `/lit-tag` | 为筛选后的文献打功能标签（BG/LR/GAP/...），按研究问题分类 |
-| `/lit-pool` | 汇总标签文献为引用池，含引用场景、分级排序，并生成 `master.bib` |
+| Skill | Description |
+|:------|:------------|
+| `/lit-plan` | Plan search directions, generate Web of Science / CNKI queries with quota allocation |
+| `/lit-review` | Screen RIS exports, generate per-direction and summary reports |
+| `/lit-tag` | Tag screened papers by function (BG/LR/GAP/...), classify by research question |
+| `/lit-pool` | Aggregate tagged papers into citation pool with usage scenarios + `master.bib` |
 
-### 阶段三：Idea 精炼
+### Phase 3: Idea Refinement
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/idea-refine` | 交互式研究 idea 与方法设计迭代审稿（idea-reviewer 审稿 → 用户确认 → 修改 → 循环至满意） |
+| Skill | Description |
+|:------|:------------|
+| `/idea-refine` | Interactive idea & method design iteration (idea-reviewer audit → user confirm → revise → loop until satisfied) |
 
-### 阶段四：写作
+### Phase 4: Writing
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/method-audit` | 对标已发表论文，审计方法论问题，提出结构/模型/图表的优化建议 |
-| `/method-end` | 从成熟过程文件(_dev.md)交互式凝练正文要点，填充技术型章节成稿(X.md) |
-| `/pen-outline` | 交互式构建章节大纲（论点 + 引文），为起草提供高质量输入 |
-| `/pen-draft` | 从大纲自动生成初稿，通过 journal-scout 和并行 sci-writer agent 完成 |
-| `/pen-polish` | 迭代打磨：strict-reviewer 反馈 → 用户确认 → 修改 → language-polisher 润色 |
+| Skill | Description |
+|:------|:------------|
+| `/method-audit` | Benchmark against published papers, audit methodology issues, suggest structural improvements |
+| `/method-end` | Distill mature dev files (`_dev.md`) into publication-ready chapter markdown |
+| `/pen-outline` | Interactively build section outlines (arguments + citations) |
+| `/pen-draft` | Generate first draft from outline via journal-scout + parallel sci-writer agents |
+| `/pen-polish` | Iterative polish: strict-reviewer feedback → user confirm → revise → language-polisher |
 
-### 阶段五：定稿
+### Phase 5: Finalization
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/finalize` | 定稿四步曲：Conclusion → Abstract → Cover Letter → Structure 清理，交互式确认 + 语言润色 |
-| `/pre-submit` | 投稿前终检：引用完整性、自引率、格式合规、图表规范、符号一致性 |
+| Skill | Description |
+|:------|:------------|
+| `/finalize` | Four-step wrap-up: Conclusion → Abstract → Cover Letter → Structure cleanup |
+| `/pre-submit` | Pre-submission checklist: citation integrity, self-citation rate, formatting, symbol consistency |
 
-### 阶段六：修改
+### Phase 6: Revision
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/rev-init` | 初始化修改工作流：冻结基准 → 解析决定信 → 聚类评审意见 → 搭建回复骨架 |
-| `/rev-respond` | 逐条审稿回复闭环：策略对齐 → 内容起草 → 语言润色 → 执行写入 |
+| Skill | Description |
+|:------|:------------|
+| `/rev-init` | Initialize revision workflow: freeze baseline → parse decision letter → cluster comments → scaffold response |
+| `/rev-respond` | Per-comment response loop: strategy alignment → draft → polish → execute |
 
-### 跨阶段工具
+### Cross-cutting Utilities
 
-| 技能 | 说明 |
-|:-----|:-----|
-| `/resume` | 新 session 快速加载项目上下文 |
-| `/figure` | 学术图表全流程：自动判断 TikZ/Python/R，创建或美化图表，Eagle 风格参考 |
-| `/latex-table` | LaTeX 表格格式化与模板（兼容 Elsarticle） |
-| `/web-access` | 联网操作：搜索、网页抓取、登录后操作、浏览器 CDP |
-| `/peer-review` | 作为期刊审稿人阅读待审稿件 PDF，按用户审稿风格自动生成审稿意见 |
+| Skill | Description |
+|:------|:------------|
+| `/resume` | Quick-load project context for new sessions |
+| `/figure` | Academic figure workflow: auto-select TikZ/Python/R, create or beautify figures, Eagle style reference |
+| `/figure-harvest` | Batch harvest figures (GA + body figures) from Elsevier journals via CDN direct download |
+| `/latex-table` | LaTeX table formatting & templates (Elsarticle compatible) |
+| `/web-access` | Browser CDP: search, fetch, login-required pages, interactive navigation |
+| `/peer-review` | Act as journal reviewer: read manuscript PDF, generate review comments matching user's review style |
 
-## 安装
+## Idea Scout App
 
-将本仓库克隆到 Claude Code 配置目录：
+A companion Flutter Web PWA for browsing journal papers on mobile:
+
+- **Live**: [zylen97.github.io/idea-scout](https://zylen97.github.io/idea-scout/)
+- **Repo**: [zylen97/idea-scout](https://github.com/zylen97/idea-scout)
+- **Flow**: `/idea-scout` pushes data → App displays → user selects → export JSON → `/idea-mine` analyzes
+
+## Installation
+
+Clone this repo to the Claude Code config directory:
 
 ```bash
 git clone https://github.com/zylen97/claude-config.git ~/.claude
 ```
 
-Claude Code 会自动从 `~/.claude/skills/` 发现所有技能。
+Claude Code auto-discovers all skills from `~/.claude/skills/`.
 
-## 设计原则
+> **Note**: `CLAUDE.md` and `settings.json` are gitignored — create your own based on your preferences.
 
-- **Markdown 优先**：所有内容先写入章节 `.md` 文件，用户确认后才写入 `manuscript.tex`
-- **不可跳步，可以回改**：阶段必须按顺序推进，但随时允许回溯修改
-- **交互式确认**：每个技能在关键决策点暂停，等待用户确认后再继续
-- **并行 Agent 加速**：计算密集步骤（文献筛选、方法论对标）分发并行子 agent 提速
-- **双轨写作**：叙述型章节（Introduction/Literature/Discussion）走 `/pen-outline` → `/pen-draft` 路径；技术型章节（Methodology/Results/Simulation）走 `/method-end` → `/pen-draft` 路径，两条路径汇合于 `/pen-draft` 生成 manuscript
+## Architecture
 
-## 许可证
+```
+~/.claude/
+├── CLAUDE.md              # Personal instructions (gitignored)
+├── settings.json          # Claude Code settings (gitignored)
+├── agents/                # Specialized sub-agents
+│   ├── sci-writer.md      # Academic English writer
+│   ├── strict-reviewer.md # Harsh peer reviewer
+│   ├── language-polisher.md
+│   ├── journal-scout.md   # Journal guidelines fetcher
+│   └── idea-reviewer.md   # Idea & method design reviewer
+├── skills/                # 23 slash-command skills
+│   ├── idea-scout/        # Journal scanning + App data pipeline
+│   ├── idea-mine/         # PDF → transferable idea extraction
+│   ├── paper-init/        # Project scaffolding (6 publishers)
+│   ├── lit-*/             # Literature pipeline (4 skills)
+│   ├── pen-*/             # Writing pipeline (3 skills)
+│   ├── rev-*/             # Revision pipeline (2 skills)
+│   ├── figure-harvest/    # Journal figure batch download
+│   └── ...
+└── config/                # Runtime state
+```
+
+## Design Principles
+
+- **Markdown first**: All content goes into chapter `.md` files; only written to `manuscript.tex` after user confirmation
+- **No skipping, free backtracking**: Phases must proceed in order, but revisions are always allowed
+- **Interactive confirmation**: Every skill pauses at critical decision points
+- **Parallel agents**: Computation-heavy steps (literature screening, methodology benchmarking) dispatch parallel sub-agents
+- **Dual-track writing**: Narrative chapters (Intro/Lit/Discussion) via `/pen-outline` → `/pen-draft`; Technical chapters (Methodology/Results) via `/method-end` → `/pen-draft` — both converge at `/pen-draft`
+
+## License
 
 MIT
