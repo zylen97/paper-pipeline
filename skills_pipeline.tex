@@ -91,12 +91,6 @@
 \node[skill] (paperinit) at (0, -2*\vs) {/paper-init};
 \node[desc, below=4pt of paperinit] {project skeleton\\Git + GitHub};
 
-% idea-refine: beside Phase 1, with loop arrow
-\node[skillteal] (idearefine) at (0, -3.3*\vs) {/idea-refine};
-\node[desc, below=4pt of idearefine] {idea-reviewer\\iterative audit};
-
-% Loop arrow for idea-refine (small self-loop on the right)
-\draw[arr, teal] ([xshift=6pt]idearefine.north) -- ++(0, 0.5) -- ++(1.4, 0) -- ++(0, -1.35) -- ++(-1.4, 0) -- ([xshift=6pt]idearefine.south);
 
 %% ============================================================
 %% COLUMN 2: Phase 2 — Literature (x=5)
@@ -163,22 +157,25 @@
 \def\uty{-5.6*\vs}
 \node[phase] at (1.5*\hs, \uty + 0.6) {Cross-cutting Utilities};
 
-\node[skillgray] (resume)     at (0,           \uty - 0.2) {/resume};
+\node[skillteal] (idearefine) at (0,            \uty - 0.2) {/idea-refine};
+\node[desc, below=3pt of idearefine] {iterative idea audit};
+
+\node[skillgray] (resume)     at (2.6,          \uty - 0.2) {/resume};
 \node[desc, below=3pt of resume] {context loader};
 
-\node[skillgray] (figure)     at (\hs - 1.8,   \uty - 0.2) {/figure};
+\node[skillgray] (figure)     at (5.2,          \uty - 0.2) {/figure};
 \node[desc, below=3pt of figure] {TikZ / Python / R};
 
-\node[skillgray] (figharvest) at (2*\hs - 2.8,  \uty - 0.2) {/figure-harvest};
+\node[skillgray] (figharvest) at (7.8,          \uty - 0.2) {/figure-harvest};
 \node[desc, below=3pt of figharvest] {Elsevier CDN};
 
-\node[skillgray] (latextable) at (2*\hs - 0.2,  \uty - 0.2) {/latex-table};
+\node[skillgray] (latextable) at (10.4,         \uty - 0.2) {/latex-table};
 \node[desc, below=3pt of latextable] {table formatting};
 
-\node[skillgray] (webaccess)  at (3*\hs - 2.2,  \uty - 0.2) {/web-access};
+\node[skillgray] (webaccess)  at (13.0,         \uty - 0.2) {/web-access};
 \node[desc, below=3pt of webaccess] {browser CDP};
 
-\node[skillgray] (peerreview) at (3*\hs + 0.6,  \uty - 0.2) {/peer-review};
+\node[skillgray] (peerreview) at (15.6,         \uty - 0.2) {/peer-review};
 \node[desc, below=3pt of peerreview] {reviewer simulation};
 
 %% ============================================================
@@ -235,12 +232,12 @@
 %% BACKGROUND REGIONS
 %% ============================================================
 \begin{scope}[on background layer]
-  \node[fit=(ideascout)(idearefine), inner sep=16pt, fill=bggold!40, rounded corners=6pt] {};
+  \node[fit=(ideascout)(paperinit), inner sep=16pt, fill=bggold!40, rounded corners=6pt] {};
   \node[fit=(litplan)(litpool), inner sep=16pt, fill=bgblue!50, rounded corners=6pt] {};
   \node[fit=(methodaudit)(penpolish), inner sep=16pt, fill=bggold!30, rounded corners=6pt] {};
   \node[fit=(finalize)(presubmit), inner sep=16pt, fill=bgrose!40, rounded corners=6pt] {};
   \node[fit=(revinit)(revrespond), inner sep=16pt, fill=bggreen!50, rounded corners=6pt] {};
-  \node[fit=(resume)(peerreview), inner sep=16pt, fill=bggray!40, rounded corners=6pt] {};
+  \node[fit=(idearefine)(peerreview), inner sep=16pt, fill=bggray!40, rounded corners=6pt] {};
 \end{scope}
 
 \end{tikzpicture}
