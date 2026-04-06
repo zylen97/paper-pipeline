@@ -123,7 +123,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 ## 步骤 1：生成 Writing Brief
 
 1. **复用检查**：读取 `drafts/writing_brief.md`，检查 `## Metadata` 中的 `Generated` 时间戳（> 24h→重新生成）和 `Manuscript word count`（变化 > 20%→重新生成）。两项通过→复用
-2. **Web 搜索**（主 agent 执行）：从 `\journal{}` 提取期刊名，依次尝试 `mcp__web-search-prime__webSearchPrime`→`mcp__MiniMax__web_search`→"Knowledge base only"
+2. **Web 搜索**（主 agent 执行）：从 `\journal{}` 提取期刊名，使用 `WebSearch` 工具搜索期刊投稿指南。如需深入获取页面内容，加载 web-access skill 通过 CDP 访问
 3. **调用 journal-scout**（`subagent_type: "journal-scout"`）：prompt 含 manuscript 分析 + web 搜索结果
 4. **保存**：提取 `---BEGIN/END WRITING BRIEF---` 之间内容→`drafts/writing_brief.md`
 5. **展示**：期刊名称、研究情境、信息来源

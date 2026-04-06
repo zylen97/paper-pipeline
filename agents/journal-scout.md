@@ -8,7 +8,7 @@ description: >
   downstream agents (sci-writer, strict-reviewer, language-polisher).
   Invoke at the start of every /draft or /polish workflow.
 model: opus
-tools: Read, Grep, Glob, mcp__MiniMax__web_search, mcp__web-search-prime__webSearchPrime
+tools: Read, Grep, Glob, WebFetch, WebSearch
 maxTurns: 15
 ---
 
