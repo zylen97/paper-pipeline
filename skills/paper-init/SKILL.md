@@ -8,7 +8,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ## 参数解析
 
-从 `$ARGUMENTS` 提取论文编号 `{ID}`（如 `zl15`）。
+从 `$ARGUMENTS` 提取论文编号 `{ID}`（如 `zy15`）。
 
 - `$ARGUMENTS` 的值为：`$ARGUMENTS`
 - 如果为空或未提供，使用 AskUserQuestion 询问论文编号
@@ -112,21 +112,22 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ### 导入内容与目标位置
 
-所有导入内容放入外层项目文件夹的 `idea-mine-ref/` 子目录（与 `raw literature/`、`{ID}_latexfile/` 同级），作为立项参考资料（不纳入 git）：
+所有导入内容放入 `{ID}_latexfile/structure/0_global/idea-mine-ref/` 子目录，与 `idea.md` 同级，作为立项参考资料（纳入 git，随项目版本管理）：
 
 ```
 {OUTER_DIR}/
 ├── raw literature/           ← 源论文 PDF 复制到这里
-├── idea-mine-ref/            ← idea-mine 产出复制到这里
-│   ├── paper-note.md         ← paper note（重命名为统一名称）
-│   ├── idea_12_绿色创新溢出_IJPE.md   ← 所有期刊版本的 idea 文件
-│   ├── idea_12_绿色创新溢出_JCP.md
-│   ├── idea_12_绿色创新溢出_...md
-│   ├── review_IJPE_P12.md    ← 所有期刊版本的审稿评分
-│   ├── review_JCP_P12.md
-│   └── review_..._P12.md
 └── {ID}_latexfile/
-    └── structure/0_global/idea.md  ← 从选中的 idea 文件重组写入
+    └── structure/0_global/
+        ├── idea.md           ← 从选中的 idea 文件重组写入
+        └── idea-mine-ref/    ← idea-mine 产出复制到这里
+            ├── paper-note.md
+            ├── idea_12_绿色创新溢出_IJPE.md
+            ├── idea_12_绿色创新溢出_JCP.md
+            ├── idea_12_绿色创新溢出_...md
+            ├── review_IJPE_P12.md
+            ├── review_JCP_P12.md
+            └── review_..._P12.md
 ```
 
 ### 导入操作（在 Step 1 创建目录后、Step 2 之前执行）
@@ -134,11 +135,11 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 1. **复制源论文 PDF**：在 `{BATCH_DIR}/papers/` 中根据 `{BATCH_DIR}/paper-notes/` 的文件列表匹配源论文编号对应的 PDF，复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
    - 匹配方式：`{BATCH_DIR}/paper-notes/` 中的文件按目录顺序排列，第 `{PAPER_ID}` 个文件对应的作者名即为源论文。在 `{BATCH_DIR}/papers/` 中找到同名（仅扩展名不同 `.pdf` vs `.md`）的 PDF 复制
 
-2. **复制 paper note**：将匹配到的 `{BATCH_DIR}/paper-notes/{对应文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+2. **复制 paper note**：将匹配到的 `{BATCH_DIR}/paper-notes/{对应文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
 
-3. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+3. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
 
-4. **复制所有 review 文件**：`{BATCH_DIR}/idea-review/review_*_P{PAPER_ID}.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+4. **复制所有 review 文件**：`{BATCH_DIR}/idea-review/review_*_P{PAPER_ID}.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
 
 5. **重组写入 idea.md**：读取用户选中的那个 idea 文件（由目标期刊决定，如 `idea_12_绿色创新溢出_IJPE.md`），将其 §1-§5 的内容按 `idea.md.tmpl` 的结构重组写入 `{ID}_latexfile/structure/0_global/idea.md`，映射规则：
    - idea 文件 §1 灵感来源 → idea.md §1 灵感来源 & 参考论文
@@ -255,7 +256,7 @@ mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile"
 mkdir "{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature"
 
 # 如果启用 idea-mine 导入，还需创建参考资料目录
-mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref"   # 仅当导入时
+mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref"   # 仅当导入时
 
 # 进入内层目录，后续所有操作都在这里
 cd "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile"
@@ -271,9 +272,9 @@ gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
 
 具体：
 1. 匹配并复制源论文 PDF → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
-2. 复制 paper note → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
-3. 复制所有 idea 文件（glob `idea_{PAPER_ID}_{IDEA_SHORT}_*.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
-4. 复制所有 review 文件（glob `review_*_P{PAPER_ID}.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/`
+2. 复制 paper note → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
+3. 复制所有 idea 文件（glob `idea_{PAPER_ID}_{IDEA_SHORT}_*.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
+4. 复制所有 review 文件（glob `review_*_P{PAPER_ID}.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
 
 > **操作 5（重组写入 idea.md）放在 Step 3 末尾执行**，见 Step 3 末尾的「Idea-mine 内容写入」。
 
@@ -612,7 +613,7 @@ chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
 
 此步骤对应「Idea-mine 导入」章节的操作 5。在 Step 3 所有模板文件创建完成后执行：
 
-读取用户选中的 idea 文件（目标期刊对应的版本，如 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/idea-mine-ref/idea_{PAPER_ID}_{IDEA_SHORT}_{TARGET_JOURNAL}.md`），按以下映射关系重组内容，**覆盖写入**已由模板生成的 `structure/0_global/idea.md`：
+读取用户选中的 idea 文件（目标期刊对应的版本，如 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/idea_{PAPER_ID}_{IDEA_SHORT}_{TARGET_JOURNAL}.md`），按以下映射关系重组内容，**覆盖写入**已由模板生成的 `structure/0_global/idea.md`：
 
 | idea 文件章节 | → idea.md 章节 | 处理方式 |
 |:-------------|:--------------|:---------|
