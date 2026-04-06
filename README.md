@@ -3,7 +3,7 @@
 A modular skill system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) covering the full academic paper lifecycle — from idea discovery to revision response.
 
 <p align="center">
-  <img src="assets/skills_pipeline.png" alt="Skills Pipeline" width="90%">
+  <img src="assets/skills_pipeline.svg" alt="Skills Pipeline" width="100%">
 </p>
 
 ## Pipeline Overview
