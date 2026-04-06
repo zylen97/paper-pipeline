@@ -8,14 +8,14 @@ A modular skill system for [Claude Code](https://docs.anthropic.com/en/docs/clau
 
 ## Pipeline Overview
 
-The pipeline spans 7 phases. Each skill is invoked via slash command (e.g., `/lit-plan`) in Claude Code.
+The pipeline spans 5 phases + cross-cutting utilities. Each skill is invoked via slash command (e.g., `/lit-plan`) in Claude Code.
 
-### Phase 1: Idea Discovery & Initialization
+### Phase 1: Idea & Init
 
 | Skill | Description |
 |:------|:------------|
-| `/idea-scout` | Scan 28 FT50/UTD24 journals via OpenAlex API, translate abstracts, push to [Idea Scout App](https://zylen97.github.io/idea-scout/) for manual browsing & selection |
-| `/idea-mine` | Deep-dive selected PDFs to extract transferable research ideas, output `idea.md` with reviewer-grade quality control |
+| `/idea-scout` | Scan 28 FT50/UTD24 journals via OpenAlex API, translate abstracts, push to [Idea Scout App](https://zylen97.github.io/idea-scout/) for browsing & selection |
+| `/idea-mine` | Deep-dive selected PDFs to extract transferable research ideas, output `idea.md` |
 | `/paper-init` | Initialize project skeleton: publisher templates + Git/GitHub + 3-layer document system |
 
 ### Phase 2: Literature
@@ -27,46 +27,41 @@ The pipeline spans 7 phases. Each skill is invoked via slash command (e.g., `/li
 | `/lit-tag` | Tag screened papers by function (BG/LR/GAP/...), classify by research question |
 | `/lit-pool` | Aggregate tagged papers into citation pool with usage scenarios + `master.bib` |
 
-### Phase 3: Idea Refinement
+### Phase 3: Writing
 
 | Skill | Description |
 |:------|:------------|
-| `/idea-refine` | Interactive idea & method design iteration (idea-reviewer audit → user confirm → revise → loop until satisfied) |
-
-### Phase 4: Writing
-
-| Skill | Description |
-|:------|:------------|
-| `/method-audit` | Benchmark against published papers, audit methodology issues, suggest structural improvements |
+| `/method-audit` | Benchmark against published papers, audit methodology issues |
 | `/method-end` | Distill mature dev files (`_dev.md`) into publication-ready chapter markdown |
 | `/pen-outline` | Interactively build section outlines (arguments + citations) |
 | `/pen-draft` | Generate first draft from outline via journal-scout + parallel sci-writer agents |
-| `/pen-polish` | Iterative polish: strict-reviewer feedback → user confirm → revise → language-polisher |
+| `/pen-polish` | Iterative polish: strict-reviewer → user confirm → revise → language-polisher |
 
-### Phase 5: Finalization
+### Phase 4: Finalize
 
 | Skill | Description |
 |:------|:------------|
 | `/finalize` | Four-step wrap-up: Conclusion → Abstract → Cover Letter → Structure cleanup |
 | `/pre-submit` | Pre-submission checklist: citation integrity, self-citation rate, formatting, symbol consistency |
 
-### Phase 6: Revision
+### Phase 5: Revision
 
 | Skill | Description |
 |:------|:------------|
-| `/rev-init` | Initialize revision workflow: freeze baseline → parse decision letter → cluster comments → scaffold response |
+| `/rev-init` | Initialize revision workflow: freeze baseline → parse decision letter → cluster comments |
 | `/rev-respond` | Per-comment response loop: strategy alignment → draft → polish → execute |
 
 ### Cross-cutting Utilities
 
 | Skill | Description |
 |:------|:------------|
+| `/idea-refine` | Interactive idea & method design iteration (idea-reviewer audit → revise → loop until satisfied) |
 | `/resume` | Quick-load project context for new sessions |
-| `/figure` | Academic figure workflow: auto-select TikZ/Python/R, create or beautify figures, Eagle style reference |
-| `/figure-harvest` | Batch harvest figures (GA + body figures) from Elsevier journals via CDN direct download |
+| `/figure` | Academic figure workflow: auto-select TikZ/Python/R, create or beautify, Eagle style reference |
+| `/figure-harvest` | Batch harvest figures from Elsevier journals via CDN direct download |
 | `/latex-table` | LaTeX table formatting & templates (Elsarticle compatible) |
 | `/web-access` | Browser CDP: search, fetch, login-required pages, interactive navigation |
-| `/peer-review` | Act as journal reviewer: read manuscript PDF, generate review comments matching user's review style |
+| `/peer-review` | Act as journal reviewer: read manuscript PDF, generate review comments |
 
 ## Idea Scout App
 
