@@ -162,7 +162,10 @@ results.md:
        "检测到已有对标分析（{date}，{N} 篇论文）。
        (1) 复用现有对标数据（推荐）
        (2) 重新分析"
-     用户选 (1) → 跳过 2.1-2.5，直接读取 cross_comparison.md，进入 2.6
+     用户选 (1) → 跳过 2.1-2.4，直接读取 cross_comparison.md，进入 2.6
+       ⚠️ 但须检查视觉素材：如果 benchmark/ 下不存在 per-paper 子目录
+       （即 PDF 仍在根目录、无 figures/tables/ 子目录），
+       则补跑 2.3.2（自动组织）+ 2.3.3（图表提取），再进入 2.6
      用户选 (2) → 继续检查下一条件
 
 2. 检查引用池：
@@ -220,11 +223,95 @@ AskUserQuestion 让用户确认/增删。
 3. 如 bib 中缺少 DOI，尝试用 WebSearch 补全后再写入 RIS
 4. 提示用户："RIS 已生成于 `structure/3_methodology/benchmark/benchmark_papers.ris`，请用文献管理工具导入后下载 PDF，放回同一目录。"
 
-### 2.3 检测 PDF
+### 2.3 检测 PDF + 自动组织 + 图表提取
 
-Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配文件名。
+#### 2.3.1 检测 PDF
+
+Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`（根目录）和 `structure/3_methodology/benchmark/*/*.pdf`（已组织的子目录），汇总所有 PDF。
 
 **如果部分 PDF 缺失**：允许 ≥3 篇即可继续，行业基线的可信度注明样本量（如"基于 5/8 篇论文"）。
+
+#### 2.3.2 自动组织为 per-paper 子目录
+
+将 benchmark 目录从扁平结构重组为**每篇论文一个子目录**（以 citation key 命名）：
+
+```
+benchmark/
+├── cao2017d/                    # citation key 为目录名
+│   ├── Cao et al. - 2017 - ....pdf   # PDF 移入
+│   ├── cao2017d_benchmark.md          # 精读报告（Step 2.4 生成）
+│   ├── figures/                       # 自动提取的 figure
+│   │   ├── fig1.png
+│   │   └── fig2.jpeg
+│   └── tables/                        # 自动提取的 table
+│       ├── table1.png
+│       └── table4.png
+├── gui2025u/
+│   ├── ...
+├── _visual_index.md              # 全局图表索引（自动生成）
+├── cross_comparison.md           # 横向比对表（Step 2.5 生成）
+├── method_audit_report.md        # 审计报告（Step 4 生成）
+└── benchmark_papers.ris          # RIS 清单（Step 2.2 生成）
+```
+
+**组织逻辑**：
+1. 遍历 `benchmark/` 根目录下的 PDF 文件
+2. 根据文件名中的第一作者姓氏匹配 citation key
+3. 创建 `benchmark/{citation_key}/` 子目录（含 `figures/` 和 `tables/`）
+4. 将 PDF 移入对应子目录
+5. 如果根目录已有 `{citation_key}_benchmark.md`，也移入子目录
+6. 如果 PDF 已在正确的子目录中，跳过
+
+> **Unicode 注意**：文件名匹配时须用 `unicodedata.normalize('NFC', ...)` 处理特殊字符（如 `ç`、`ü`），避免编码不一致导致匹配失败。对 fitz.open() 传入的路径使用 `os.listdir()` 扫描到的实际文件名，不要使用硬编码字符串。
+
+#### 2.3.3 自动提取图表（Visual Extraction）
+
+对每个子目录中的 PDF，使用 PyMuPDF（`fitz`）自动提取 figure 和 table 为图片文件。
+
+**跳过已提取**：如果某个子目录的 `figures/` 或 `tables/` 下已有文件，跳过该论文的提取（避免重复渲染）。仅对 figures/ 和 tables/ 均为空的子目录执行提取。
+
+**前置条件检查**：
+```python
+import fitz  # PyMuPDF
+```
+如果 `import fitz` 失败，跳过图表提取，提示用户安装：`pip install pymupdf`
+
+**提取逻辑**：
+
+1. **定位 table 页**：扫描每页文本，正则匹配 `^Table\s+(\d+)[.\s]`（行首），记录 `{table_num: page_idx}`，仅保留每个 table 编号首次出现的页
+2. **定位 figure 页**：正则匹配 `^Fig(?:ure)?\.?\s*(\d+)[.\s]`，同理
+3. **提取 table**：统一使用页面渲染（`page.get_pixmap(matrix=fitz.Matrix(2, 2))`），保存为 `tables/table{N}.png`
+4. **提取 figure**（两种策略，自动选择）：
+   - **优先提取嵌入位图**：`page.get_images()` → `doc.extract_image(xref)` → 过滤掉 width < 300 或 height < 300 的装饰图（期刊 logo、CC 标志等）
+   - 同一页有多个有效嵌入图时，按索引添加后缀：`fig{N}_a.{ext}`、`fig{N}_b.{ext}`
+   - **Fallback 渲染整页**：如果该 figure 页没有有效嵌入图（矢量图 / LaTeX 绘制），使用 `get_pixmap(matrix=Matrix(2,2))` 渲染，保存为 `figures/fig{N}.png`
+
+5. **生成全局图表索引** `benchmark/_visual_index.md`：
+
+```markdown
+# Benchmark Visual Index
+
+> Auto-generated from benchmark PDFs. Figures and tables for cross-paper visual comparison.
+
+## {citation_key}
+
+| Type | # | Page | File | Size | Method |
+|:-----|:--|:-----|:-----|:-----|:-------|
+| figure | 1 | p3 | `{key}/figures/fig1.jpeg` | 1423x450 | embedded |
+| table | 3 | p7 | `{key}/tables/table3.png` | 1191x1588 | rendered |
+...
+```
+
+**提取完成后显示摘要**：
+```
+📸 图表提取完成（{M} 篇论文）
+  共提取: {F} 个 figure + {T} 个 table
+  索引: benchmark/_visual_index.md
+
+  {key1}: {f1} figs + {t1} tables
+  {key2}: {f2} figs + {t2} tables
+  ...
+```
 
 ### 2.4 并行 subagent 分析
 
@@ -235,7 +322,7 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 ```
 你是一个 {METHOD_TYPE} 方法论审计专家。请阅读以下论文 PDF，生成结构化的方法论对标报告。
 
-**论文**: {PDF 路径}
+**论文**: {PDF 路径}（格式: `benchmark/{key}/{pdf_filename}`）
 **Citation key**: {key}
 
 **我们论文的基本参数**（用于 A 部分对比）：
@@ -297,10 +384,10 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 基于 A3，该文有什么独特的模型设计技巧（效应选择、变量构造、估计策略、诊断方法）？逐条评估是否适用于本文，如适用则说明如何纳入。
 
 ### B4. 图表借鉴
-基于 A7，哪些图表设计出色（说明好在哪里）？逐条分析是否适配本文数据和结果，如适配则建议如何借鉴。
+基于 A7 和提取的图表图片（`benchmark/{citation_key}/figures/` + `benchmark/{citation_key}/tables/`），哪些图表设计出色（说明好在哪里）？逐条分析是否适配本文数据和结果，如适配则建议如何借鉴。可直接 Read 图片文件进行视觉对比。
 
 报告用中文写，技术术语保留英文。
-写入: structure/3_methodology/benchmark/{citation_key}_benchmark.md
+写入: structure/3_methodology/benchmark/{citation_key}/{citation_key}_benchmark.md
 ```
 
 **METHOD_TYPE 差异化补充**（追加到 subagent prompt 末尾）：
@@ -381,9 +468,11 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 - {创新1}：{N} 篇使用 → 适用性评估
 - {创新2}：...
 
-### 图表推荐汇总（从各报告 B4 聚合）
+### 图表推荐汇总（从各报告 B4 聚合，结合视觉对标）
 - {图表类型1}：{N} 篇使用 → 适配性评估
 - {图表类型2}：...
+
+> **视觉对标**：生成图表推荐汇总时，主 agent 须 Read `benchmark/{key}/tables/` 和 `benchmark/{key}/figures/` 中的核心图表图片（尤其是 SAOM/SEM 结果表、网络拓扑图、GOF 图等方法论核心图表），进行跨论文视觉对比，识别报告格式差异（如哪些报告了 exp(β)、哪些用了星号标注、表格分栏方式等），将视觉发现融入图表推荐。图片路径见 `benchmark/_visual_index.md`。
 
 ### 技术型章节结构共性模式（从各报告 A6 聚合）
 
@@ -424,10 +513,15 @@ Agent 用 Glob 检测 `structure/3_methodology/benchmark/*.pdf`，模糊匹配�
 对标分析产出的 benchmark 报告和横向比对表是后续审计的基础数据，必须在进入审计前备份。
 
 ```bash
-git add structure/3_methodology/benchmark/*_benchmark.md \
+git add structure/3_methodology/benchmark/*/*_benchmark.md \
+       structure/3_methodology/benchmark/*/figures/ \
+       structure/3_methodology/benchmark/*/tables/ \
+       structure/3_methodology/benchmark/_visual_index.md \
        structure/3_methodology/benchmark/cross_comparison.md
 git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 ```
+
+> 注：显式添加 benchmark.md、figures/、tables/，**不添加 PDF**（二进制大文件不入 git）。_visual_index.md 和 cross_comparison.md 保留在 benchmark 根目录。
 
 ### 2.6 展示比对结果
 
@@ -485,15 +579,21 @@ AskUserQuestion（允许用户在进入审计前做策略性决定）：
 
 **核心价值所在。** 基于对标数据 + Claude 方法论知识 + 论文具体内容，提出方法论问题和对标借鉴建议。
 
-### 3.1 审计信息源（三源融合）
+### 3.1 审计信息源（四源融合）
 
 ```
 审计依据 = 对标数据（步骤 2 的 cross_comparison.md + 行业基线）
+         + 视觉对标（benchmark/{key}/figures/ + tables/ 中的提取图表）
          + Claude 方法论知识（理论最佳实践、常见审稿意见）
          + 论文具体内容（methodology.md + results.md 的实际情况）
 ```
 
-**降级模式**（跳过了步骤 2 时）：仅基于 Claude 知识 + 论文内容，不附带行业基线标注。
+**视觉对标使用场景**：
+- **维度 D（结果可靠性）+ 维度 F（方法论表述）**：Read 对标论文的结果表图片（如 `benchmark/cao2017d/tables/table4.png`），对比报告格式（显著性标注方式、效应量呈现、模型嵌套展示、注释规范等），识别本文的格式短板
+- **SO-图表借鉴**：Read 对标论文的 figure 图片，评估网络拓扑图、GOF 图、框架图等的设计质量和适配性
+- **图片路径索引**：`benchmark/_visual_index.md`
+
+**降级模式**（跳过了步骤 2 时）：仅基于 Claude 知识 + 论文内容，不附带行业基线标注和视觉对标。
 
 ### 3.2 审计维度（6 维度，不变）
 
@@ -612,15 +712,18 @@ AskUserQuestion（允许用户在进入审计前做策略性决定）：
 **适用性**: {为什么适用于本文，如何纳入}
 ```
 
-**SO-图表**：图表设计借鉴（来源：各报告 B4 → 行业基线图表推荐汇总）
+**SO-图表**：图表设计借鉴（来源：各报告 B4 → 行业基线图表推荐汇总 + `_visual_index.md`）
 
 ```
 ### SO-F1: {一句话标题}
 
 **来源论文**: {citation_key}（{期刊}, {年份}）
 **图表描述**: {该图/表的内容和呈现方式}
+**参考图片**: `benchmark/{citation_key}/figures/{filename}` 或 `benchmark/{citation_key}/tables/{filename}`
 **适配分析**: {为什么适配本文数据，建议如何借鉴}
 ```
+
+> 借鉴建议中附上图片路径，用户和 Claude 均可直接 Read 查看原图做视觉对比。
 
 - SO 条目统一标记为 📐，不分 🔴/🟡/🟢
 - 数量控制：SO-结构 ≤3 条，SO-模型 ≤3 条，SO-图表 ≤3 条
@@ -789,8 +892,11 @@ FOR each item IN {QUEUE}:
 
   **对标发现**: {发现}
   **当前状况**: {现状}
+  {仅 SO-F:} **参考图片**: `benchmark/{key}/figures/{filename}` 或 `benchmark/{key}/tables/{filename}`
   **建议**: {调整方案}
   ```
+
+  > SO-F 条目展示时，主 agent 须 Read 参考图片，向用户展示视觉参考后再讨论借鉴方案。
 
   # ────────────────────────────────
   # 5.2 分类 + 生成处理方案
