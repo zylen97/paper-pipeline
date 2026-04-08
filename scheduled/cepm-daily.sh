@@ -95,7 +95,7 @@ echo "Merge done" >> "$LOG_FILE"
 # ── 推送到 GitHub + 部署 gh-pages ──
 git add data/cepm_latest.json data/cepm_papers.json
 git commit -m "cepm: $TODAY - scan from $SCAN_FROM" 2>> "$LOG_FILE"
-git push origin main >> "$LOG_FILE" 2>&1
+for _attempt in 1 2 3; do git push origin main >> "$LOG_FILE" 2>&1 && break; sleep 15; done
 
 # 部署到 gh-pages（只更新数据，不重建 Flutter）
 # 复制所有 data/*.json 避免覆盖 FT50 数据
@@ -105,7 +105,7 @@ git checkout gh-pages 2>> "$LOG_FILE"
 cp /tmp/idea_scout_all_data/*.json data/
 git add data/
 git commit -m "data: cepm $TODAY" 2>> "$LOG_FILE"
-git push origin gh-pages >> "$LOG_FILE" 2>&1
+for _attempt in 1 2 3; do git push origin gh-pages >> "$LOG_FILE" 2>&1 && break; sleep 15; done
 git checkout main 2>> "$LOG_FILE"
 rm -rf /tmp/idea_scout_all_data
 

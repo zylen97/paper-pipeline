@@ -60,7 +60,7 @@ python3 "$SCRIPT_DIR/send-cnki-email.py" \
 # ── 推送到 GitHub + 部署 gh-pages ──
 git add data/cnki_latest.json
 git commit -m "cnki: $TODAY" 2>> "$LOG_FILE"
-git push origin main >> "$LOG_FILE" 2>&1
+for _attempt in 1 2 3; do git push origin main >> "$LOG_FILE" 2>&1 && break; sleep 15; done
 
 # 部署到 gh-pages（复制所有 data/*.json 避免覆盖 FT50/CE/PM 数据）
 mkdir -p /tmp/idea_scout_all_data
@@ -69,7 +69,7 @@ git checkout gh-pages 2>> "$LOG_FILE"
 cp /tmp/idea_scout_all_data/*.json data/
 git add data/
 git commit -m "data: cnki $TODAY" 2>> "$LOG_FILE"
-git push origin gh-pages >> "$LOG_FILE" 2>&1
+for _attempt in 1 2 3; do git push origin gh-pages >> "$LOG_FILE" 2>&1 && break; sleep 15; done
 git checkout main 2>> "$LOG_FILE"
 rm -rf /tmp/idea_scout_all_data
 
