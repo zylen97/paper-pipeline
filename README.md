@@ -14,7 +14,7 @@ The pipeline spans 5 phases + cross-cutting utilities. Each skill is invoked via
 
 | Skill | Description |
 |:------|:------------|
-| `/idea-scout` | Scan 28 FT50/UTD24 journals via OpenAlex API, translate abstracts, push to [Idea Scout App](https://zylen97.github.io/idea-scout/) for browsing & selection |
+| `/idea-scout` | Scan 79 journals (25 FT50/UTD24 + 11 CE/PM + 43 CNKI) daily, translate abstracts, push to [Idea Scout App](https://zylen97.github.io/idea-scout/) for browsing & selection |
 | `/idea-mine` | Deep-dive selected PDFs to extract transferable research ideas, output `idea.md` |
 | `/paper-init` | Initialize project skeleton: publisher templates + Git/GitHub + 3-layer document system |
 
@@ -69,7 +69,9 @@ A companion Flutter Web PWA for browsing journal papers on mobile:
 
 - **Live**: [zylen97.github.io/idea-scout](https://zylen97.github.io/idea-scout/)
 - **Repo**: [zylen97/idea-scout](https://github.com/zylen97/idea-scout)
-- **Flow**: `/idea-scout` pushes data → App displays → user selects → export JSON → `/idea-mine` analyzes
+- **3 Sources**: FT50/UTD24 (OpenAlex) · CE/PM (OpenAlex) · CNKI (RSS) — with in-app source switcher
+- **Daily scans**: 9:00 FT50 → 9:10 CE/PM → 9:20 CNKI, automated via launchd + email digests
+- **Flow**: daily scans push data → App displays → user selects → export JSON → `/idea-mine` analyzes
 
 ## Installation
 

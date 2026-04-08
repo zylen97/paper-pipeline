@@ -55,7 +55,7 @@ B - Econ & Strategy（经济与战略，4本）：
 C - Org & Management（组织与管理，12本）：
   AMJ · AMR · ASQ · OS · JMS · JBE · JBV · OBHDP · OrgStudies · JAP · HR · JOM2
 
-(1) 扫描全部 25 本（默认最近 3 个月）
+(1) 扫描全部 25 本（默认最近 5 天）
 (2) 按类别 — 输入 "A" 或 "A,B"
 (3) 指定期刊 — 输入 "MS,OR,MSOM"
 (4) 关键词搜索 — 输入如 "博弈" "contract"
@@ -76,7 +76,7 @@ C - Org & Management（组织与管理，12本）：
 
 ### 1. 确定目标期刊和时间范围
 
-根据用户选择确定 `target_journals`，默认最近 3 个月。
+根据用户选择确定 `target_journals`，默认最近 5 天（自动扫描脚本使用 `-v-5d`）。手动执行时可指定更长时间范围。
 
 ### 2. OpenAlex API 批量拉取
 
@@ -262,7 +262,7 @@ git push → GitHub Pages                     勾选论文 → Export
 - GitHub: `zylen97/idea-scout`
 - 本地: `~/idea_scout/`
 - Pages URL: `https://zylen97.github.io/idea-scout/`
-- 数据文件: `data/latest.json`（每次扫描覆盖）
+- 数据文件: FT50 `data/latest.json` + `papers.json`，CE/PM `data/cepm_*.json`，CNKI `data/cnki_latest.json`
 
 ### 数据存储
 - **实时数据**: `~/idea_scout/data/latest.json` → 推送到 GitHub → App 加载
