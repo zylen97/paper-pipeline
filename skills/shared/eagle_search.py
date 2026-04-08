@@ -88,7 +88,7 @@ def cmd_search(args):
             for t in r["tags"]
             if q.lower() in t.lower()
         )
-        return (-tag_hits, -images[0].get("mtime", 0))
+        return (-tag_hits, -r.get("mtime", 0))
 
     results.sort(key=sort_key)
 

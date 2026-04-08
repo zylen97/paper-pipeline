@@ -210,7 +210,8 @@ Proxy 持续运行，不建议主动停止——重启后需要在 Chrome 中重
 
 操作中积累的特定网站经验，按域名存储在 `references/site-patterns/` 下。
 
-已有经验的站点：!`ls ${CLAUDE_SKILL_DIR}/references/site-patterns/ 2>/dev/null | sed 's/\.md$//' || echo "暂无"`
+已有经验的站点：
+- `kns.cnki.net` — 知网/CNKI 文献搜索与导出
 
 确定目标网站后，如果上方列表中有匹配的站点，必须读取对应文件获取先验知识（平台特征、有效模式、已知陷阱）。经验内容标注了发现日期，当作可能有效的提示而非保证——如果按经验操作失败，回退通用模式并更新经验文件。
 

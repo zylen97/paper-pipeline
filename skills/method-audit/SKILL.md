@@ -252,6 +252,9 @@ benchmark/
 ├── cross_comparison.md           # 横向比对表（Step 2.5 生成）
 ├── method_audit_report.md        # 审计报告（Step 4 生成）
 └── benchmark_papers.ris          # RIS 清单（Step 2.2 生成）
+
+# 另外在 structure/2_literature/ 下生成：
+# method_landscape.md             # 方法景观文件（Step 2.5.1 生成，/finalize 保留）
 ```
 
 **组织逻辑**：
@@ -559,6 +562,16 @@ git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 
 完整比对表已保存至 structure/3_methodology/benchmark/cross_comparison.md
 ```
+
+### 2.5.1 生成 method_landscape.md
+
+从 `cross_comparison.md` 和各 `{key}_benchmark.md` 中汇总，生成 `structure/2_literature/method_landscape.md`：
+
+- **方法论创新汇总**：从各 benchmark 报告的 B3（模型创新）条目提取，表格形式
+- **模型设计技巧矩阵**：论文 × 技巧，从 cross_comparison.md 表1 提取
+- **本文的对标定位**：差异化定位和核心改进策略
+
+> 此文件在 `/finalize` Phase 4 清理时**保留**（位于 `2_literature/`，不是 `literature.md`，因此不删除）。
 
 AskUserQuestion（允许用户在进入审计前做策略性决定）：
 

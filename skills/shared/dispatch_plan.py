@@ -60,7 +60,7 @@ def scan_ris(input_dir: str, plan_file: str | None, directions_filter: list[int]
         try:
             with open(plan_file, encoding="utf-8") as f:
                 content = f.read()
-            for m in re.finditer(r"\|\s*D?(\d+)\s*\|[^|]+\|[^|]+\|[^|]+\|\s*(\d+)篇\s*\|", content):
+            for m in re.finditer(r"\|\s*D?(\d+)\s*\|[^|]*\|[^|]*\|[^|]*\|\s*(?:WoS\s*)?(\d+)\s*篇", content):
                 quotas[int(m.group(1))] = int(m.group(2))
         except Exception:
             pass

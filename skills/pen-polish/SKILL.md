@@ -244,5 +244,6 @@ Read `{WORK_DIR}/{最新版本}`
 - 字数变化：{original} → {final}
 - 审稿轮数：{1 或 2}
 - Checkpoint 文件清单
-- 💡 提醒手动替换 manuscript.tex 中的对应文本
+- 💡 自动写入 manuscript.tex：从 `final.md` 提取 LaTeX content，使用 Edit 工具替换 manuscript.tex 中的对应文本（通过 `{STRUCTURAL_CONTEXT}` 中的行号范围定位）
+- 💡 写入后执行 git checkpoint：`git add manuscript.tex && git commit -m "polish: {SECTION_NAME}"`
 - 💡 所有章节 polish 完成后，运行 `/finalize` 完成 Conclusion → Abstract → Cover Letter

@@ -198,7 +198,8 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
    - modeling → `Methodology, Results, Simulation`
    - survey-sem → `Methodology, Results`
    - panel-regression → `Methodology, Results`
-8. 写入目标路径
+8. 将 claude-settings.json.tmpl 中的 `{PROJECT_PARENT_DIR}` 替换为实际的项目父目录绝对路径（步骤 0 推导所得）
+9. 写入目标路径
 
 ### {STRUCTURE_TABLE} 替换内容
 
@@ -261,7 +262,7 @@ mkdir -p "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/ide
 # 进入内层目录，后续所有操作都在这里
 cd "{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile"
 git init
-gh repo create zylen97/paper_{ID} --private --source=. --remote=origin
+gh repo create paper_{ID} --private --source=. --remote=origin
 ```
 
 ---
@@ -562,9 +563,9 @@ fi
 
 | # | 操作 | 目标路径 |
 |---|------|---------|
-| 20 | 直接创建空注册表 | `structure/figures_tables/index.md` |
-| 21 | 直接创建空表格文件 | `structure/figures_tables/tables.tex` |
-| 22 | 空目录占位 | `structure/figures_tables/figures/.gitkeep` |
+| 23 | 直接创建空注册表 | `structure/figures_tables/index.md` |
+| 24 | 直接创建空表格文件 | `structure/figures_tables/tables.tex` |
+| 25 | 空目录占位 | `structure/figures_tables/figures/.gitkeep` |
 
 **index.md 初始内容**：
 ```markdown
@@ -689,7 +690,7 @@ git push -u origin main
 向用户报告：
 
 1. **创建完成** — 列出两层目录结构的树状图（外层文件夹 + `{ID}_latexfile/` 内部文件）
-2. **GitHub 仓库** — `https://github.com/zylen97/paper_{ID}`（Private）
+2. **GitHub 仓库** — `https://github.com/{GITHUB_USER}/paper_{ID}`（Private，{GITHUB_USER} 从 `gh api user -q .login` 获取）
 3. **出版社** — `{PUBLISHER}`
 4. **研究方法类型** — `{METHOD_TYPE}`
 5. **编译验证** — ✅ 通过

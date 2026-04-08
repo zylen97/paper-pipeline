@@ -76,9 +76,9 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
   ```
 - **存在且无红色项** → 静默通过
 
-**成稿 md 填充检查**（紧接审计检查之后）：
+**成稿 md 填充检查**（在步骤 0.6 定位到 `{CHAPTER_MD_PATH}` 之后执行）：
 
-读取该 section 对应的成稿 md 文件，检查 `## 正文要点` 下是否仍有大量 `TODO` 占位符：
+读取 `{CHAPTER_MD_PATH}`，检查 `## 正文要点` 下是否仍有大量 `TODO` 占位符：
 - **全部或大部分 subsection 仍为 TODO** → 警告用户：
   ```
   ⚠️ {md文件名} 的正文要点大部分仍为 TODO，尚未被 /method-end 填充。
@@ -117,7 +117,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 
 **`normalize(title)`**：空格→下划线，Capitalized_Words 风格，> 40 字符在最后完整单词边界截断。
 
-- **Form 1**：`drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_{序号:03d}/`（HIERARCHY_PREFIX = 祖先标题 normalize 后 "/" 连接，顶级为空）
+- **Form 1**：`drafts/{HIERARCHY_PREFIX}/{SECTION_NAME}_{序号:03d}/`（HIERARCHY_PREFIX = 祖先标题 normalize 后 "/" 连接；顶级 section 时 HIERARCHY_PREFIX 省略，路径为 `drafts/{SECTION_NAME}_{序号:03d}/`，不产生双斜杠）
 - **Form 2/3**：`{MULTI_BASE_DIR}` = `drafts/{PARENT_HIERARCHY}/`，子工作目录在步骤 2 并行调用中创建
 
 ## 步骤 1：生成 Writing Brief
@@ -136,7 +136,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 
 直接进入步骤 3，传入：
 - `{CHAPTER_MD_CONTENT}` = 章节 md 中对应区块（顶级 section 读全文，子 section 按 heading 提取）
-- `{WORD_TARGET}` = null（由 sci-writer 根据大纲密度自行判断）
+- `{WORD_TARGET}` = 从章节 md 的字数分配表提取（如无分配表，由 sci-writer 根据大纲密度自行判断，目标约 800-1200 词）
 
 ### 2.2 Form 2（真实 subsection）
 

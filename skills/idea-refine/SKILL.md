@@ -253,7 +253,7 @@ AskUserQuestion：确认修改方案，或调整某条的具体内容。
 - 使用 Edit 工具逐条修改 `structure/0_global/idea.md`
 - **只改方案中列出的内容**，不做额外改动
 - 保留 idea.md 的整体结构和格式
-- 更新 frontmatter 中的版本号（递增末位；如版本字段缺失则新增）
+- 更新 frontmatter 中的版本号（格式 `v{major}.{minor}`，递增末位 minor+1，如 v2.3→v2.4；如版本字段缺失则新增 `version: v1.0`）
 - 更新 frontmatter 中的日期
 
 **manuscript.tex 修改**（如有）：
@@ -293,7 +293,8 @@ AskUserQuestion：确认修改方案，或调整某条的具体内容。
 ### 3.1 Git Checkpoint
 
 ```bash
-git add structure/0_global/idea.md structure/0_global/idea-refine/
+git add structure/0_global/idea.md
+git add structure/0_global/idea-refine/review_r*.md structure/0_global/idea-refine/confirmed_r*.md structure/0_global/idea-refine/idea_v*
 ```
 
 如果本轮修改了 `manuscript.tex`：

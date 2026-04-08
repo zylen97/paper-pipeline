@@ -344,9 +344,9 @@ Block 4: 贡献 3 — 实践意义（Practical Implications）
 
 Block 1-4 逐块提议中文要点 → 用户确认。称呼和标准结尾自动生成，不交互。
 
-格式示例（Block 3）：
+格式示例（Block 2）：
 ```
-📝 Phase 3 — Cover Letter > Block 3: 贡献 1 — Journal Fit
+📝 Phase 3 — Cover Letter > Block 2: 贡献 1 — Journal Fit
 
 参考 idea.md 贡献点 #1：{原文}
 参考期刊 Scope：{JOURNAL_SCOPE}

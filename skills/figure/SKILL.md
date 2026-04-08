@@ -41,10 +41,10 @@ description: "学术论文图表全流程：自动判断 TikZ/Python/R → 创�
 **Python**：
 ```python
 MORANDI = {
-    "steel_blue": "#576fa0", "steel_blue_l": "#a7b9d7",
-    "gold": "#e3b87f", "gold_l": "#fadcb4",
-    "rose": "#b57979", "rose_l": "#dea3a2",
-    "gray": "#9f9f9f", "gray_l": "#cfcece",
+    "steel_blue": "#576fa0", "steel_blue_light": "#a7b9d7",
+    "gold": "#e3b87f", "gold_light": "#fadcb4",
+    "rose": "#b57979", "rose_light": "#dea3a2",
+    "gray": "#9f9f9f", "gray_light": "#cfcece",
 }
 ```
 
@@ -343,8 +343,8 @@ AskUserQuestion，循环直到确认。
 ```python
 import matplotlib.pyplot as plt
 MORANDI = {"steel_blue": "#576fa0", "gold": "#e3b87f", "rose": "#b57979",
-           "gray": "#9f9f9f", "steel_blue_l": "#a7b9d7", "gold_l": "#fadcb4",
-           "rose_l": "#dea3a2", "gray_l": "#cfcece"}
+           "gray": "#9f9f9f", "steel_blue_light": "#a7b9d7", "gold_light": "#fadcb4",
+           "rose_light": "#dea3a2", "gray_light": "#cfcece"}
 plt.rcParams.update({
     "font.family": "serif", "font.serif": ["Times New Roman"],
     "font.size": 10, "axes.labelsize": 10, "xtick.labelsize": 9,

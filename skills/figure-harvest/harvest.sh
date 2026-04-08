@@ -121,7 +121,7 @@ mkdir -p "$OUTDIR"
 TOTAL_FIGS=0
 NUM=0
 
-tail -n +2 /tmp/harvest_${JID}.txt | while IFS='|' read -r PII SHORT; do
+while IFS='|' read -r PII SHORT; do
   NUM=$((NUM + 1))
   PADNUM=$(printf "%02d" $NUM)
   PAPER_DIR="$OUTDIR/paper${PADNUM}_${SHORT}"
@@ -165,7 +165,7 @@ tail -n +2 /tmp/harvest_${JID}.txt | while IFS='|' read -r PII SHORT; do
     echo "  [$PADNUM] $SHORT — $FCOUNT 张图片"
     TOTAL_FIGS=$((TOTAL_FIGS + FCOUNT))
   fi
-done
+done < <(tail -n +2 /tmp/harvest_${JID}.txt)
 
 echo ""
 echo "=== [$JID] 采集完成: $VOL_LABEL ==="

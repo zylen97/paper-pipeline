@@ -51,16 +51,29 @@ def build_section_tree(tex_content: str) -> list[dict]:
 
     # 匹配 \section{...}, \subsection{...}, \subsubsection{...}
     # 忽略 \section*{...} 变体（带 *）
-    pattern = re.compile(
+    # 使用括号计数来正确处理嵌套括号（如 \section{Introduction to \emph{Game Theory}}）
+    cmd_pattern = re.compile(
         r"^[^%]*?"  # 忽略注释行
-        r"\\(section|subsection|subsubsection)\*?\{([^}]+)\}",
+        r"\\(section|subsection|subsubsection)\*?\{",
         re.MULTILINE
     )
 
     nodes = []
-    for i, m in enumerate(pattern.finditer(tex_content)):
+    for i, m in enumerate(cmd_pattern.finditer(tex_content)):
         cmd = m.group(1)
-        title = m.group(2).strip()
+        # 从 { 后开始，用括号计数找到匹配的 }
+        brace_start = m.end() - 1  # 指向 {
+        depth = 0
+        title_end = brace_start
+        for j in range(brace_start, len(tex_content)):
+            if tex_content[j] == '{':
+                depth += 1
+            elif tex_content[j] == '}':
+                depth -= 1
+                if depth == 0:
+                    title_end = j
+                    break
+        title = tex_content[brace_start + 1:title_end].strip()
         # 计算行号
         line_no = tex_content[:m.start()].count("\n") + 1
         nodes.append({
@@ -379,9 +392,9 @@ def cmd_citation_paths(args):
 # ===========================================================================
 
 def extract_cite_keys(text: str) -> set[str]:
-    r"""从 LaTeX 文本中提取所有 \citep{} 和 \citet{} 的 key。"""
+    r"""从 LaTeX 文本中提取所有 cite 命令的 key（含 natbib/biblatex 变体）。"""
     keys = set()
-    for m in re.finditer(r"\\cite[pt]?\{([^}]+)\}", text):
+    for m in re.finditer(r"\\cite\w*\{([^}]+)\}", text):
         raw = m.group(1)
         for key in raw.split(","):
             key = key.strip()

@@ -257,11 +257,11 @@ def main():
     print()
 
     if all_pass and total_papers > 0:
-        print("VERIFY: PASS")
+        print("=== VERIFY: PASS ===")
     elif total_papers > 0:
-        print("VERIFY: PASS (with warnings)")
+        print("=== VERIFY: PASS (with warnings) ===")
     else:
-        print("VERIFY: FAIL — no papers were formatted")
+        print("=== VERIFY: FAIL — no papers were formatted ===")
         sys.exit(1)
 
 

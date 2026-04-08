@@ -65,7 +65,8 @@ python3 ~/.claude/skills/shared/dispatch_plan.py --mode ris \
   --plan-file structure/2_literature/literature_search_plan.md \
   --limit 30 \
   --template-dir structure/2_literature/_batch/ \
-  --directions "{$ARGUMENTS 指定的方向，如 1,3,5；不指定则省略此参数}"
+  ${DIRECTIONS_FLAG}
+# DIRECTIONS_FLAG 的值：如果 $ARGUMENTS 非空（如 "1,3,5"），则为 --directions "1,3,5"；否则省略整行
 ```
 
 **脚本职责**（`dispatch_plan.py --mode ris`）：
@@ -269,7 +270,8 @@ ls structure/2_literature/_batch/d*_batch*_raw.md | wc -l
 
 ```bash
 python3 ~/.claude/skills/lit-review/format_batches.py \
-  --batch-dir structure/2_literature/_batch/
+  --batch-dir structure/2_literature/_batch/ \
+  --plan-json structure/2_literature/_dispatch_plan.json
 ```
 
 **脚本职责**（`format_batches.py`）：

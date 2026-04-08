@@ -81,7 +81,7 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 运行：
 
 ```bash
-git log --oneline -15 --date=short --format="%ad %s"
+git log -15 --date=short --format="%ad %s"
 ```
 
 了解最近的工作轨迹和节奏。
@@ -116,4 +116,26 @@ git log --oneline -15 --date=short --format="%ad %s"
 - 简洁，不超过 500 字
 - 用中文
 - 不要输出表格、不要状态标记符号，就是一段让人（和 Claude）看完就能干活的文字
-- 最后一句问用户："需要从哪里继续？"
+
+---
+
+## 步骤 8：Proactive 阶段提醒
+
+根据步骤 1 检测到的项目阶段，在简述末尾输出对应的 skill 建议（一句话，非强制）：
+
+- **foundation**：
+  - 如果 _dev.md 有实质内容但成稿 md 仍为空 → 建议 `/method-end`
+  - 如果技术章节基本成形 → 建议 `/method-audit`
+  - 如果 idea.md 近期有较大改动或用户表达不确定 → 建议 `/idea-refine`
+  - 否则 → 不输出建议，直接问用户
+- **drafting**：
+  - 如果叙述型章节 md 为空 → 建议 `/pen-outline`
+  - 如果叙述型章节 md 有内容但 tex 对应 section 仍为 TODO → 建议 `/pen-draft`
+  - 如果 tex 有正文但未经 polish → 建议 `/pen-polish`
+  - 如果所有章节已写入 tex → 建议 `/finalize`
+- **submitted**：无主动提醒
+- **revision-R{N}**：
+  - 如果 response-letter.tex 中有 `[TO BE FILLED]` → 建议 `/rev-respond`
+  - 如果 revision/ 目录不存在 → 建议 `/rev-init`
+
+最后一句问用户："需要从哪里继续？"

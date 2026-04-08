@@ -341,6 +341,7 @@ AskUserQuestion：
 
 ```
 Agent(
+  description: "Polish response letter and revisions",
   subagent_type: "language-polisher",
   prompt: "Mode B (Ad-hoc). Polish the following academic English text.
            This is a response letter and manuscript revision for
