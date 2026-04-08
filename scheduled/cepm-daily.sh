@@ -1,6 +1,13 @@
 #!/bin/bash
-# CE/PM Daily Scan — 每天 9:05 自动扫描建工/PM期刊最近5天新论文
+# CE/PM Daily Scan — 每天 9:10 自动扫描建工/PM期刊最近5天新论文
 # 由 launchd 触发，通过独立 Python 脚本执行扫描
+
+# ── 文件锁（防止睡眠唤醒后多脚本同时操作 git） ──
+LOCKDIR="/tmp/idea_scout_git.lock"
+while ! mkdir "$LOCKDIR" 2>/dev/null; do
+    sleep 10
+done
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
 LOG_DIR="$HOME/.claude/scheduled/logs"
 mkdir -p "$LOG_DIR"
@@ -108,7 +115,8 @@ echo "GitHub push done" >> "$LOG_FILE"
 osascript -e "display notification \"CE/PM scan done\" with title \"CE/PM Scout\" subtitle \"$TODAY\" sound name \"Glass\""
 
 # ── 邮件日报 ──
-export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS EMAIL_TO
+export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS
+export EMAIL_TO="$EMAIL_TO,zhangshfan@mail.usts.edu.cn"
 
 python3 "$SCRIPT_DIR/send-digest-email.py" \
     "data/cepm_latest.json" \

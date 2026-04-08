@@ -20,8 +20,8 @@ def load_new_papers(latest_path, seen_path):
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
-    # 筛选新论文（只读不写，发送成功后再更新）
-    new_papers = [p for p in papers if p.get('doi') and p['doi'] not in seen_dois]
+    # 筛选新论文：有 DOI 的按 DOI 去重，无 DOI 的一律当新论文推送（宁可多推不漏推）
+    new_papers = [p for p in papers if not p.get('doi') or p['doi'] not in seen_dois]
 
     return new_papers, seen_dois
 
@@ -49,7 +49,7 @@ def build_email_html(papers, scan_from, source='ft50'):
     if source == 'cepm':
         header_color = '#6B5B4E'
         header_title = 'CE/PM Scout'
-        footer_text = 'By ZYLEN - 每日 9:05 扫描建工/PM 期刊'
+        footer_text = 'By ZYLEN - 每日 9:10 扫描建工/PM 期刊'
         show_tier = False
     else:
         header_color = '#8B7355'

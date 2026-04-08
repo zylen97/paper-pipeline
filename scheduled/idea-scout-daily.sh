@@ -2,6 +2,13 @@
 # Idea Scout Daily Scan — 每天 9:00 自动扫描 FT50/UTD24 顶刊最近5天新论文
 # 由 launchd 触发，通过独立 Python 脚本执行扫描
 
+# ── 文件锁（防止睡眠唤醒后多脚本同时操作 git） ──
+LOCKDIR="/tmp/idea_scout_git.lock"
+while ! mkdir "$LOCKDIR" 2>/dev/null; do
+    sleep 10
+done
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+
 LOG_DIR="$HOME/.claude/scheduled/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/idea-scout-$(date +%Y%m%d-%H%M%S).log"

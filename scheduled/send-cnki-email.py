@@ -87,20 +87,17 @@ def build_email_html(papers, scan_date):
 """
         for p in plist:
             title = p.get('title', '')
-            title_en = p.get('title_en', '')
             authors = p.get('authors', [])
             authors_str = ', '.join(authors) if authors else ''
             abstract = p.get('abstract', '')
             link = p.get('link', '')
 
-            title_en_line = f'<div style="font-size: 13px; color: #6B6560; line-height: 1.3; margin-bottom: 2px; font-style: italic;">{title_en}</div>' if title_en else ''
             authors_line = f'<div style="font-size: 12px; color: #9B9488; margin-bottom: 3px;">{authors_str}</div>' if authors_str else ''
             link_html = f'<a href="{link}" style="color: {header_color}; text-decoration: none; font-size: 12px;">知网链接</a>' if link else ''
 
             html += f"""
   <div style="margin-bottom: 16px; padding-left: 12px; border-left: 3px solid #E8E6DC;">
     <div style="font-weight: 600; font-size: 14px; line-height: 1.4; margin-bottom: 2px;">{title}</div>
-    {title_en_line}
     {authors_line}
     <div style="font-size: 13px; color: #6B6560; line-height: 1.5; margin-bottom: 4px;">{abstract}</div>
     <div style="font-size: 12px; color: #9B9488;">{link_html}</div>
@@ -120,7 +117,7 @@ def build_email_html(papers, scan_date):
     html += f"""
 <p style="text-align: center; font-size: 13px; color: {header_color}; margin-top: 20px; padding-top: 16px; border-top: 1px solid #E8E6DC; font-style: italic;">{quote}</p>
 
-<p style="text-align: center; font-size: 11px; color: #9B9488; margin-top: 8px;">By ZYLEN - 每日 9:10 扫描中文核心期刊 (CNKI RSS)</p>
+<p style="text-align: center; font-size: 11px; color: #9B9488; margin-top: 8px;">By ZYLEN - 每日 9:20 扫描中文核心期刊 (CNKI RSS)</p>
 
 </div></div></body></html>"""
 

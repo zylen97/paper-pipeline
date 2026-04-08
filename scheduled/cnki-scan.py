@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""CNKI RSS Scanner — 从知网 RSS 抓取中文期刊最新论文，翻译为英文标题（可选），生成邮件推送。"""
+"""CNKI RSS Scanner — 从知网 RSS 抓取中文期刊最新论文，生成 App 数据和邮件推送。"""
 
 import argparse
 import json
-import os
 import re
 import sys
 import time
@@ -61,56 +60,12 @@ def fetch_rss(journal_id, journal_name, rss_base_url, rss_suffix=""):
             "journal_id": journal_id,
             "journal_name": journal_name,
             "title": title,
-            "title_en": "",
             "authors": [a.strip() for a in authors.split(";") if a.strip()],
             "date": date_iso,
             "abstract": abstract,
-            "abstract_en": "",
             "link": link,
             "doi": "",
         })
-
-    return papers
-
-
-def translate_titles(papers, api_key):
-    """Translate Chinese titles to English using ChatAnywhere API."""
-    import concurrent.futures
-
-    api_url = "https://api.chatanywhere.tech/v1/chat/completions"
-
-    def translate(text):
-        if not text or len(text.strip()) < 3:
-            return text
-        body = json.dumps({
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "将以下中文学术论文标题翻译为英文，保持学术术语准确。只返回翻译结果。"},
-                {"role": "user", "content": text},
-            ],
-            "temperature": 0.3,
-        }).encode()
-
-        for attempt in range(3):
-            try:
-                req = urllib.request.Request(api_url, data=body, headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                })
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    result = json.loads(resp.read())
-                    return result["choices"][0]["message"]["content"].strip()
-            except Exception:
-                if attempt < 2:
-                    time.sleep(2)
-        return ""
-
-    print("Translating titles to English...")
-    titles = [p["title"] for p in papers]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as ex:
-        results = list(ex.map(translate, titles))
-    for i, t in enumerate(results):
-        papers[i]["title_en"] = t
 
     return papers
 
