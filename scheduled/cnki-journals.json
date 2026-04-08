@@ -1,6 +1,7 @@
 {
   "source": "cnki",
   "journals": [
+    {"id": "JJYJ", "name": "经济研究", "category": "管理A"},
     {"id": "JCYJ", "name": "管理科学学报", "category": "管理A"},
     {"id": "GLSJ", "name": "管理世界", "category": "管理A"},
     {"id": "XTLL", "name": "系统工程理论与实践", "category": "管理B1"},
@@ -14,6 +15,7 @@
     {"id": "GLGU", "name": "管理工程学报", "category": "管理B1"},
     {"id": "XTGC", "name": "系统工程学报", "category": "管理B1"},
     {"id": "XTGL", "name": "系统管理学报", "category": "管理B1"},
+    {"id": "GGGL", "name": "公共管理学报", "category": "管理B1"},
     {"id": "JCJJ", "name": "管理科学", "category": "管理B2"},
     {"id": "GLXB", "name": "管理学报", "category": "管理B2"},
     {"id": "YCGL", "name": "运筹与管理", "category": "管理B2"},
@@ -24,11 +26,14 @@
     {"id": "JZJJ", "name": "建筑经济", "category": "工程"},
     {"id": "GCZJ", "name": "工程造价管理", "category": "工程"},
     {"id": "XMGJ", "name": "项目管理技术", "category": "工程"},
+    {"id": "YJYF", "name": "研究与发展管理", "category": "管理B2"},
+    {"id": "ZGRZ", "name": "中国人口·资源与环境", "category": "管理B2"},
+    {"id": "SLTJ", "name": "数理统计与管理", "category": "管理B2"},
     {"id": "KXXG", "name": "科学学与科学技术管理", "category": "管理B2"},
     {"id": "GGYY", "name": "中国工业经济", "category": "管理B2"},
     {"id": "DLXB", "name": "地理学报", "category": "其他"}
   ],
   "rss_base_url": "https://rss.cnki.net/knavi/rss/",
   "rss_suffix": "?pcode=CJFD,CCJD",
-  "missing_journals_note": "工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
+  "missing_journals_note": "预测、工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
 }
