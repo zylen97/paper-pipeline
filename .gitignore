@@ -27,6 +27,10 @@
 !skills/**/*.json
 !config/
 !config/**
+!scheduled/
+!scheduled/*.py
+!scheduled/*.sh
+!scheduled/*.json
 !skills_pipeline.pdf
 !skills_pipeline.tex
 

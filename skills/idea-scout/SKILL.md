@@ -4,15 +4,15 @@ description: "从UTD24/FT50顶刊扫描最新论文，翻译摘要后推送到Id
 
 # Idea Scout — 顶刊 Idea 迁移雷达
 
-从 28 本 UTD24/FT50 顶级期刊中，扫描最新论文摘要，批量翻译为中文，推送到 Idea Scout App（GitHub Pages PWA）供用户在手机上浏览、筛选。
+从 25 本 UTD24/FT50 顶级期刊中，扫描最新论文摘要，批量翻译为中文，推送到 Idea Scout App（GitHub Pages PWA）供用户在手机上浏览、筛选。
 
 **核心逻辑**：Skill = 数据管线（获取+翻译+推送），App = 浏览器/选择器（用户手动筛选）。
 
 **输入** `$ARGUMENTS`：格式灵活，示例：
 - `/idea-scout` — 交互式选择
-- `/idea-scout scan` — 扫描全部 28 本期刊
+- `/idea-scout scan` — 扫描全部 25 本期刊
 - `/idea-scout scan MS,OR,MSOM` — 只扫描指定期刊
-- `/idea-scout scan 1` — 只扫描第一梯队
+- `/idea-scout scan A` — 只扫描 A 类（Ops & IS）
 - `/idea-scout 博弈` — 关键词定向搜索
 - `/idea-scout status` — 查看扫描记录
 
@@ -35,7 +35,7 @@ cat ~/.claude/skills/idea-scout/scout_log.json 2>/dev/null || echo "{}"
 |:-----|:-----|
 | 空 / 无参数 | → 交互式菜单 |
 | `status` / `记录` | → Route S（查看扫描记录） |
-| `scan` + 可选期刊ID/梯队号 | → Route A（批量扫描最新论文） |
+| `scan` + 可选期刊ID/类别(A/B/C) | → Route A（批量扫描最新论文） |
 | 关键词如 `博弈` `优化` `网络` | → Route B（关键词定向搜索） |
 
 ### 0.3 交互式菜单（无参数时）
@@ -44,19 +44,19 @@ AskUserQuestion：
 ```
 🔭 顶刊 Idea 迁移雷达
 
-28 本 UTD24/FT50 期刊（7+11+10）：
+25 本 UTD24/FT50 期刊（9+4+12）：
 
-T1（方法直接可迁移，7本）：
-  MS · OR · MSOM · POM · JOM · ISR · MISQ
+A - Ops & IS（运营与信息系统，9本）：
+  MS · OR · MSOM · POM · JOM · JSCM · DS · ISR · MISQ
 
-T2（理论/方法框架可迁移，11本）：
-  SMJ · OS · AMJ · RP · JMS · JSCM · JBE · AER · ECMA · JIBS · MKS
+B - Econ & Strategy（经济与战略，4本）：
+  AER · SMJ · RP · JIBS
 
-T3（特定场景可迁移，10本）：
-  AMR · ASQ · DS · JBV · ETP · JOM2 · OBHDP · OrgStudies · JAP · HR
+C - Org & Management（组织与管理，12本）：
+  AMJ · AMR · ASQ · OS · JMS · JBE · JBV · OBHDP · OrgStudies · JAP · HR · JOM2
 
-(1) 扫描全部 28 本（默认最近 3 个月）
-(2) 按梯队 — 输入 "1" 或 "1,2"
+(1) 扫描全部 25 本（默认最近 3 个月）
+(2) 按类别 — 输入 "A" 或 "A,B"
 (3) 指定期刊 — 输入 "MS,OR,MSOM"
 (4) 关键词搜索 — 输入如 "博弈" "contract"
 (5) 查看扫描记录
@@ -101,7 +101,7 @@ def rebuild_abstract(inverted_index):
 
 **分页处理**：如结果超过 50 条（`meta.count > 50`），用 `cursor` 分页继续拉取。每次请求间隔 0.3 秒。
 
-**过滤**：去掉无摘要的论文。
+**过滤**：保留无摘要的论文（仅翻译标题，摘要留空）。
 
 **数据格式**（每篇论文）：
 ```json
@@ -109,6 +109,7 @@ def rebuild_abstract(inverted_index):
     "journal_id": "MS",
     "journal_name": "Management Science",
     "title": "...",
+    "authors": ["Smith, John", "Zhang, Wei"],  // 从 authorships[].author.display_name 提取
     "doi": "https://doi.org/...",
     "date": "2026-04-01",
     "abstract": "...",

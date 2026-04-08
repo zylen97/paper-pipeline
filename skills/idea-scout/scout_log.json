@@ -1,0 +1,41 @@
+{
+  "scans": [
+    {
+      "date": "2026-04-07",
+      "start": "2026-04-02",
+      "end": "2026-04-07",
+      "journals": 28,
+      "papers": 16,
+      "journals_with_papers": [
+        "MS(5)",
+        "POM(3)",
+        "ISR(2)",
+        "OR(1)",
+        "SMJ(1)",
+        "OS(1)",
+        "RP(1)",
+        "JSCM(1)",
+        "JBE(1)"
+      ],
+      "archive": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/idea_scout/scout_2026-04-07_data.json"
+    },
+    {
+      "date": "2026-04-08",
+      "start": "2026-04-03",
+      "end": "2026-04-08",
+      "journals": 25,
+      "papers": 18,
+      "journals_with_papers": [
+        "JAP(6)",
+        "MS(4)",
+        "ISR(2)",
+        "OS(2)",
+        "POM(1)",
+        "SMJ(1)",
+        "JMS(1)",
+        "JSCM(1)"
+      ],
+      "archive": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/idea_scout/scout_2026-04-08_data.json"
+    }
+  ]
+}
