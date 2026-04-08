@@ -119,7 +119,6 @@ def main():
     parser = argparse.ArgumentParser(description="CNKI RSS Scanner")
     parser.add_argument("--config", required=True, help="Path to cnki-journals.json")
     parser.add_argument("--output", required=True, help="Output JSON path")
-    parser.add_argument("--days", type=int, default=7, help="Only include papers from last N days")
     parser.add_argument("--translate", action="store_true", help="Translate titles to English")
     args = parser.parse_args()
 
@@ -128,18 +127,15 @@ def main():
 
     rss_base = config.get("rss_base_url", "https://rss.cnki.net/knavi/rss/")
     journals = config["journals"]
-    cutoff = (datetime.now() - timedelta(days=args.days)).strftime("%Y-%m-%d")
 
-    print(f"Scanning {len(journals)} CNKI journals (last {args.days} days, cutoff: {cutoff})")
+    print(f"Scanning {len(journals)} CNKI journals (fetch all RSS items, dedup by seen_titles)")
 
     all_papers = []
     for j in journals:
         papers = fetch_rss(j["id"], j["name"], rss_base)
-        # Filter by date
-        recent = [p for p in papers if not p["date"] or p["date"] >= cutoff]
-        if recent:
-            print(f"  {j['id']:6s} {j['name']}: {len(recent)} papers")
-        all_papers.extend(recent)
+        if papers:
+            print(f"  {j['id']:6s} {j['name']}: {len(papers)} papers")
+        all_papers.extend(papers)
         time.sleep(0.3)
 
     print(f"Fetched: {len(all_papers)} papers from {len(set(p['journal_id'] for p in all_papers))} journals")

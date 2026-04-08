@@ -29,7 +29,6 @@ cd "$HOME/idea_scout" || {
 python3 "$SCRIPT_DIR/cnki-scan.py" \
     --config "$SCRIPT_DIR/cnki-journals.json" \
     --output "data/cnki_latest.json" \
-    --days 7 \
     --translate \
     >> "$LOG_FILE" 2>&1
 
