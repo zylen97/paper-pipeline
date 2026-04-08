@@ -12,9 +12,9 @@ import html as html_lib
 from datetime import datetime, timedelta
 
 
-def fetch_rss(journal_id, journal_name, rss_base_url):
+def fetch_rss(journal_id, journal_name, rss_base_url, rss_suffix=""):
     """Fetch and parse CNKI RSS for a journal."""
-    url = f"{rss_base_url}{journal_id}"
+    url = f"{rss_base_url}{journal_id}{rss_suffix}"
     try:
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
@@ -126,13 +126,14 @@ def main():
         config = json.load(f)
 
     rss_base = config.get("rss_base_url", "https://rss.cnki.net/knavi/rss/")
+    rss_suffix = config.get("rss_suffix", "")
     journals = config["journals"]
 
     print(f"Scanning {len(journals)} CNKI journals (fetch all RSS items, dedup by seen_titles)")
 
     all_papers = []
     for j in journals:
-        papers = fetch_rss(j["id"], j["name"], rss_base)
+        papers = fetch_rss(j["id"], j["name"], rss_base, rss_suffix)
         if papers:
             print(f"  {j['id']:6s} {j['name']}: {len(papers)} papers")
         all_papers.extend(papers)

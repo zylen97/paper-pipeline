@@ -8,6 +8,7 @@
     {"id": "ZGRK", "name": "中国软科学", "category": "管理B1"},
     {"id": "ZGGK", "name": "中国管理科学", "category": "管理B1"},
     {"id": "KJYJ", "name": "会计研究", "category": "管理B1"},
+    {"id": "ZWGD", "name": "管理评论", "category": "管理B1"},
     {"id": "LKGP", "name": "南开管理评论", "category": "管理B1"},
     {"id": "KYGL", "name": "科研管理", "category": "管理B1"},
     {"id": "GLGU", "name": "管理工程学报", "category": "管理B1"},
@@ -18,12 +19,16 @@
     {"id": "YCGL", "name": "运筹与管理", "category": "管理B2"},
     {"id": "GCXT", "name": "系统工程", "category": "管理B2"},
     {"id": "KZYC", "name": "控制与决策", "category": "管理B2"},
+    {"id": "STYS", "name": "系统科学与数学", "category": "管理B2"},
     {"id": "GYGC", "name": "工业工程与管理", "category": "工程"},
     {"id": "JZJJ", "name": "建筑经济", "category": "工程"},
     {"id": "GCZJ", "name": "工程造价管理", "category": "工程"},
     {"id": "XMGJ", "name": "项目管理技术", "category": "工程"},
+    {"id": "KXXG", "name": "科学学与科学技术管理", "category": "管理B2"},
+    {"id": "GGYY", "name": "中国工业经济", "category": "管理B2"},
     {"id": "DLXB", "name": "地理学报", "category": "其他"}
   ],
   "rss_base_url": "https://rss.cnki.net/knavi/rss/",
-  "missing_journals_note": "管理评论、中国工业经济、科学学与科学技术管理、工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
+  "rss_suffix": "?pcode=CJFD,CCJD",
+  "missing_journals_note": "工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
 }
