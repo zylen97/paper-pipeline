@@ -25,7 +25,10 @@ def load_new_papers(latest_path, seen_path):
 
     return new_papers, seen_dois
 
-def build_email_html(papers, scan_date, source='ft50'):
+def build_email_html(papers, scan_from, source='ft50'):
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    date_range = f'{scan_from} ~ {today}'
     # 按期刊分组
     by_journal = {}
     for p in papers:
@@ -79,7 +82,7 @@ def build_email_html(papers, scan_date, source='ft50'):
 
 <div style="background: {header_color}; color: white; padding: 20px 24px; border-radius: 12px 12px 0 0;">
   <h1 style="margin: 0; font-size: 22px;">{header_title}</h1>
-  <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">{scan_date} 发表 · 共 {total} 篇 · {journal_count} 本期刊</p>
+  <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">{date_range} · 共 {total} 篇 · {journal_count} 本期刊</p>
 </div>
 
 <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #D8D4CA; border-top: none;">
@@ -230,10 +233,12 @@ if __name__ == '__main__':
 
     html_body, total, jcount = build_email_html(papers, scan_date, source)
 
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
     if source == 'cepm':
-        subject = f'CE/PM Scout {scan_date} - {total}篇新论文'
+        subject = f'CE/PM Scout {today} - {total}篇新论文'
     else:
-        subject = f'Idea Scout {scan_date} - {total}篇新论文'
+        subject = f'Idea Scout {today} - {total}篇新论文'
 
     send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject, html_body)
 
