@@ -6,9 +6,11 @@
     {"id": "GLSJ", "name": "管理世界", "category": "管理A"},
     {"id": "XTLL", "name": "系统工程理论与实践", "category": "管理B1"},
     {"id": "SLJY", "name": "数量经济技术经济研究", "category": "管理B1"},
+    {"id": "JRYJ", "name": "金融研究", "category": "管理B1"},
     {"id": "ZGRK", "name": "中国软科学", "category": "管理B1"},
     {"id": "ZGGK", "name": "中国管理科学", "category": "管理B1"},
     {"id": "KJYJ", "name": "会计研究", "category": "管理B1"},
+    {"id": "WGJG", "name": "外国经济与管理", "category": "管理B1"},
     {"id": "ZWGD", "name": "管理评论", "category": "管理B1"},
     {"id": "LKGP", "name": "南开管理评论", "category": "管理B1"},
     {"id": "KYGL", "name": "科研管理", "category": "管理B1"},
@@ -31,9 +33,17 @@
     {"id": "SLTJ", "name": "数理统计与管理", "category": "管理B2"},
     {"id": "KXXG", "name": "科学学与科学技术管理", "category": "管理B2"},
     {"id": "GGYY", "name": "中国工业经济", "category": "管理B2"},
+    {"id": "SJJJ", "name": "世界经济", "category": "管理B2"},
+    {"id": "JJDL", "name": "经济地理", "category": "管理B2"},
+    {"id": "CYJJ", "name": "产业经济研究", "category": "管理B2"},
+    {"id": "KXYJ", "name": "科学学研究", "category": "管理B2"},
+    {"id": "TJYJ", "name": "统计研究", "category": "管理B2"},
+    {"id": "TJLT", "name": "统计与信息论坛", "category": "管理B2"},
+    {"id": "ZHXU", "name": "灾害学", "category": "其他"},
+    {"id": "YSXT", "name": "交通运输系统工程与信息", "category": "其他"},
     {"id": "DLXB", "name": "地理学报", "category": "其他"}
   ],
   "rss_base_url": "https://rss.cnki.net/knavi/rss/",
   "rss_suffix": "?pcode=CJFD,CCJD",
-  "missing_journals_note": "预测、工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
+  "missing_journals_note": "预测、软科学、工程管理学报、土木工程与管理学报 — CNKI RSS代码未找到"
 }
