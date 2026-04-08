@@ -29,7 +29,7 @@ cd "$HOME/idea_scout" || {
 python3 "$SCRIPT_DIR/cnki-scan.py" \
     --config "$SCRIPT_DIR/cnki-journals.json" \
     --output "data/cnki_latest.json" \
-    --translate \
+    --days 30 \
     >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
@@ -41,9 +41,9 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cnki_latest.json" ]; then
     exit 1
 fi
 
-# ── 邮件推送 ──
-# CNKI 用独立的 seen_dois (基于 title 去重，因为中文论文没有 DOI)
-export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS EMAIL_TO
+# ── 邮件推送（CNKI 只发给自己） ──
+export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS
+export EMAIL_TO="$SMTP_USER"
 
 python3 "$SCRIPT_DIR/send-cnki-email.py" \
     "data/cnki_latest.json" \

@@ -119,7 +119,7 @@ def main():
     parser = argparse.ArgumentParser(description="CNKI RSS Scanner")
     parser.add_argument("--config", required=True, help="Path to cnki-journals.json")
     parser.add_argument("--output", required=True, help="Output JSON path")
-    parser.add_argument("--translate", action="store_true", help="Translate titles to English")
+    parser.add_argument("--days", type=int, default=30, help="Only include papers from last N days")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -128,15 +128,23 @@ def main():
     rss_base = config.get("rss_base_url", "https://rss.cnki.net/knavi/rss/")
     rss_suffix = config.get("rss_suffix", "")
     journals = config["journals"]
+    cutoff = (datetime.now() - timedelta(days=args.days)).strftime("%Y-%m-%d")
 
-    print(f"Scanning {len(journals)} CNKI journals (fetch all RSS items, dedup by seen_titles)")
+    print(f"Scanning {len(journals)} CNKI journals (last {args.days} days, cutoff: {cutoff})")
+
+    # Category to tier mapping
+    tier_map = {"管理A": 1, "管理B1": 2, "管理B2": 3, "工程": 3, "其他": 3}
 
     all_papers = []
     for j in journals:
         papers = fetch_rss(j["id"], j["name"], rss_base, rss_suffix)
-        if papers:
-            print(f"  {j['id']:6s} {j['name']}: {len(papers)} papers")
-        all_papers.extend(papers)
+        tier = tier_map.get(j.get("category", ""), 3)
+        for p in papers:
+            p["_tier"] = tier
+        recent = [p for p in papers if not p["date"] or p["date"] >= cutoff]
+        if recent:
+            print(f"  {j['id']:6s} {j['name']}: {len(recent)} papers")
+        all_papers.extend(recent)
         time.sleep(0.3)
 
     print(f"Fetched: {len(all_papers)} papers from {len(set(p['journal_id'] for p in all_papers))} journals")
@@ -147,18 +155,31 @@ def main():
             json.dump([], f)
         return
 
-    # Optional translation
-    if args.translate:
-        api_key = os.environ.get("CHATANYWHERE_API_KEY", "")
-        if api_key:
-            all_papers = translate_titles(all_papers, api_key)
-        else:
-            print("WARNING: CHATANYWHERE_API_KEY not set, skipping translation", file=sys.stderr)
+    # Normalize to App-compatible format (same as FT50/CE/PM Paper model)
+    normalized = []
+    for p in all_papers:
+        normalized.append({
+            "journal_id": p["journal_id"],
+            "journal_name": p["journal_name"],
+            "title": p["title"],
+            "title_cn": p["title"],
+            "authors": p["authors"],
+            "doi": p.get("link", ""),
+            "date": p["date"],
+            "abstract": p["abstract"],
+            "abstract_cn": p["abstract"],
+            "topics": [],
+            "cited_by": 0,
+            "oa": False,
+            "pdf_url": "",
+            "tier": p.get("_tier", 3),
+            "scan_date": datetime.now().strftime("%Y-%m-%d"),
+        })
 
     with open(args.output, "w") as f:
-        json.dump(all_papers, f, ensure_ascii=False)
+        json.dump(normalized, f, ensure_ascii=False)
 
-    print(f"Output: {args.output} ({len(all_papers)} papers)")
+    print(f"Output: {args.output} ({len(normalized)} papers)")
 
 
 if __name__ == "__main__":
