@@ -190,7 +190,6 @@ def send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = f'Zylen的论文检索助手 <{smtp_user}>'
-    msg['To'] = smtp_user
     msg['Bcc'] = ', '.join(recipients)
     msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
