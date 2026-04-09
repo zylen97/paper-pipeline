@@ -47,6 +47,50 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cnki_latest.json" ]; then
     exit 1
 fi
 
+# ── 合并数据（累积到 cnki_papers.json，与 FT50/CEPM 架构一致） ──
+python3 - "data/cnki_latest.json" "data/cnki_papers.json" "$TODAY" << 'PYEOF'
+import json, sys
+
+latest_path, papers_path, scan_date = sys.argv[1], sys.argv[2], sys.argv[3]
+
+try:
+    with open(latest_path, 'r') as f:
+        new_papers = json.load(f)
+    if isinstance(new_papers, dict) and 'papers' in new_papers:
+        new_papers = new_papers['papers']
+except Exception as e:
+    print(f"Cannot read cnki_latest.json: {e}", file=sys.stderr)
+    sys.exit(0)
+
+for p in new_papers:
+    p['scan_date'] = scan_date
+
+try:
+    with open(papers_path, 'r') as f:
+        all_papers = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    all_papers = []
+
+# CNKI 用 doi 字段（实为 CNKI 链接）去重，与 App 的 deleted_dois 一致
+doi_map = {p.get('doi', ''): p for p in all_papers if p.get('doi')}
+for p in new_papers:
+    if p.get('doi'):
+        doi_map[p['doi']] = p
+all_papers = list(doi_map.values())
+
+from datetime import datetime, timedelta
+cutoff = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
+all_papers = [p for p in all_papers if p.get('scan_date', p.get('date', '9999')) >= cutoff]
+all_papers.sort(key=lambda p: p.get('date', ''), reverse=True)
+
+with open(papers_path, 'w') as f:
+    json.dump(all_papers, f, ensure_ascii=False)
+
+print(f"Merged: {len(new_papers)} fetched, {len(all_papers)} total")
+PYEOF
+
+echo "Merge done" >> "$LOG_FILE"
+
 # ── 统计去重后真实新论文数 ──
 NEW_COUNT=$(python3 -c "
 import json
@@ -76,7 +120,7 @@ if [ "$NEW_COUNT" -gt 0 ] 2>/dev/null; then
 fi
 
 # ── 推送到 GitHub + 部署 gh-pages（带超时保护） ──
-git add data/cnki_latest.json data/cnki_seen_titles.json
+git add data/cnki_latest.json data/cnki_papers.json data/cnki_seen_titles.json
 git commit -m "cnki: $TODAY" 2>> "$LOG_FILE"
 
 PUSH_OK=0
