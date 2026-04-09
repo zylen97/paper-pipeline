@@ -1,0 +1,86 @@
+{
+  "Automation_in_Construction": {
+    "id": "AIC",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol187_Jul2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 22,
+        "figure_count": 352,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Automation_in_Construction/Vol187_Jul2026/"
+      }
+    }
+  },
+  "Advanced_Engineering_Informatics": {
+    "id": "AEI",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol74_September_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 57,
+        "figure_count": 845,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Advanced_Engineering_Informatics/Vol74_September_2026/"
+      }
+    }
+  },
+  "Building_and_Environment": {
+    "id": "BAE",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol297_June_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 28,
+        "figure_count": 315,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Building_and_Environment/Vol297_June_2026/"
+      }
+    }
+  },
+  "Intl_Journal_of_Project_Management": {
+    "id": "IJPM",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol44_March_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 11,
+        "figure_count": 27,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Intl_Journal_of_Project_Management/Vol44_March_2026/"
+      }
+    }
+  },
+  "Journal_of_Building_Engineering": {
+    "id": "JBE",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol124_April_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 21,
+        "figure_count": 383,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Journal_of_Building_Engineering/Vol124_April_2026/"
+      }
+    }
+  },
+  "Safety_Science": {
+    "id": "SS",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol200_August_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 7,
+        "figure_count": 46,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Safety_Science/Vol200_August_2026/"
+      }
+    }
+  },
+  "Sustainable_Cities_and_Society": {
+    "id": "SCS",
+    "last_checked": "2026-04-06",
+    "volumes": {
+      "Vol143_June_2026": {
+        "harvested_at": "2026-04-06",
+        "paper_count": 21,
+        "figure_count": 257,
+        "path": "~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/Sustainable_Cities_and_Society/Vol143_June_2026/"
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@
     {"id": "JME", "name": "Journal of Management in Engineering", "openalex_id": "S144495243", "issn": "0742-597X", "tier": 1, "tags": ["工程管理", "组织"]},
     {"id": "PMJ", "name": "Project Management Journal", "openalex_id": "S196205230", "issn": "1938-9507", "tier": 1, "tags": ["项目管理"]},
     {"id": "SS", "name": "Safety Science", "openalex_id": "S123149298", "issn": "0925-7535", "tier": 1, "tags": ["安全", "行为安全"]},
-    {"id": "SCS", "name": "Sustainable Cities and Society", "openalex_id": "S163634330", "issn": "2210-6707", "tier": 1, "tags": ["可持续", "城市"]}
+    {"id": "SCS", "name": "Sustainable Cities and Society", "openalex_id": "S163634330", "issn": "2210-6707", "tier": 1, "tags": ["可持续", "城市"]},
+    {"id": "TEM", "name": "IEEE Transactions on Engineering Management", "openalex_id": "S154533451", "issn": "0018-9391", "tier": 1, "tags": ["工程管理", "技术管理", "创新"]}
   ]
 }
