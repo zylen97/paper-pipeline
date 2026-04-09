@@ -49,6 +49,11 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cepm_latest.json" ]; then
     exit 1
 fi
 
+# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 gh-pages） ──
+git fetch origin gh-pages --quiet 2>> "$LOG_FILE"
+git show origin/gh-pages:data/user_state.json > /tmp/idea_scout_user_state.json 2>/dev/null \
+    || cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
+
 # ── 合并数据 ──
 python3 - "data/cepm_latest.json" "data/cepm_papers.json" "$TODAY" << 'PYEOF'
 import json, sys
@@ -81,7 +86,7 @@ for p in new_papers:
 # 加载 user_state.json，过滤已删除/已加入 Idea 的论文
 deleted_dois = set()
 try:
-    with open('data/user_state.json', 'r') as f:
+    with open('/tmp/idea_scout_user_state.json', 'r') as f:
         _us = json.load(f)
     deleted_dois = set(_us.get('cepm', {}).get('deleted_dois', []))
     for ip in _us.get('cepm', {}).get('idea_papers', []):

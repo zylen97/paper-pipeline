@@ -47,6 +47,11 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cnki_latest.json" ]; then
     exit 1
 fi
 
+# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 gh-pages） ──
+git fetch origin gh-pages --quiet 2>> "$LOG_FILE"
+git show origin/gh-pages:data/user_state.json > /tmp/idea_scout_user_state.json 2>/dev/null \
+    || cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
+
 # ── 合并数据（累积到 cnki_papers.json，与 FT50/CEPM 架构一致） ──
 python3 - "data/cnki_latest.json" "data/cnki_papers.json" "$TODAY" << 'PYEOF'
 import json, sys
@@ -81,7 +86,7 @@ def _sid(p):
 # 加载 user_state.json 中已删除的 stable_id，避免已删除论文重新进入 Pending
 deleted_sids = set()
 try:
-    with open('data/user_state.json', 'r') as f:
+    with open('/tmp/idea_scout_user_state.json', 'r') as f:
         user_state = json.load(f)
     deleted_sids = set(user_state.get('cnki', {}).get('deleted_dois', []))
     # 同时排除 idea_papers 中的论文
