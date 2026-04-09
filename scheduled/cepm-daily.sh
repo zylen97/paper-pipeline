@@ -87,34 +87,24 @@ all_papers.sort(key=lambda p: p.get('date', ''), reverse=True)
 with open(papers_path, 'w') as f:
     json.dump(all_papers, f, ensure_ascii=False)
 
-print(f"Merged: {len(new_papers)} new, {len(all_papers)} total")
+print(f"Merged: {len(new_papers)} fetched, {len(all_papers)} total")
 PYEOF
 
 echo "Merge done" >> "$LOG_FILE"
 
-# ── 推送到 GitHub + 部署 gh-pages ──
-git add data/cepm_latest.json data/cepm_papers.json
-git commit -m "cepm: $TODAY - scan from $SCAN_FROM" 2>> "$LOG_FILE"
-for _attempt in 1 2 3; do git push origin main >> "$LOG_FILE" 2>&1 && break; sleep 15; done
+# ── 统计去重后真实新论文数 ──
+NEW_COUNT=$(python3 -c "
+import json
+papers = json.load(open('data/cepm_latest.json'))
+if isinstance(papers, dict) and 'papers' in papers: papers = papers['papers']
+try: seen = set(json.load(open('data/cepm_seen_dois.json')))
+except: seen = set()
+new = [p for p in papers if not p.get('doi') or p['doi'] not in seen]
+print(len(new))
+" 2>/dev/null || echo "0")
+echo "New papers (after dedup): $NEW_COUNT" >> "$LOG_FILE"
 
-# 部署到 gh-pages（只更新数据，不重建 Flutter）
-# 复制所有 data/*.json 避免覆盖 FT50 数据
-mkdir -p /tmp/idea_scout_all_data
-cp data/*.json /tmp/idea_scout_all_data/
-git checkout gh-pages 2>> "$LOG_FILE"
-cp /tmp/idea_scout_all_data/*.json data/
-git add data/
-git commit -m "data: cepm $TODAY" 2>> "$LOG_FILE"
-for _attempt in 1 2 3; do git push origin gh-pages >> "$LOG_FILE" 2>&1 && break; sleep 15; done
-git checkout main 2>> "$LOG_FILE"
-rm -rf /tmp/idea_scout_all_data
-
-echo "GitHub push done" >> "$LOG_FILE"
-
-# ── 通知 ──
-osascript -e "display notification \"CE/PM scan done\" with title \"CE/PM Scout\" subtitle \"$TODAY\" sound name \"Glass\""
-
-# ── 邮件日报 ──
+# ── 邮件日报（在 git push 之前，避免 push 卡死阻塞邮件） ──
 export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS
 export EMAIL_TO="$EMAIL_TO,zhangshfan@mail.usts.edu.cn"
 
@@ -125,5 +115,45 @@ python3 "$SCRIPT_DIR/send-digest-email.py" \
     "cepm" \
     >> "$LOG_FILE" 2>&1 || echo "Email sending failed" >> "$LOG_FILE"
 
-# 自动打开 App
-open "https://zylen97.github.io/idea-scout/"
+# ── 通知 + 打开 App（仅有新论文时） ──
+if [ "$NEW_COUNT" -gt 0 ] 2>/dev/null; then
+    osascript -e "display notification \"CE/PM: ${NEW_COUNT} 篇新论文\" with title \"CE/PM Scout\" subtitle \"$TODAY\" sound name \"Glass\""
+    open "https://zylen97.github.io/idea-scout/"
+fi
+
+# ── 推送到 GitHub + 部署 gh-pages（带超时保护） ──
+git add data/cepm_latest.json data/cepm_papers.json data/cepm_seen_dois.json
+git commit -m "cepm: $TODAY - scan from $SCAN_FROM" 2>> "$LOG_FILE"
+
+PUSH_OK=0
+for _attempt in 1 2 3; do
+    perl -e 'alarm 60; exec @ARGV' git push origin main >> "$LOG_FILE" 2>&1 && { PUSH_OK=1; break; }
+    sleep 5
+done
+if [ $PUSH_OK -eq 0 ]; then
+    echo "ERROR: git push main failed after 3 attempts" >> "$LOG_FILE"
+    osascript -e 'display notification "git push main 超时/失败，数据未同步" with title "CE/PM Scout" subtitle "Push Failed" sound name "Basso"'
+fi
+
+# 部署到 gh-pages
+mkdir -p /tmp/idea_scout_all_data
+cp data/*.json /tmp/idea_scout_all_data/
+git checkout gh-pages 2>> "$LOG_FILE"
+cp /tmp/idea_scout_all_data/*.json data/
+git add data/
+git commit -m "data: cepm $TODAY" 2>> "$LOG_FILE"
+
+PUSH_OK=0
+for _attempt in 1 2 3; do
+    perl -e 'alarm 60; exec @ARGV' git push origin gh-pages >> "$LOG_FILE" 2>&1 && { PUSH_OK=1; break; }
+    sleep 5
+done
+if [ $PUSH_OK -eq 0 ]; then
+    echo "ERROR: git push gh-pages failed after 3 attempts" >> "$LOG_FILE"
+    osascript -e 'display notification "gh-pages push 超时/失败，App 未更新" with title "CE/PM Scout" subtitle "Push Failed" sound name "Basso"'
+fi
+
+git checkout main 2>> "$LOG_FILE"
+rm -rf /tmp/idea_scout_all_data
+
+echo "GitHub push done" >> "$LOG_FILE"

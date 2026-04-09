@@ -23,6 +23,32 @@ def rebuild_abstract(inv_idx):
     return " ".join(w for _, w in wp)
 
 
+# 标题匹配任一关键词即视为噪音，不入库
+NOISE_PATTERNS = [
+    "issue information",
+    "correction to ",
+    "erratum",
+    "corrigendum",
+    "retraction notice",
+    "retraction:",
+    "editorial board",
+    "table of contents",
+    "front cover",
+    "back cover",
+    "masthead",
+    "reviewer acknowledgement",
+    "list of reviewers",
+    "books received",
+    "call for papers",
+    "in this issue",
+]
+
+
+def _is_noise(title):
+    t = (title or "").lower().strip()
+    return any(t.startswith(p) or p in t for p in NOISE_PATTERNS)
+
+
 def fetch_papers(config, from_date, to_date):
     mailto = config["openalex_mailto"]
     journals = config["journals"]
@@ -59,6 +85,9 @@ def fetch_papers(config, from_date, to_date):
 
                 pub_date = r.get("publication_date", "")
                 if pub_date > to_date:
+                    continue
+
+                if _is_noise(r.get("title", "")):
                     continue
 
                 authors = [
