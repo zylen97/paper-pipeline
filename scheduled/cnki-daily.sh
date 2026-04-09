@@ -71,12 +71,19 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     all_papers = []
 
-# CNKI 用 doi 字段（实为 CNKI 链接）去重，与 App 的 deleted_dois 一致
-doi_map = {p.get('doi', ''): p for p in all_papers if p.get('doi')}
+# CNKI 用 stable_id（md5(title|journal_id)）去重，因为 CNKI URL 每次扫描都会变
+import hashlib
+def _sid(p):
+    s = p.get('stable_id', '')
+    if s: return s
+    return hashlib.md5(f"{p.get('title','')}|{p.get('journal_id','')}".encode('utf-8')).hexdigest()
+
+sid_map = {_sid(p): p for p in all_papers if p.get('title')}
 for p in new_papers:
-    if p.get('doi'):
-        doi_map[p['doi']] = p
-all_papers = list(doi_map.values())
+    if p.get('title'):
+        p['stable_id'] = _sid(p)
+        sid_map[p['stable_id']] = p
+all_papers = list(sid_map.values())
 
 from datetime import datetime, timedelta
 cutoff = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')

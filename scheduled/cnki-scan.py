@@ -2,6 +2,7 @@
 """CNKI RSS Scanner — 从知网 RSS 抓取中文期刊最新论文，生成 App 数据和邮件推送。"""
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -9,6 +10,12 @@ import time
 import urllib.request
 import html as html_lib
 from datetime import datetime, timedelta
+
+
+def make_stable_id(title, journal_id):
+    """Generate stable ID from title + journal_id (MD5 hash, UTF-8 safe)."""
+    raw = f"{title}|{journal_id}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 
 def fetch_rss(journal_id, journal_name, rss_base_url, rss_suffix=""):
@@ -129,6 +136,7 @@ def main():
             "pdf_url": "",
             "tier": p.get("_tier", 3),
             "scan_date": datetime.now().strftime("%Y-%m-%d"),
+            "stable_id": make_stable_id(p["title"], p["journal_id"]),
         })
 
     with open(args.output, "w") as f:
