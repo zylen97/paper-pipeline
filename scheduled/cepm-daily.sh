@@ -77,7 +77,20 @@ doi_map = {p.get('doi', ''): p for p in all_papers if p.get('doi')}
 for p in new_papers:
     if p.get('doi'):
         doi_map[p['doi']] = p
-all_papers = list(doi_map.values())
+
+# 加载 user_state.json，过滤已删除/已加入 Idea 的论文
+deleted_dois = set()
+try:
+    with open('data/user_state.json', 'r') as f:
+        _us = json.load(f)
+    deleted_dois = set(_us.get('cepm', {}).get('deleted_dois', []))
+    for ip in _us.get('cepm', {}).get('idea_papers', []):
+        tid = ip.get('tracking_id', ip.get('doi', ''))
+        if tid: deleted_dois.add(tid)
+except (FileNotFoundError, json.JSONDecodeError):
+    pass
+
+all_papers = [p for doi, p in doi_map.items() if doi not in deleted_dois]
 
 from datetime import datetime, timedelta
 cutoff = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')

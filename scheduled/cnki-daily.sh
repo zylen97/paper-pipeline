@@ -78,12 +78,27 @@ def _sid(p):
     if s: return s
     return hashlib.md5(f"{p.get('title','')}|{p.get('journal_id','')}".encode('utf-8')).hexdigest()
 
+# 加载 user_state.json 中已删除的 stable_id，避免已删除论文重新进入 Pending
+deleted_sids = set()
+try:
+    with open('data/user_state.json', 'r') as f:
+        user_state = json.load(f)
+    deleted_sids = set(user_state.get('cnki', {}).get('deleted_dois', []))
+    # 同时排除 idea_papers 中的论文
+    for ip in user_state.get('cnki', {}).get('idea_papers', []):
+        tid = ip.get('tracking_id', '')
+        if tid:
+            deleted_sids.add(tid)
+except (FileNotFoundError, json.JSONDecodeError):
+    pass
+
 sid_map = {_sid(p): p for p in all_papers if p.get('title')}
 for p in new_papers:
     if p.get('title'):
         p['stable_id'] = _sid(p)
         sid_map[p['stable_id']] = p
-all_papers = list(sid_map.values())
+# 过滤掉用户已删除/已加入Idea的论文
+all_papers = [p for sid, p in sid_map.items() if sid not in deleted_sids]
 
 from datetime import datetime, timedelta
 cutoff = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
