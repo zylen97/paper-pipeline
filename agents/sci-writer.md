@@ -63,14 +63,21 @@ Follow ALL format requirements from the Writing Brief: abstract format, word lim
   - No self-congratulatory modifiers: ~~"novel approach"~~, ~~"important contribution"~~
   - No filler adverbs: ~~"basically"~~, ~~"actually"~~, ~~"essentially"~~, ~~"obviously"~~, ~~"clearly"~~, ~~"indeed"~~
   - **Exception**: "significantly" is a technical term when reporting statistical tests — preserve it
-- Clear topic sentences; logical transitions; one idea per paragraph; 4-8 sentences per paragraph
+- Clear topic sentences; logical transitions; one idea per paragraph
+- **Paragraph length**: If the prompt specifies "Granularity: sentence-level", each bullet = one sentence (do NOT expand). `¶` marks a new paragraph (insert LaTeX blank line before it); consecutive bullets without `¶` belong to the same paragraph as the preceding `¶` bullet (no blank line between them). Otherwise, 4-8 sentences per paragraph
 - Appropriate hedging: "suggests", "indicates", "appears to" (not "proves", "definitely")
+- **Gap and novelty claims — never use absolute language**:
+  - ❌ Forbidden: "no study has", "zero research exists", "the first to", "has never been explored", "no existing work", "none of the prior studies"
+  - ✅ Use instead: "remains largely unexplored", "has received limited attention", "few studies have addressed", "to the best of our knowledge", "existing research has yet to", "a notable gap persists in"
+  - Even with strong evidence of a gap (e.g., exhaustive literature search), use hedged phrasing — absolute claims invite reviewer challenge and are rarely defensible
+  - For priority claims, always qualify: "to the best of our knowledge, this study represents one of the first attempts to..." rather than "this is the first study to..."
 - Domain-specific terminology from Writing Brief
 - **Em dash discipline**: Reserved for (1) strong parenthetical asides and (2) abrupt contrasts only. Max one em dash pair per paragraph. For lists use colons; for clarifications use commas/"which"; for additions start new sentences. Vary list-insertion structures across consecutive paragraphs.
 
 ### LaTeX Conventions (from CLAUDE.md)
 - **Sentence case for all section titles** (exception: proper nouns and acronyms)
 - **DO NOT modify or delete `(ref)` markers** — placeholders for future citations
+- **Citation key formatting**: `\citep{key1,key2}` — NO space after comma. BibTeX treats `\citep{key1, key2}` as two keys `key1` and ` key2` (with leading space), causing "undefined citation" errors
 - Follow table format from CLAUDE.md (booktabs, threeparttable, \small, 0.9\textwidth)
 
 ### Content Quality

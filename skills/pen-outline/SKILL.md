@@ -1,10 +1,10 @@
 ---
-description: "交互式构建叙述型章节的要点（论点 + citations），为 /pen-draft 提供高质量输入"
+description: "交互式构建叙述型章节的句子级要点（每句话 + citation form），为 /pen-draft 提供高质量输入"
 ---
 
 # Outline Workflow — 交互式构建章节要点
 
-为叙述型章节（Introduction, Literature Review, Discussion）逐子节构建要点（核心论点 + citation key），经用户确认后写入章节 md 文件。技术型章节不适用本技能。
+为叙述型章节（Introduction, Literature Review, Discussion）逐子节构建**句子级**要点（1 要点 = 1 句话 + 引用形式标记 `[citep]/[citet]/[—]`），经用户确认后写入章节 md 文件。技术型章节不适用本技能。
 
 **三个章节的流程差异**：
 - **Introduction / Discussion**：子节骨架由必备元素固定（RQ数量确定 → 子节确定），跳过步骤 1-2，直接进入要点填充
@@ -46,8 +46,55 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
 
 输出 `_section_match.json`。主 Agent 从中读取：
 - `has_children` = true → `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = children 列表
-- `has_children` = false → `{INPUT_FORM}` = "single"
+- `has_children` = false → 暂定 `{INPUT_FORM}` = "single"，**但需要步骤 0.6b 的 fallback 检查**
 - **匹配失败**（VERIFY: FAIL）→ AskUserQuestion 让用户从列出的 section 中选择
+
+### 0.6b Chapter MD Headings Fallback + 一致性校验
+
+> **执行顺序**：0.4 → 0.5 → 0.6 → **0.6b**（本步骤依赖 0.6 定位到的 `{CHAPTER_MD_PATH}`）。
+
+当步骤 0.4 判定 `{INPUT_FORM}` = "single" 时（tex 中无子节），执行以下 fallback：
+
+**a. 检查 chapter md 中的 `###` headings**：
+
+扫描 `{CHAPTER_MD_PATH}` 的 `## 大纲` 区块中所有 `###` 开头的行，提取 heading 列表 → `{MD_HEADINGS}`。
+
+- `{MD_HEADINGS}` 非空（有 `###` headings） → 覆盖 `{INPUT_FORM}` = "multi"，`{SPLIT_SEGMENTS}` = `{MD_HEADINGS}`
+- `{MD_HEADINGS}` 为空 → 保持 "single"
+
+**b. 校验 md headings 与模板的一致性**：
+
+> **`###` heading 结构保护规则**：叙述型章节的 `###` heading 结构由 paper-init 模板定义，pen-outline **严禁擅自修改**（拆分、合并、重命名、新增、删除均不允许）。**唯一例外**：Gap 段数量适配（见下方）。
+
+当 `{MD_HEADINGS}` 非空时：
+
+1. 从模板文件（`~/.claude/skills/paper-init/common/{section}.md.tmpl`，如存在）提取模板 `###` headings → `{TEMPLATE_HEADINGS}`
+2. 对比 `{MD_HEADINGS}` vs `{TEMPLATE_HEADINGS}`
+
+**如果不一致**（除 Gap 数量外有差异）：
+
+```
+⚠️ 章节 md 的 ### headings 与模板不一致（可能被之前的 session 误改）：
+
+当前 md headings:           模板期望:
+──────────────────         ──────────────────
+{逐行对比}
+
+将恢复为模板结构（已有内容会按最近匹配迁移到对应 heading 下）。
+Gap 段数量将根据 idea.md 适配。
+
+确认恢复？(y/n)
+```
+
+用户确认后，恢复 `###` headings 为模板结构（保留已有要点内容，按语义最近匹配迁移到正确的 heading 下）。用户拒绝 → 使用当前 md headings 继续（但显示警告）。
+
+**Gap 段数量适配**（唯一允许的结构修改）：
+
+当 `{SECTION_TYPE}` == "intro" 时，从 idea.md 读取 Gap 数量（`## 2` 中的 Gap 表格行数）和 RQ 数量。Gap 数量必须等于 RQ 数量（一对一映射）。如果 idea.md 中 Gap 数量 ≠ RQ 数量，显示警告并要求用户先修正 idea.md。
+
+模板中的 `{GAP_SECTIONS}` 占位符（或已有的 `### GapN` headings）按实际 Gap/RQ 数量展开/收缩。每个 Gap heading 标注对应的 RQ 编号（如 `### Gap1（→RQ1）`、`### Gap2（→RQ2）`、`### Gap3（→RQ3）`）。
+
+更新 `{SPLIT_SEGMENTS}` 为最终的 heading 列表。
 
 ### 0.5 叙述型章节检查 + 章节类型判定
 
@@ -84,6 +131,11 @@ introduction         → structure/1_introduction/introduction.md
 literature           → structure/2_literature/literature.md
 discussion           → Glob("structure/*discussion*/discussion.md") 动态匹配
 ```
+
+如果匹配到的 md 文件**不存在**（如 finalize 后被清理）：
+  1. 检查 `~/.claude/skills/paper-init/common/` 下是否有对应模板（如 `introduction.md.tmpl`）
+  2. 有模板 → 复制模板到目标路径，将 `{ID}` 替换为项目编号（从 CLAUDE.md 提取），显示 `📄 已从模板创建 {文件名}`
+  3. 无模板 → 创建最小空壳（`# {Section} — {ID}` + `## 大纲`），显示 `📄 已创建空壳 {文件名}`
 
 记录 `{CHAPTER_MD_PATH}`
 
@@ -193,8 +245,10 @@ LR 方向的内部结构分为两部分，比重固定：
 | 指出不足 + 连接Gap | ~15% | 末段，约50词指出不足 + 一句话连接Gap |
 
 **引用风格**（综述主体中交替使用）：
-- **形式A（主题驱动）**: 以研究领域/主题为主语，文献做括号引用 `\citep{}`——用于概括性综述、覆盖多篇文献
-- **形式B（作者驱动）**: 以作者为主语 `\citet{}`——用于 highlight 关键文献的具体发现
+- **形式A（主题驱动）** = `[citep]` 标记: 以研究领域/主题为主语，文献做括号引用 `\citep{}`——用于概括性综述、覆盖多篇文献
+- **形式B（作者驱动）** = `[citet]` 标记: 以作者为主语 `\citet{}`——用于 highlight 关键文献的具体发现
+
+> **标记对应关系**：形式A → `[citep]`，形式B → `[citet]`。步骤 5.3 生成句子级要点时统一使用 `[citep]/[citet]/[—]` 标记。
 
 **落脚规则**：
 - 如果该方向综述的是**跨行业的一般文献**，综述主体的**末尾子主题必须回溯到本文的研究情境**（从一般→本文研究的具体行业/领域），然后再接"指出不足"
@@ -262,6 +316,14 @@ AskUserQuestion 等待用户确认。用户可以：
 4. 读取 `{OTHER_MD_PATHS}` 中的文件（仅标题和要点摘要）→ `{CROSS_REF_CONTEXT}`
 5. 读取 bib 文件用于验证 citation key 存在性
 
+**所有章节类型的额外动作**：
+
+6. **构建可用引用清单 `{AVAILABLE_REFS}`**：从 `{CITATION_POOL_CONTENT}` 中提取所有条目，按标签（BG / GAP / METHOD / LR / DISC / COMP）分组，为每个条目记录 citation key + 引用场景摘要 + 分级（核心/重要/备选）。如果 citation pool 为空或不存在，则从 bib 文件中提取所有条目作为 fallback。此清单在步骤 5.3 中用于为每个要点（= 每句话）主动匹配引用。
+
+   **大文件处理**：citation pool 单文件可能超过 10k tokens。如果 Read 工具因文件过大报错，使用 Explore subagent 并行读取所有 citation pool 文件并提取条目清单（citation key + 引用场景 + 分级），避免主 agent 上下文溢出。
+
+   **LR 的特殊处理**：`{AVAILABLE_REFS}` 与步骤 2.1 的子主题预分配**互补**——预分配覆盖综述主体的核心 citations，`{AVAILABLE_REFS}` 补充预分配未覆盖的要点（落脚段、指出不足段、用户临时新增的要点）。步骤 5.3 中对 LR 子节：先使用预分配 citation keys，剩余未分配要点从 `{AVAILABLE_REFS}` 中匹配。
+
 **LR 额外读取**（仅 `{SECTION_TYPE}` == `"litrev"` 时）：
 
 步骤 1.1 已读取方向报告等素材用于方向确定。此处复用已加载的上下文变量（`{DIRECTION_REPORTS_CONTEXT}` 等），不重复读取。
@@ -281,7 +343,7 @@ AskUserQuestion 等待用户确认。用户可以：
 
 ## 步骤 4：调度确认
 
-`{INPUT_FORM}` = "single" → 跳过，直接对整个 section 执行步骤 5。
+`{INPUT_FORM}` = "single" → 跳过步骤 4，直接对整个 section 执行步骤 5。（注意：经过 0.6b 的 fallback 后，叙述型章节几乎不会保持 single——只有 md 中无 `###` headings 时才可能。）
 
 **4.1 确认**（AskUserQuestion）：
 - Parent section 名称
@@ -379,38 +441,75 @@ AskUserQuestion：确认 intent 或提出修改意见。
 - bib 文件验证 citation key 存在性
 
 **要点写作规范**：
-- 中文表述，citation key/专用术语/公式符号用英文原文
-- 每个要点包含核心论点 + 对应的 `\citep{}` 或 `\citet{}`
-- **引用密度**：尽可能每个要点都带引用，宁多勿少（用户后期可删，但补加成本高）
-- 每个要点引用不超过 2 个（硬性上限 3 个）
-- 需要引用但 citation pool 中找不到合适文献 → 标记 `(ref)`
-- **引用偏好**：遵循 citation pool 的分级说明（如 BG 优先近3年高质量期刊，GAP 优先近年进展而非经典文献）
-- 如用户选了 (2) 补充模式，在已有要点基础上调整
+
+> **核心原则：1 要点 = 1 句话**。每个要点对应最终英文稿中的**恰好一个句子**（非一个论点/段落）。sci-writer 将把每个要点 1:1 翻译为一个英文句子，不做扩展。要点的信息密度应与一个英文学术长句匹配（15-35 词对应的中文内容量）。
+
+- **语言**：中文表述，citation key / 专用术语 / 公式符号用英文原文
+- **Gap/novelty 措辞规范**：避免绝对性声明，改用留有余地的 hedge 表述。即使文献检索确认为空白，也必须加 hedge。
+  - ❌ 禁止：「零研究」「从未被探索」「首个/首次」「没有任何研究」「完全空白」
+  - ✅ 改用：「尚未充分探索」「现有研究缺乏」「鲜有研究关注」「据作者所知（to the best of our knowledge）」「仍是一个显著的研究空白」
+  - 优先级声明必须加限定词：「据作者所知，本研究是该领域较早的尝试之一」而非「本研究是首个」
+  - 此规则适用于所有子节（Gap 段落、贡献声明、LR 指出不足等），在中文要点和最终英文稿中同等执行
+- **引用形式标记**（每个要点**必须**带以下标记之一，写在要点最前方）：
+  - `[citep]` → 该句使用括号引用 `\citep{}`：用于概括性陈述、多文献支撑的事实
+  - `[citet]` → 该句使用作者主语引用 `\citet{}`：用于 highlight 某作者的具体发现
+  - `[—]` → 该句无需引用：仅限于过渡句、本文自身的论点/贡献声明、RQ 陈述、结构引导句
+- **citep vs citet 判断规则**：
+  - `\citet{}`：作者是主语（"Zhang et al. (2020) found that..."）——用于 highlight 某篇文献的具体发现/贡献
+  - `\citep{}`：观点/事实是主语（"Innovation requires collaboration (Zhang, 2020)"）——用于综述性/概括性陈述
+- **引用密度目标**：标记 `[citep]` 或 `[citet]` 的要点占总要点数 **≥ 85%**。仅以下句子类型允许标 `[—]`：
+  - 段落间过渡句（如"然而，上述研究存在以下不足"）
+  - 本文贡献/创新声明（如"本文通过...填补了这一空白"）
+  - RQ/假设陈述（如"据此，本文提出 RQ1：..."）
+  - 章节结构引导句（如"本文余下部分结构如下"）
+- **每个要点引用数**：1-2 个 citation keys（硬性上限 3 个）
+- **需要引用但无合适文献** → 标记 `(ref)`
+- **引用偏好**：遵循 citation pool 的分级说明（如 BG 优先近3年高质量期刊，GAP 优先近年进展）。优先使用 `{AVAILABLE_REFS}` 中的核心/重要级文献
+- **段落归属标记**（可选）：当多个连续要点属于同一段落时，用 `¶` 标记段首要点，帮助 sci-writer 组织段落结构。无 `¶` 标记的要点跟随前一个 `¶` 要点归入同一段落
+- **句子分类参考表**（生成要点前，在内部按此表分类每句话的引用需求，不输出给用户）：
+
+  | 句子功能 | 引用要求 | 典型占比 |
+  |:---------|:---------|:---------|
+  | 事实陈述（已知发现/行业趋势） | 必须 `[citep]` 或 `[citet]` | ~40% |
+  | 文献观点归纳（多篇综述） | 必须 `[citep]` | ~20% |
+  | 具体作者发现 highlight | 必须 `[citet]` | ~15% |
+  | 概念/方法定义或对比 | 通常 `[citep]`，偶可 `[—]` | ~8% |
+  | 过渡/衔接句 | `[—]` | ~5-8% |
+  | 本文论点/贡献/RQ 声明 | `[—]` | ~5-8% |
+  | 结构引导句 | `[—]` | ~2% |
+
+- 如用户选了 (2) 补充模式，在已有要点基础上调整，对现有要点也补充引用形式标记
 
 **LR 方向子节的要点组织**（仅 `{SECTION_TYPE}` == `"litrev"` 且非定位表）：
 
-要点按写作蓝图的**子主题**分组组织，citations 使用步骤 2.1 预分配的文献。在交互输出中用子主题标记辅助用户审阅（写入 md 时去掉标记）：
+要点按写作蓝图的**子主题**分组组织，**每个要点 = 最终英文稿中的一个句子**。citations 优先使用步骤 2.1 预分配的文献，不足时从 `{AVAILABLE_REFS}` 补充。在交互输出中用子主题标记辅助用户审阅（写入 md 时去掉标记）：
 
 ```
 ### {subsection title}
 > {confirmed intent}
 
 **综述主体** (~85%):
-- [A] 要点1：{子主题A内容}（形式A）\citep{key1, key2}
-- [A] 要点2：{子主题A内容}（形式A）\citep{key3}
-- [B] 要点3：{子主题B内容}（形式B）\citet{key4} 的具体发现
-- [B] 要点4：{子主题B内容}（形式B）\citet{key5} 的具体发现
-- [C] 要点5：{子主题C内容}（形式A）\citep{key6, key7}
-- [落脚] 要点6：{回溯到研究情境——已有证据1}（形式A/B）\citep{key8, key9}
-- [落脚] 要点7：{回溯到研究情境——已有证据2}（形式B）\citet{key10}
-- [落脚] 要点8：{回溯到研究情境——已有证据3}（形式A）\citep{key11}
-- [落脚] 要点9：{回溯到研究情境——但未触及的核心问题}（形式A）\citep{key12}
+- ¶ [A][citep] 子主题A的概括性开场句，综述该子领域的整体趋势 \citep{key1, key2}
+- [A][citep] 展开：某方面的具体研究发现 \citep{key3}
+- [A][citep] 进一步展开：另一方面的证据 \citep{key4, key5}
+- ¶ [B][citet] \citet{key6} 发现了具体结论（highlight 该文献的核心贡献）
+- [B][citet] \citet{key7} 进一步揭示了另一维度的发现
+- [B][citep] 其他学者也报告了类似结果 \citep{key8, key9}
+- ¶ [C][citep] 子主题C的概括 \citep{key10}
+- [C][citep] 子主题C的展开 \citep{key11}
+- ¶ [落脚][citep] 在本文研究情境中，已有证据1 \citep{key12}
+- [落脚][citet] \citet{key13} 的情境相关发现
+- [落脚][citep] 进一步的情境证据 \citep{key14}
+- [落脚][—] 然而，上述研究尚未触及的核心问题是...
 
-**指出不足** (~50词):
-- [不足] 要点10：{不足} \citep{key13}
+**指出不足** (~50词 ≈ 2-3个要点):
+- ¶ [不足][citep] 尽管已有研究关注了X，但缺乏对Y的系统分析 \citep{key15}
+- [不足][—] 这一空白限制了我们对Z的理解
 
 **连接Gap**:
-- [Gap] 要点11：→ G{x}
+- [Gap][—] → G{x}：本文通过...来填补这一空白
+
+**引用密度自检**：{标记[citep]或[citet]的要点数}/{总要点数} = {百分比}%（目标≥85%）
 
 | # | Citation | 引用理由 |
 |:-:|:---------|:---------|
@@ -418,7 +517,24 @@ AskUserQuestion：确认 intent 或提出修改意见。
 | ... | ... | ... |
 ```
 
-**与 Introduction/Discussion 的差异**：LR 要点的 citations 已在步骤 2.1 预分配，步骤 5.3 主要任务是**围绕预分配的 citations 撰写要点文本**。用户仍可在此阶段增删改 citations。
+**与 Introduction/Discussion 的差异**：LR 要点的 citations 已在步骤 2.1 预分配，步骤 5.3 主要任务是**围绕预分配的 citations 撰写句子级要点文本**，并从 `{AVAILABLE_REFS}` 补充预分配未覆盖的句子。用户仍可在此阶段增删改 citations。
+
+**intro Gap 子节的措辞规则**（仅 `{SECTION_TYPE}` == `"intro"` 且当前子节为 GapN）：
+
+**Gap 声明措辞**：Gap 段落中的③Gap 步骤（指出研究空白）必须使用 hedge 表述，严禁绝对性声明：
+```
+❌ 错误：[—] 装配式建筑工程变更+LLM = 零研究
+❌ 错误：[citep] 目前没有任何研究探索过这一方向
+✅ 正确：[citep] 现有研究尚未充分关注装配式建筑工程变更场景下的 LLM 决策支持 \citep{gao2026l}
+✅ 正确：[citep] 据作者所知，多阶段变更决策链的自动化支持在该领域仍是一个显著的研究空白 \citep{li2026e}
+```
+
+**末句规则**：每个 Gap 段的最后一个要点必须是⑤目标——用**陈述句**表述研究目标，标记 `[—]`。不得直接引用 RQ 问句；RQ 问句统一在"方法论概述与RQ"子节中呈现。
+
+```
+❌ 错误：[—] 因此，本文提出 RQ1：如何设计...？
+✅ 正确：[—] 因此，本文旨在构建面向装配式工程变更的多阶段 LLM 决策支持框架
+```
 
 **通用输出格式**（Introduction / Discussion）：
 
@@ -426,21 +542,50 @@ AskUserQuestion：确认 intent 或提出修改意见。
 ### {subsection title}
 > {confirmed intent}
 
-- 要点1：论点内容 \citep{key1, key2}
-- 要点2：论点内容 \citet{key3}
-- 要点3：论点内容 (ref)
-- ...
+- ¶ [citep] 开场句：该领域/主题的背景概述 \citep{key1, key2}
+- [citep] 具体趋势/现象描述 \citep{key3}
+- [citep] 进一步的支撑证据 \citep{key4}
+- ¶ [citet] \citet{key5} 发现了具体重要结论
+- [citet] \citet{key6} 进一步揭示了相关发现
+- [citep] 综合来看，这些研究表明... \citep{key7, key8}
+- ¶ [—] 然而，现有研究尚未充分关注...
+- [citep] 少数研究开始探索这一方向 \citep{key9}
+- ¶ [—] 本文针对这一空白，提出...
+- [citep] 这一做法与先前研究的方法论选择一致 \citep{key10}
+
+**引用密度自检**：{标记[citep]或[citet]的要点数}/{总要点数} = {百分比}%（目标≥85%）
 
 | # | Citation | 引用理由 |
 |:-:|:---------|:---------|
-| 1 | key1 | 为什么选这篇文献支撑该要点 |
-| 2 | key2 | 为什么选这篇文献支撑该要点 |
-| 3 | key3 | 为什么选这篇文献支撑该要点 |
+| 1 | key1 | 为什么选这篇文献支撑该句 |
+| ... | ... | ... |
 ```
 
-AskUserQuestion：确认要点或提出修改意见（可以要求增删改某个要点、换引用、调整顺序等）。
+**引用密度自检**（在展示要点列表后、AskUserQuestion 前自动执行）：
 
-**循环**：用户不满意 → 修改要点和引用理由表 → 再次展示 → 直到用户确认。
+统计当前子节要点中：
+- `N_cited` = 标记 `[citep]` 或 `[citet]` 的要点数
+- `N_uncited` = 标记 `[—]` 的要点数
+- `N_ref` = 标记 `(ref)` 的待补要点数
+- `N_total` = 总要点数
+- `density` = N_cited / N_total × 100%
+
+在要点列表末尾显示：
+```
+📊 引用密度：{N_cited}/{N_total} = {density}%
+   [citep]: {数量}  [citet]: {数量}  [—]: {数量}  (ref)待补: {数量}
+```
+
+- `density` ≥ 85% → ✅ 通过
+- 80% ≤ `density` < 85% → ⚠️ 略低，建议检查 `[—]` 标记的要点是否确实无需引用
+- `density` < 80% → ❌ 不达标，自动触发修复：
+  1. 列出所有 `[—]` 标记的要点
+  2. 逐条判断：该句是否真的是过渡句/本文论点/RQ？如果实际是事实陈述或文献观点，从 `{AVAILABLE_REFS}` 匹配合适的 citation 并改标为 `[citep]` 或 `[citet]`
+  3. 修复后重新统计并展示修复后的要点列表
+
+AskUserQuestion：确认要点或提出修改意见（可以要求增删改某个要点、换引用、调整引用形式标记、调整段落分组等）。
+
+**循环**：用户不满意 → 修改要点和引用理由表 → 再次展示（含重新自检） → 直到用户确认。
 
 **定位表专用流程**（仅 `{SECTION_TYPE}` == `"litrev"` 且当前子节为"定位表"时）：
 
@@ -473,7 +618,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
 ### 5.4 记录确认结果
 
-将用户确认的要点（不含引用理由表、不含子主题标记 `[A][B][落脚][不足][Gap]` 等）暂存，等待步骤 6 字数分配。
+将用户确认的要点（不含引用理由表、不含子主题标记 `[A][B][落脚][不足][Gap]` 等，但**保留引用形式标记 `[citep][citet][—]` 和段落标记 `¶`**）暂存，等待步骤 6 字数分配。
 
 定位表以完整表格形式暂存。
 
@@ -501,6 +646,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
 **6.2 自动分配各子节字数**：
 - 基础分配 = 总字数 × (该子节要点数 / 全部要点数)
+- **句子级校验**：由于每个要点 = 1 句话（约 20-30 词），对每个子节计算 `estimated_words = 要点数 × 25`。若 `基础分配` 与 `estimated_words` 偏差 > 30%，显示警告并建议用户调整目标总字数或增减要点数
 - 角色调整（按 `{SECTION_TYPE}` 分别处理）：
 
   **intro**：
@@ -572,6 +718,10 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
    **目标总字数: {N} words**
 
+   > **Granularity: sentence-level** — 每个要点 = 最终英文稿中的一个句子。
+   > `[citep]` = 括号引用 | `[citet]` = 作者主语引用 | `[—]` = 无需引用 | `¶` = 段首句
+   > sci-writer 应将每个要点 1:1 翻译为一个英文句子，不做自由扩展。
+
    | 子节 | 要点数 | 目标字数 | 写作说明 |
    |:-----|:---:|:---:|:------|
    | ... | ... | ... | ... |
@@ -579,12 +729,14 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
 4. 对每个已确认的子节：
    a. 定位 md 中对应的 heading（模糊匹配，忽略编号前缀）
-   b. 替换该 heading 下的内容为：
+   b. 替换该 heading 下的内容为（保留 `[citep][citet][—]` 和 `¶` 标记）：
    ```
    > {intent}
 
-   - 要点1...
-   - 要点2...
+   - ¶ [citep] 要点1... \citep{key1, key2}
+   - [citep] 要点2... \citep{key3}
+   - [citet] \citet{key4} 的发现...
+   - [—] 过渡句...
    ```
    c. 保留 heading 本身不变
 
@@ -631,4 +783,5 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 - 📂 读取的源文件列表
 - 📊 各子节要点数量 + 字数分配汇总
 - ⚠️ 标记 `(ref)` 的数量（提醒用户后续补充文献）
+- 📊 引用密度：全章节 `{N_cited}/{N_total} = {density}%`（汇总所有子节）
 - 💡 提示：要点就绪后可运行 `/pen-draft section=XXX` 生成初稿

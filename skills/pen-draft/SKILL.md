@@ -245,7 +245,7 @@ END FOR
 ### 3.1 读取并组装源材料
 
 1. 读取 `{IDEA_PATH}` → `{IDEA_CONTEXT}`（idea.md 全文）
-2. 读取传入的章节 md 内容 → `{CHAPTER_MD_CONTENT}`（由步骤 2 提取好的对应区块）
+2. 读取传入的章节 md 内容 → `{CHAPTER_MD_CONTENT}`（由步骤 2 提取好的对应区块）。**必须包含 `## 大纲` 区块的完整内容**（含顶部的 Granularity 声明、字数分配表、以及所有子节要点），不得仅提取 bullet points 而跳过 metadata
 3. 读取 `{CITATION_POOL_PATHS}` 中所有文件 → `{CITATION_POOL_CONTENT}`
 4. 生成 Structural Context：
 
@@ -287,13 +287,28 @@ This outline contains ALL the content points, arguments, and citation keys you n
 Every point in this outline must appear in the draft. Treat them as non-negotiable
 key points — do not omit, weaken, or reinterpret any point.
 
+## Granularity Mode
+Check the outline above for a "Granularity: sentence-level" note (usually near the top of the 大纲 section).
+
+**If sentence-level granularity is declared:**
+- Each bullet point = exactly ONE sentence in your output
+- Do NOT expand a bullet into multiple sentences or a full paragraph
+- Translate each bullet 1:1 into one well-crafted English academic sentence
+- Respect citation form markers: `[citep]` → use `\citep{}`, `[citet]` → use `\citet{}`, `[—]` → no citation
+- Respect paragraph markers: `¶` marks a new paragraph; consecutive bullets without `¶` belong to the same paragraph as the preceding `¶` bullet
+- Your output sentence count MUST equal the bullet count (±0)
+- The word target should be approximately bullet_count × 25; flag if target deviates significantly
+
+**If no granularity note is found:**
+- Follow the standard approach: treat each bullet as a key point and expand into a well-developed paragraph
+
 ## Available Citations
 {CITATION_POOL_CONTENT}
 
 Use these citation keys following the outline's citation markers:
 - `\citet{key}` = author as subject: "Smith (2020) found that..." — use when highlighting a specific study's findings
 - `\citep{key}` = parenthetical: "...recent findings (Smith, 2020)" — use for general claims supported by multiple sources
-- `\citep{key1, key2}` = multiple parenthetical: "...observed across industries (Smith, 2020; Jones, 2021)"
+- `\citep{key1,key2}` = multiple parenthetical: "...observed across industries (Smith, 2020; Jones, 2021)" — **NO space after comma** (BibTeX treats spaces as part of the key)
 If the outline specifies `\citet{}` for a point, the author MUST appear as subject in the sentence.
 If the outline specifies `\citep{}`, use parenthetical citation.
 Only use keys that appear in the outline above or in this citation pool.
