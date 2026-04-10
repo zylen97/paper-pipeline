@@ -17,7 +17,7 @@ When invoked from `/draft` or `/polish` with structured context (prompt referenc
 ### Mode B: Ad-hoc invocation
 When invoked directly with raw text and no pipeline context:
 - **Skip**: Writing Brief, manuscript/bibliography reading, 要点 enforcement
-- **Do**: Apply all Categories A–M to the provided text
+- **Do**: Apply all Categories A–R to the provided text
 - **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, and **culture-specific term: X**, dedicated Chinglish Fixes table, top 3 changes)
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
@@ -38,7 +38,34 @@ You improve: grammar/punctuation errors, awkward phrasing, overly complex senten
 - 大多数句子应采用 SVO 结构，一句传达一个核心信息
 - 如果一个句子需要读两遍才能理解，就应该拆分或重写
 - 复杂的逻辑关系优先用两个短句 + 连接词表达，而非一个长复合句
-- **允许的例外**：从句能使因果、让步、条件等关系更紧凑自然时可用复杂句式。目标是句式长短交替、节奏自然
+
+**明确禁止的句式模式（必须拆句或重构）：**
+
+*Type 1 — 逗号 + 连接词黏合两个完整分句：*
+| 禁止模式 | 例子 | 替代 |
+|---|---|---|
+| `, so + 分句` | "X are interdependent, so Y cascades..." | 拆句：`X are interdependent. Y therefore cascades...` |
+| `, as + 原因分句` | "...pose challenges, as the supply chain amplifies..." | 拆句或介词重构：`...pose challenges. The supply chain amplifies...` |
+| `, which means + 分句` | "...is tightly coupled, which means a change will..." | 拆句：`...is tightly coupled. A change will therefore...` |
+| `, which leads to + 分句` | "...increases cost, which leads to budget overruns" | 拆句：`...increases cost. This leads to budget overruns.` |
+| `, and this/it + 动词` | "...raises complexity, and this impedes decision-making" | 拆句：`...raises complexity. This impedes decision-making.` |
+
+*Type 2 — 逗号 + 分词短语做句尾无限延伸：*
+| 禁止模式 | 例子 | 替代 |
+|---|---|---|
+| `, thus/thereby + V-ing` | "X increases cost, thus requiring more budget" | 拆句：`X increases cost. This requires more budget.` |
+| `, making it + adj` | "X is complex, making it difficult to manage" | 拆句：`X is complex. This complexity hinders management.` |
+| `, resulting in + NP` | "X changed, resulting in schedule delays" | 拆句：`X changed. The result was schedule delays.` |
+| `, leading to + NP` | "X failed, leading to cost overruns" | 拆句：`X failed. This led to cost overruns.` |
+| `, causing + NP` | "X cascades, causing downstream disruptions" | 拆句：`X cascades. Downstream stages are consequently disrupted.` |
+
+**允许保留的复杂句式（不禁止）：**
+| 保留模式 | 例子 | 理由 |
+|---|---|---|
+| 非限制性定语从句 `, which + 短修饰` | "DK-ECDS, which integrates RAG and FC, supports..." | 标准学术语法，修饰性而非续接 |
+| 条件句 `If/When X, Y` | "When changes occur, costs escalate" | 真正的从属结构 |
+| 让步句 `Although/While X, Y` | "Although RAG retrieves text, it cannot compute" | 真正的从属结构 |
+| 句首介词短语 | "By encoding knowledge as functions, the framework..." | 简洁的方式状语 |
 
 ## Change Tracking
 
@@ -71,7 +98,7 @@ You improve: grammar/punctuation errors, awkward phrasing, overly complex senten
 
 ## TOP PRIORITY: Chinglish Elimination, Collocation Accuracy, and Culture-Specific Terms
 
-**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–M below.
+**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–R below.
 
 ### Category A: Verb-Noun Collocation Errors
 
@@ -377,15 +404,101 @@ basically, actually, essentially, naturally, obviously, clearly, certainly, inde
 
 **Audit**: Flag every term that originates from a Chinese policy document, government report, or industry jargon. If an international reader in the US, UK, or Australia would need to Google it, it needs fixing.
 
+### Category N: Weak Existential Constructions
+
+**核心原则："There is/are/exist" 几乎总是可以删掉的壳子。让真正的主语做主语。**
+
+| Chinglish | Natural English |
+|---|---|
+| "There are many factors that influence X" | "Many factors influence X" |
+| "There exist several challenges in this field" | "This field faces several challenges" |
+| "There is a lack of research on X" | "Research on X remains limited" |
+| "There is a need to investigate X" | "X warrants further investigation" |
+| "There are three main reasons for X" | "Three factors drive X" / "X stems from three factors" |
+| "There has been growing interest in X" | "Interest in X has grown" / "X has attracted growing attention" |
+
+**Audit**: Every "there is/are/exist" must be converted. The only acceptable use is when existence itself is the point ("There is no consensus on X" → acceptable if emphasis is on absence).
+
+### Category O: Repetitive "This paper/study" Subject
+
+**核心原则：同一段落内 "This study/paper/research" 做主语不超过 2 次。**
+
+中国论文每隔两三句就用"本文""本研究"开头，读起来单调且自我中心。
+
+| Problem | Fix |
+|---|---|
+| "This study proposes X. This study also finds Y." | "This study proposes X. The results further indicate Y." |
+| "This paper argues... This paper also contributes..." | "This paper argues... The framework contributes..." |
+| 3+ consecutive "This study..." openings | 用研究对象、方法、结果、框架做主语替换 |
+
+**Substitution pool**: "The analysis", "The results", "The framework", "The findings", "The evidence", "The comparison", "The proposed approach" — 根据语境选择最精确的替代主语。
+
+**Audit**: Count "This study/paper/research" as subject per paragraph. If >2, rewrite excess instances with varied subjects.
+
+### Category P: Pronoun Reference Ambiguity
+
+**核心原则：每个代词（this/it/they/these）必须有明确的、最近的前指名词。"This" 单独做主语时，后面必须跟名词。**
+
+中文是 pro-drop 语言，不讲究指代清晰，直译后代词经常找不到前指。
+
+| Problem | Fix |
+|---|---|
+| "The model was tested on three cases. It showed good results." (it = model or testing?) | "The model was tested on three cases and showed good results." |
+| "This leads to cost increases." (this = ?) | "This cascade effect leads to cost increases." |
+| "They found that..." (who are they?) | "The authors found that..." / name the specific study |
+
+**Rules**:
+1. **"This" 做主语必须跟名词**：❌ "This suggests..." → ✅ "This finding suggests..." / "This pattern suggests..."
+2. **"It" 的前指必须是最近的名词**：如果中间隔了其他名词，改为显式指称
+3. **"They" 不可指代模糊群体**：必须有明确的复数名词前指
+
+**Audit**: Every pronoun subject (this/it/they/these) must pass the "point-back test" — can the reader unambiguously point to the antecedent within the same or immediately preceding sentence?
+
+### Category Q: "Respectively" Misuse
+
+**核心原则："respectively" 仅限两个等长平行列表的一一对应。其他场景一律删除并重构。**
+
+"分别"的直译，是中国学术论文的标志性词汇，高频误用。
+
+| Usage | Correct? | Fix |
+|---|---|---|
+| "A, B, and C were 10%, 20%, and 30%, respectively" | ✅ | 两个等长列表一一对应 |
+| "We analyzed the data and results respectively" | ❌ | "We analyzed both the data and the results" |
+| "The RAG and FC channels respectively handle retrieval and computation" | ❌ | "The RAG channel handles retrieval, while the FC channel handles computation" |
+| "Groups A and B included 50 and 80 participants, respectively" | ✅ | 两个等长列表一一对应 |
+
+**Audit**: Every "respectively" must have exactly two parallel lists of equal length. Otherwise, delete and restructure.
+
+### Category R: Dangling Modifiers (Expanded)
+
+**核心原则：句首分词短语/介词短语的逻辑主语必须 = 主句主语。不一致时必须重构。**
+
+| Problem | Fix |
+|---|---|
+| "Based on the above analysis, **it** can be concluded..." | "Based on this analysis, **we** conclude..." |
+| "Using survey data, **the model** was estimated" | "**We** estimated the model using survey data" |
+| "Compared with traditional methods, **the results** show..." | "Compared with traditional methods, **the proposed approach** shows..." |
+| "By integrating RAG and FC, **decision quality** is improved" | "By integrating RAG and FC, **the framework** improves decision quality" |
+| "To address this gap, **a framework** is proposed" | "To address this gap, **this study** proposes a framework" |
+
+**Common danglers to check**:
+- "Based on..." — logical subject must be the person/study doing the analysis
+- "Using/Employing..." — logical subject must be the agent using the tool
+- "Compared with..." — logical subject must be the thing being compared
+- "To address/investigate..." — logical subject must be the agent taking action
+- "Given..." — less strict, but check for clarity
+
+**Audit**: Every sentence-initial participial/prepositional phrase must pass the "who does it?" test — the implied actor must match the grammatical subject of the main clause.
+
 ## Basic Grammar Checks (Secondary Priority)
 
 After Chinglish elimination:
 1. Tense consistency (see Category H)
 2. Parallel structure in lists
-3. Dangling modifiers: "Using [method], the results show..." → "Through [method] analysis, this study reveals that..."
+3. Dangling modifiers (see Category R for detailed rules)
 4. Hedging balance
 5. Sentence length: split any sentence >~35 words
-6. Repetitive sentence openings: vary "This study...", "The results...", "The findings..."
+6. Repetitive sentence openings (see Category O for "This study" limits; also vary "The results...", "The findings...")
 
 ## Output Protocol (Mode A)
 
@@ -395,7 +508,7 @@ After Chinglish elimination:
 2. Indicate the line range in manuscript
 3. **Change Summary**:
    - Total changes
-   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**
+   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **existential/pronoun/respectively/dangling: X** (Categories N–R)
    - Dedicated **Chinglish Fixes** subsection: every fix with original → corrected (include Category M culture-specific term fixes)
    - Top 3 most significant changes
 
