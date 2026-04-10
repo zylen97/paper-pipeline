@@ -31,6 +31,15 @@ cd "$HOME/idea_scout" || {
     exit 1
 }
 
+# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 main） ──
+# 必须在扫描前 pull，否则扫描产生的未提交文件会导致 rebase 失败
+git pull --rebase origin main --quiet >> "$LOG_FILE" 2>&1 || {
+    echo "WARN: git pull --rebase failed, falling back to merge" >> "$LOG_FILE"
+    git rebase --abort 2>/dev/null
+    git pull origin main --quiet >> "$LOG_FILE" 2>&1 || true
+}
+cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
+
 # ── 扫描（CNKI RSS） ──
 python3 "$SCRIPT_DIR/cnki-scan.py" \
     --config "$SCRIPT_DIR/cnki-journals.json" \
@@ -46,11 +55,6 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cnki_latest.json" ]; then
     osascript -e 'display notification "CNKI scan failed, check logs" with title "CNKI Scout" subtitle "Failed" sound name "Basso"'
     exit 1
 fi
-
-# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 gh-pages） ──
-git fetch origin gh-pages --quiet 2>> "$LOG_FILE"
-git show origin/gh-pages:data/user_state.json > /tmp/idea_scout_user_state.json 2>/dev/null \
-    || cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
 
 # ── 合并数据（累积到 cnki_papers.json，与 FT50/CEPM 架构一致） ──
 python3 - "data/cnki_latest.json" "data/cnki_papers.json" "$TODAY" << 'PYEOF'
@@ -88,7 +92,8 @@ deleted_sids = set()
 try:
     with open('/tmp/idea_scout_user_state.json', 'r') as f:
         user_state = json.load(f)
-    deleted_sids = set(user_state.get('cnki', {}).get('deleted_dois', []))
+    _raw = user_state.get('cnki', {}).get('deleted_dois', [])
+    deleted_sids = set((x['id'] if isinstance(x, dict) else x) for x in _raw)
     # 同时排除 idea_papers 中的论文
     for ip in user_state.get('cnki', {}).get('idea_papers', []):
         tid = ip.get('tracking_id', '')
@@ -130,9 +135,9 @@ print(len(new))
 " 2>/dev/null || echo "0")
 echo "New papers (after dedup): $NEW_COUNT" >> "$LOG_FILE"
 
-# ── 邮件推送（CNKI 只发给自己） ──
+# ── 邮件推送 ──
 export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS
-export EMAIL_TO="$SMTP_USER"
+export EMAIL_TO="$SMTP_USER,cheese.q124@gmail.com"
 
 python3 "$SCRIPT_DIR/send-cnki-email.py" \
     "data/cnki_latest.json" \

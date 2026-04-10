@@ -33,6 +33,15 @@ cd "$HOME/idea_scout" || {
     exit 1
 }
 
+# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 main） ──
+# 必须在扫描前 pull，否则扫描产生的未提交文件会导致 rebase 失败
+git pull --rebase origin main --quiet >> "$LOG_FILE" 2>&1 || {
+    echo "WARN: git pull --rebase failed, falling back to merge" >> "$LOG_FILE"
+    git rebase --abort 2>/dev/null
+    git pull origin main --quiet >> "$LOG_FILE" 2>&1 || true
+}
+cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
+
 # ── 扫描（独立 Python 脚本） ──
 python3 "$SCRIPT_DIR/scout-scan.py" \
     --config "$HOME/.claude/skills/idea-scout/journals.json" \
@@ -48,11 +57,6 @@ if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/latest.json" ]; then
     osascript -e 'display notification "FT50 scan failed, check logs" with title "Idea Scout" subtitle "Failed" sound name "Basso"'
     exit 1
 fi
-
-# ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 gh-pages） ──
-git fetch origin gh-pages --quiet 2>> "$LOG_FILE"
-git show origin/gh-pages:data/user_state.json > /tmp/idea_scout_user_state.json 2>/dev/null \
-    || cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
 
 # ── 合并数据 ──
 python3 - "data/latest.json" "data/papers.json" "$TODAY" << 'PYEOF'
@@ -88,7 +92,8 @@ deleted_dois = set()
 try:
     with open('/tmp/idea_scout_user_state.json', 'r') as f:
         _us = json.load(f)
-    deleted_dois = set(_us.get('ft50', {}).get('deleted_dois', []))
+    _raw = _us.get('ft50', {}).get('deleted_dois', [])
+    deleted_dois = set((x['id'] if isinstance(x, dict) else x) for x in _raw)
     for ip in _us.get('ft50', {}).get('idea_papers', []):
         tid = ip.get('tracking_id', ip.get('doi', ''))
         if tid: deleted_dois.add(tid)

@@ -4,6 +4,7 @@
     {"id": "JJYJ", "name": "经济研究", "category": "管理A"},
     {"id": "JCYJ", "name": "管理科学学报", "category": "管理A"},
     {"id": "GLSJ", "name": "管理世界", "category": "管理A"},
+    {"id": "ZSHK", "name": "中国社会科学", "category": "管理A"},
     {"id": "XTLL", "name": "系统工程理论与实践", "category": "管理B1"},
     {"id": "SLJY", "name": "数量经济技术经济研究", "category": "管理B1"},
     {"id": "JRYJ", "name": "金融研究", "category": "管理B1"},
@@ -47,5 +48,5 @@
   ],
   "rss_base_url": "https://rss.cnki.net/knavi/rss/",
   "rss_suffix": "?pcode=CJFD,CCJD",
-  "note": "43 journals finalized 2026-04-08"
+  "note": "44 journals (added ZSHK 2026-04-10)"
 }
