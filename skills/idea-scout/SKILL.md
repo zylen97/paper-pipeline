@@ -145,7 +145,7 @@ cat ~/.claude/projects/-Users-zylen/memory/reference_chatanywhere_api.md
 
 ```bash
 # 保存到 Dropbox（归档）
-cp data.json ~/Library/CloudStorage/Dropbox/02-Research/Zylen\ paper/idea_scout/scout_{YYYY-MM-DD}_data.json
+cp data.json ~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{YYYY-MM-DD}_data.json
 
 # 保存到 App 仓库（用于部署）
 cp data.json ~/idea_scout/data/latest.json
@@ -266,7 +266,7 @@ git push → GitHub Pages                     勾选论文 → Export
 
 ### 数据存储
 - **实时数据**: `~/idea_scout/data/latest.json` → 推送到 GitHub → App 加载
-- **归档数据**: `~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/idea_scout/scout_{date}_data.json`
+- **归档数据**: `~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{date}_data.json`
 - **用户选择**: App 中勾选 → Export JSON → 保存为 `idea_scout/selected.json`
 - **扫描记录**: `~/.claude/skills/idea-scout/scout_log.json`
 

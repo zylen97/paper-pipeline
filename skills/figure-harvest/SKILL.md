@@ -167,7 +167,7 @@ bash ~/.claude/skills/web-access/scripts/check-deps.sh
 | ...  |                |    |     |
 | 合计  |               | XX | XXX |
 
-📂 图片已保存到: ~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/
+📂 图片已保存到: ~/Library/CloudStorage/Dropbox/02-Research/papers/figure_harvest/
 ```
 
 2. **更新 `harvest_log.json`**：将每本期刊的新采集记录写入。
@@ -226,7 +226,7 @@ document.querySelectorAll('figure[id] img')
 ## 全局约束
 
 ### 文件规范
-- 图片统一存到 `~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/figure_harvest/` 下
+- 图片统一存到 `~/Library/CloudStorage/Dropbox/02-Research/papers/figure_harvest/` 下
 - 目录层级：`{期刊ID}/{卷期号}/paper{NN}_{short_title}/`
 - 图片文件名保留 ScienceDirect 原始命名（ga1, gr1, gr2...），后缀 .jpg
 

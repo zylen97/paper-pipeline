@@ -1,7 +1,7 @@
 #!/bin/bash
 # Figure Harvest — 单期刊采集脚本（CDN 直下版）
 # Usage: bash harvest.sh <journal_slug> <journal_id> <dir_name> <output_base>
-# Example: bash harvest.sh automation-in-construction AIC Automation_in_Construction ~/Library/CloudStorage/Dropbox/02-Research/Zylen\ paper/figure_harvest
+# Example: bash harvest.sh automation-in-construction AIC Automation_in_Construction ~/Library/CloudStorage/Dropbox/02-Research/papers/figure_harvest
 #
 # 策略：CDP 只用于获取论文列表（1次页面访问），图片全部通过 CDN 直下
 # CDN URL 模式: https://ars.els-cdn.com/content/image/1-s2.0-{PII}-{ga1|grN}_lrg.jpg

@@ -531,7 +531,7 @@ analyzed: {YYYY-MM-DD}
 
 用户确认后，将所有 idea 的确认期刊**去重**，得到本轮需要调研的期刊集合。
 
-**缓存机制**：期刊画像存储在 `~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/_Zylen idea/_journal-spec/` 目录下，每本期刊一个 md 文件（文件名 = 期刊全称，如 `Journal of Construction Engineering and Management.md`），跨项目共享复用。
+**缓存机制**：期刊画像存储在 `~/Library/CloudStorage/Dropbox/02-Research/papers/_Zylen idea/_journal-spec/` 目录下，每本期刊一个 md 文件（文件名 = 期刊全称，如 `Journal of Construction Engineering and Management.md`），跨项目共享复用。
 
 对去重后的每本期刊，执行以下检查：
 1. 检查 `_journal-spec/{期刊全称}.md` 是否存在

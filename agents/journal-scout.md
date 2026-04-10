@@ -60,7 +60,7 @@ Based on the target journal identified in Step 2, generate a 4-dimension journal
 - **Methodology Acceptance Range**: Based on model knowledge. What methods does this journal typically accept? What methods are rare/unwelcome?
 - **Journal Aesthetic Preferences**: Based on model knowledge. What does this journal particularly value? What do its reviewers care most about?
 
-**Cache check**: Before generating, check if `~/Library/CloudStorage/Dropbox/02-Research/Zylen paper/_Zylen idea/_journal-spec/{journal full name}.md` exists. If it exists and its `updated` date is ≤ 30 days old, read and reuse its content for this section (skip generation). If it doesn't exist or is outdated, generate fresh content.
+**Cache check**: Before generating, check if `~/Library/CloudStorage/Dropbox/02-Research/papers/_Zylen idea/_journal-spec/{journal full name}.md` exists. If it exists and its `updated` date is ≤ 30 days old, read and reuse its content for this section (skip generation). If it doesn't exist or is outdated, generate fresh content.
 
 ## Step 4: Generate Research Context Knowledge
 

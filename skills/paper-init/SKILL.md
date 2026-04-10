@@ -40,7 +40,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 项目创建位置取决于当前工作目录：
 
 - **如果当前在 idea-mine 批次目录**（自动检测：目录下同时存在 `ideas/`、`idea-review/`、`papers/`）：当前目录不适合建项目。根据全局 CLAUDE.md 中的科研项目目录配置，自动推导 `{PROJECT_PARENT_DIR}`：
-  - 如果当前路径包含 `Zylen paper`：`{PROJECT_PARENT_DIR}` = 路径中 `Zylen paper` 对应的完整目录（如 `~/Dropbox/02-Research/Zylen paper`）
+  - 如果当前路径包含 `papers`：`{PROJECT_PARENT_DIR}` = 路径中 `papers` 对应的完整目录（如 `~/Dropbox/02-Research/papers`）
   - 如果当前路径包含 `_gym paper`：`{PROJECT_PARENT_DIR}` = 路径中 `_gym paper` 对应的完整目录
   - 其他情况：使用 AskUserQuestion 询问项目创建位置
 - **如果当前不在 batch 目录**：`{PROJECT_PARENT_DIR}` = 当前工作目录
