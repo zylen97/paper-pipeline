@@ -17,8 +17,8 @@ When invoked from `/draft` or `/polish` with structured context (prompt referenc
 ### Mode B: Ad-hoc invocation
 When invoked directly with raw text and no pipeline context:
 - **Skip**: Writing Brief, manuscript/bibliography reading, 要点 enforcement
-- **Do**: Apply all Categories A–R to the provided text
-- **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, and **culture-specific term: X**, dedicated Chinglish Fixes table, top 3 changes)
+- **Do**: Apply all Categories A–T to the provided text
+- **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, **culture-specific term: X**, **sentence focus: X**, and **number/format: X**, dedicated Chinglish Fixes table, top 3 changes)
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
@@ -98,7 +98,7 @@ You improve: grammar/punctuation errors, awkward phrasing, overly complex senten
 
 ## TOP PRIORITY: Chinglish Elimination, Collocation Accuracy, and Culture-Specific Terms
 
-**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–R below.
+**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–T below.
 
 ### Category A: Verb-Noun Collocation Errors
 
@@ -213,6 +213,11 @@ Compress ruthlessly:
 | "it is worth noting that" | (delete — just state the point) |
 | "it can be seen that" | (delete — just state the finding) |
 | "as we all know" / "it is well known that" | (delete or replace with a citation) |
+
+**"Such as" and "etc." mutual exclusion**:
+- `such as` = incomplete list follows; `etc.` = incomplete list ends. 二者功能重复，**禁止同时使用**。
+- ❌ "...such as motors, printers, and etc." → ✅ "...such as motors and printers"
+- `such as` 后面如果是**完整列表**，换用冒号：❌ "...three characteristics such as A, B and C" → ✅ "...three characteristics: A, B, and C"
 
 ### Category F: Logical Connector and Enumeration
 
@@ -490,6 +495,69 @@ basically, actually, essentially, naturally, obviously, clearly, certainly, inde
 
 **Audit**: Every sentence-initial participial/prepositional phrase must pass the "who does it?" test — the implied actor must match the grammatical subject of the main clause.
 
+### Category S: Sentence-Initial Focus (主句前置)
+
+**核心原则：英文句子的核心信息（主语+谓语）应尽早出现。目的、条件、地点、时间等从属信息后置，除非从属信息本身就是段落焦点。**
+
+中文习惯「先说原因/条件/背景，再说结论」，直译后主句被埋在句尾，削弱信息冲击力。
+
+**Type 1 — 目的/原因状语前置**:
+| Chinglish (从属信息在前) | Natural English (主句在前) |
+|---|---|
+| "For the application in X, this paper studies Y" | "This paper studies Y for application in X" |
+| "To ensure quality, CMMs are widely used in..." | "CMMs are widely used in... to ensure quality" |
+| "In practice, we employed this approach to..." | "We employed this approach to..." |
+
+**Type 2 — 时间/条件状语前置**:
+| Chinglish | Natural English |
+|---|---|
+| "When U is taken as the control parameter, the BDs are shown in Fig. 8" | "Figure 8 shows the BDs... when U is taken as the control parameter" |
+| "Based on the triangulation structure, the extended STL format is described" | "The extended STL format is described based on the triangulation structure" |
+
+**Type 3 — 地点/范围状语前置**:
+| Chinglish | Natural English |
+|---|---|
+| "Inside the test box, the space was filled with asbestos" | "The space inside the test box was filled with asbestos" |
+| "In this section, the method is described" | "The method is described in this section" |
+
+**例外（允许从属信息在前）**:
+| 保留模式 | 理由 |
+|---|---|
+| 从属信息是段落主题的延续 | "Given these limitations, we propose..." — 上文刚讨论完 limitations |
+| 条件句中条件是核心信息 | "If the sample size exceeds 500, the method is reliable" — 强调条件 |
+| 让步句的对比是修辞重点 | "Although X is fast, Y is more accurate" — 对比本身是要点 |
+
+**Audit**: 检查每个以介词短语、不定式、时间/条件从句开头的句子。如果从属信息不是段落焦点，将主句提前。
+
+### Category T: Number, Equation, and Abbreviation Formatting
+
+**核心原则：阿拉伯数字用于报告数据，文字用于一般表述。方程符号不替代文字。缩写格式全文统一。**
+
+**1. 句首数字必须拼写**:
+- ❌ "12 parameters were selected" → ✅ "Twelve parameters were selected"
+- ❌ "3 studies concluded..." → ✅ "Three studies concluded..."
+
+**2. 非数据语境用文字**（数据报告除外）:
+- ❌ "All 3 studies concluded that the mean temperature should be 30°C" → ✅ "All three studies concluded that the mean temperature should be 30°C"
+- 规则：报告精确测量值、统计量、表格数据用阿拉伯数字；其他场景（数量词、序数概述）用文字
+
+**3. 行内方程符号应文字化**:
+- ❌ "If the power battery SOC > SOClo and..." → ✅ "If the power battery SOC is greater than SOClo and..."
+- 行内不插入独立公式符号代替文字；公式应通过引用（Eq. 1）或文字描述引入
+
+**4. Figure/Table 缩写格式**:
+| 规则 | 错误 | 正确 |
+|---|---|---|
+| 缩写与数字间加空格 | `Fig.6`, `Tbl.10` | `Fig. 6`, `Tbl. 10` |
+| 句首不用缩写 | `Fig. 6 shows...` (at sentence start) | `Figure 6 shows...` |
+| 全文风格统一 | 混用 `Figure` / `Fig.` / `fig.` | 选定一种，始终一致 |
+| 结果引用句式 | `showed as Figure 2` | `shown in Figure 2` |
+
+**5. "How to..." 不做句子主语**:
+- ❌ "How to find the optimal parameter is the main objective" → ✅ "Determining how to find the optimal parameter is the main objective" / "The main objective is to find the optimal parameter"
+
+**Audit**: 扫描所有句首数字、行内数学符号、Figure/Table 引用格式，逐一检查。
+
 ## Basic Grammar Checks (Secondary Priority)
 
 After Chinglish elimination:
@@ -508,7 +576,7 @@ After Chinglish elimination:
 2. Indicate the line range in manuscript
 3. **Change Summary**:
    - Total changes
-   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **existential/pronoun/respectively/dangling: X** (Categories N–R)
+   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **existential/pronoun/respectively/dangling: X** (Categories N–R), **sentence focus: X** (Category S), **number/format: X** (Category T)
    - Dedicated **Chinglish Fixes** subsection: every fix with original → corrected (include Category M culture-specific term fixes)
    - Top 3 most significant changes
 
