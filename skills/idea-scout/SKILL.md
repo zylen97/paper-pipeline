@@ -153,34 +153,26 @@ cp data.json ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.jso
 
 ### 5. 推送到 GitHub → App 自动更新
 
+Flutter App 已预构建并部署在 gh-pages 分支，交互式扫描只需更新数据文件，不需要重建 App。
+
 ```bash
 cd ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout
 
 # 提交数据到 main 分支
-git add data/latest.json
+git add data/latest.json data/papers.json data/seen_dois.json
 git commit -m "scout: {date} - {N} papers from {journals}"
 git push origin main
 
-# 重新构建并部署到 gh-pages
-export PATH="$HOME/develop/flutter/bin:$PATH"
-flutter build web --release --base-href "/idea-scout/"
-
-# 把 data 目录也复制到 build 输出
-mkdir -p build/web/data
-cp data/latest.json build/web/data/
-
-# 部署到 gh-pages
-cp -r build/web /tmp/idea_scout_deploy
-git stash
+# 部署到 gh-pages（只更新数据，不重建 Flutter）
+mkdir -p /tmp/idea_scout_all_data
+cp data/*.json /tmp/idea_scout_all_data/
 git checkout gh-pages
-git rm -rf . > /dev/null 2>&1
-cp -r /tmp/idea_scout_deploy/* .
-touch .nojekyll
-git add -A
-git commit -m "deploy: {date} scan data"
-git push origin gh-pages --force
+cp /tmp/idea_scout_all_data/*.json data/
+git add data/
+git commit -m "data: ft50 {date}"
+git push origin gh-pages
 git checkout main
-git stash pop 2>/dev/null || true
+rm -rf /tmp/idea_scout_all_data
 ```
 
 **推送完成后，App 会在 1-2 分钟内自动加载最新数据。**
@@ -321,4 +313,4 @@ per_page=50&cursor={next_cursor}  # 后续页
 ### 跨 Skill 关系
 - `/idea-scout` 输出 → 用户在 App 筛选 → Export `selected.json` → `/idea-mine` 深度挖掘
 - `/idea-scout` 的期刊库是 idea 来源（顶刊），`/idea-mine` 的期刊库是发表目标（领域刊）
-- 可配合 `/schedule` 每月自动扫描
+- 扫描已通过 launchd 自动化（每日 9:00 触发 `idea-scout-daily.sh`），无需手动调度

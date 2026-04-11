@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/unicode-guard.sh\""
+            "command": "\"$(pwd)/.claude/hooks/unicode-guard.sh\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/latex-compile.sh\""
+            "command": "\"$(pwd)/.claude/hooks/latex-compile.sh\""
           }
         ]
       }
@@ -25,7 +25,7 @@
   },
   "permissions": {
     "allow": [
-      "Read(//{PROJECT_PARENT_DIR}/**)",
+      "Read(/{PROJECT_PARENT_DIR}/**)",
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",

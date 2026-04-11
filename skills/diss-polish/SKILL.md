@@ -123,6 +123,16 @@ description: "学位论文中文润色：逐章审查 + 调用中文润色 agent
 
 - 将用户批准的润色文本写入对应 .tex 文件
 - 更新 CLAUDE.md 章节状态为 `polished`
+
+### 阶段转换检查
+
+完成章节润色后，检查项目阶段：
+- 读取项目 CLAUDE.md 中所有章节的状态
+- 如果**所有章节至少为 `drafted`** 且**至少一章为 `polished`**，且当前项目阶段仍为 `drafting`：
+  → 更新项目阶段为 `polishing`
+  → 在 git commit message 中注明阶段转换
+- 否则保持当前阶段不变
+
 - Git Checkpoint + Push（里程碑：第 N 章润色完成）：
   ```bash
   git add chapters/ch{N}.tex CLAUDE.md && git commit -m "diss-polish: ch{N} polished"

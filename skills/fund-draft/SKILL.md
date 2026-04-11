@@ -117,7 +117,9 @@ END FOR
 3. **调用 sci-writer-zh agent**：
 
 ```
-subagent_type: "sci-writer-zh"
+使用 Agent 工具调用 sci-writer-zh agent：
+- subagent_type: "sci-writer-zh"
+- prompt 中包含：写作模式、章节上下文、源项目材料、大纲要点、字数要求
 
 prompt 结构：
 - 角色：基金申请书写作专家

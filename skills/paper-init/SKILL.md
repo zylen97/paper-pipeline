@@ -526,6 +526,18 @@ if [ ! -f WileyNJDv5.cls ]; then
 fi
 ```
 
+#### latexmkrc（编译配置）
+
+根据出版商要求生成 `latexmkrc`：
+- Elsevier/ASCE/Emerald/SAGE → `$pdf_mode = 1;`（pdflatex）
+- IEEE → `$pdf_mode = 1;`（pdflatex）
+- Wiley → `$pdf_mode = 1;`（pdflatex）
+如需 CJK 支持，改为 `$pdf_mode = 5;`（xelatex）
+
+| # | 目标路径 | 内容 |
+|---|---------|------|
+| 6 | `latexmkrc` | 根据 `{PUBLISHER}` 写入对应的 `$pdf_mode` 行 |
+
 #### structure/ 通用文件
 
 | # | 模板文件 | 目标路径 |
