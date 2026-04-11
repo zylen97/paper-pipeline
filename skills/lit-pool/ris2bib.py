@@ -325,6 +325,8 @@ def main():
                         help="Path to _pool_prepare.json (citation key mapping)")
     parser.add_argument("--output", required=True,
                         help="Output .bib file path")
+    parser.add_argument("--extra-bib", default=None,
+                        help="Path to source project bib file (for dissertation projects)")
     args = parser.parse_args()
 
     ris_dir = Path(args.ris_dir)
@@ -342,19 +344,73 @@ def main():
         print("ERROR: No papers in prepare JSON", file=sys.stderr)
         sys.exit(1)
 
-    # 2. 解析 RIS
+    # 2. 加载源项目 bib（学位论文项目）
+    extra_bib_entries: dict[str, str] = {}
+    if args.extra_bib:
+        extra_bib_path = Path(args.extra_bib)
+        try:
+            extra_content = extra_bib_path.read_text(encoding="utf-8")
+            # 解析 BibTeX 条目：提取 {cite_key: raw_entry}
+            for m in re.finditer(r'(@\w+\s*\{)([^,\s]+)\s*,', extra_content):
+                key = m.group(2).strip()
+                start = m.start()
+                depth = 0
+                end = start
+                for i in range(start, len(extra_content)):
+                    if extra_content[i] == '{':
+                        depth += 1
+                    elif extra_content[i] == '}':
+                        depth -= 1
+                        if depth == 0:
+                            end = i + 1
+                            break
+                extra_bib_entries[key] = extra_content[start:end]
+            print(f"  Extra bib: {len(extra_bib_entries)} entries from {extra_bib_path.name}",
+                  file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: Cannot read extra bib {args.extra_bib}: {e}",
+                  file=sys.stderr)
+
+    # 3. 解析 RIS
     ris_entries = parse_all_ris(ris_dir)
     print(f"  Parsed {len(ris_entries)} RIS entries from {ris_dir}", file=sys.stderr)
 
-    # 3. 匹配
-    results = match_papers(papers, ris_entries)
-
-    # 4. 生成 BibTeX
+    # 4. 匹配（优先从源 bib 复制，其次从 RIS 匹配）
     bib_blocks = []
     matched_count = 0
+    matched_from_source = 0
     unmatched_count = 0
     unmatched_list = []
 
+    # 先用 RIS 匹配非源项目文献
+    non_source_papers = [p for p in papers if not p.get("source_cite_key")]
+    source_papers = [p for p in papers if p.get("source_cite_key")]
+
+    # 处理源项目文献：直接从 extra bib 复制
+    for paper in source_papers:
+        source_key = paper["source_cite_key"]
+        new_key = paper["citation_key"]
+        if source_key in extra_bib_entries:
+            raw_entry = extra_bib_entries[source_key]
+            # 替换 citation key（用 lambda 避免 new_key 中反向引用问题）
+            updated = re.sub(
+                r'(@\w+\s*\{)' + re.escape(source_key),
+                lambda m: m.group(1) + new_key,
+                raw_entry,
+                count=1
+            )
+            bib_blocks.append(updated)
+            matched_count += 1
+            matched_from_source += 1
+        else:
+            bib_blocks.append(make_stub_bibtex(paper))
+            unmatched_count += 1
+            unmatched_list.append(
+                f"  {paper['citation_key']}: {paper['author']} ({paper['year']}) "
+                f"- {paper['title'][:60]} [source_key={source_key} not found in extra bib]")
+
+    # 处理新检索文献：从 RIS 匹配
+    results = match_papers(non_source_papers, ris_entries)
     for paper, ris in results:
         if ris:
             bib_blocks.append(ris_to_bibtex(paper, ris))
@@ -379,7 +435,10 @@ def main():
     print("=== RIS2BIB ===")
     print(f"Citation keys: {len(papers)}")
     print(f"RIS entries: {len(ris_entries)}")
-    print(f"Matched: {matched_count}")
+    if matched_from_source > 0:
+        print(f"Matched from source bib: {matched_from_source}")
+        print(f"Matched from RIS: {matched_count - matched_from_source}")
+    print(f"Matched total: {matched_count}")
     print(f"Unmatched: {unmatched_count}")
     if unmatched_list:
         print()

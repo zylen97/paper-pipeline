@@ -65,6 +65,22 @@ def scan_ris(input_dir: str, plan_file: str | None, directions_filter: list[int]
         except Exception:
             pass
 
+    # Bug 6 fix: 从 _quota_result.json 读取精确的 per-source 配额（双轨模式）
+    wos_quotas: dict[int, int] = {}
+    cnki_quotas: dict[int, int] = {}
+    qr_path = ris_dir / "_quota_result.json"
+    if qr_path.exists():
+        try:
+            with open(qr_path, encoding="utf-8") as f:
+                qr = json.load(f)
+            if qr.get("dual_mode"):
+                for d_entry in qr["directions"]:
+                    did = d_entry["id"]
+                    wos_quotas[did] = d_entry["wos_quota"]
+                    cnki_quotas[did] = d_entry.get("cnki_quota", 0)
+        except Exception:
+            pass
+
     for fp in sorted(ris_dir.glob("*.ris")):
         # 从文件名提取方向编号（如 1_xxx.ris 或 1-xxx.ris）
         m = re.match(r"(\d+)[_\-]", fp.name)
@@ -82,11 +98,20 @@ def scan_ris(input_dir: str, plan_file: str | None, directions_filter: list[int]
         except Exception:
             count = 0
 
+        # 按源文件类型分配正确配额
+        is_cnki = "_cnki" in fp.name
+        if is_cnki and cnki_quotas:
+            quota = cnki_quotas.get(d, quotas.get(d, 0))
+        elif wos_quotas:
+            quota = wos_quotas.get(d, quotas.get(d, 0))
+        else:
+            quota = quotas.get(d, 0)
+
         items.append({
             "direction": d,
             "source_file": fp.name,
             "item_count": count,
-            "quota": quotas.get(d, 0),
+            "quota": quota,
         })
 
     return items
@@ -193,6 +218,27 @@ def split_items(items: list[dict], limit: int) -> list[dict]:
             agent_id += 1
 
     return agents
+
+
+def assign_batch_seq(agents: list[dict]) -> None:
+    """Assign globally-unique per-direction batch sequence numbers.
+
+    When a direction has multiple source files (e.g., WoS + CNKI),
+    split_info resets per source file (both get "1/2", "2/2").
+    batch_seq increments across all source files within a direction,
+    providing unique filenames: d1_batch1, d1_batch2, d1_batch3, d1_batch4.
+
+    Also infers source_type ("wos" or "cnki") from source_file name.
+    """
+    dir_counter: dict = defaultdict(int)
+    for a in agents:
+        d = a.get("direction") or a.get("tag", 0)
+        dir_counter[d] += 1
+        a["batch_seq"] = dir_counter[d]
+        # Bug 4: infer source_type from source_file
+        sf = a.get("source_file", "")
+        if sf:
+            a["source_type"] = "cnki" if "_cnki" in sf else "wos"
 
 
 def greedy_merge_small(agents: list[dict], limit: int) -> list[dict]:
@@ -359,7 +405,7 @@ def generate_templates(agents: list[dict], template_dir: str, mode: str):
     if mode == "ris":
         for a in agents:
             d = a.get("direction", 0)
-            batch = a["split_info"].split("/")[0] if "/" in a.get("split_info", "") else "1"
+            batch = a.get("batch_seq") or (a["split_info"].split("/")[0] if "/" in a.get("split_info", "") else "1")
             filename = f"d{d}_batch{batch}_raw.md"
             filepath = tpl_dir / filename
             # Safety: skip if file exists and contains agent output (not just template)
@@ -421,25 +467,24 @@ def split_ris_chunks(items_summary: list[dict], agents: list[dict],
     chunks_dir = Path(template_dir) / "_chunks"
     chunks_dir.mkdir(parents=True, exist_ok=True)
 
-    # group agents by direction
-    dir_agents: dict[int, list[dict]] = defaultdict(list)
-    for a in agents:
-        dir_agents[a["direction"]].append(a)
-
     count = 0
     errors = []
     for item in items_summary:
         d = item["direction"]
-        ris_path = Path(input_dir) / item["source_file"]
+        source_file = item["source_file"]
+        ris_path = Path(input_dir) / source_file
         content = ris_path.read_text(encoding="utf-8-sig")
         entries = re.split(r"(?=^TY  - )", content, flags=re.MULTILINE)
         entries = [e for e in entries if e.strip() and e.strip().startswith("TY  -")]
 
-        for a in dir_agents.get(d, []):
+        # Bug 1 fix: only process agents belonging to THIS source file
+        for a in agents:
+            if a.get("direction") != d or a.get("source_file") != source_file:
+                continue
             start, end = map(int, a["item_range"].split("-"))
             chunk = entries[start - 1:end]
-            batch_num = a["split_info"].split("/")[0]
-            chunk_path = chunks_dir / f"d{d}_batch{batch_num}.ris"
+            batch_seq = a.get("batch_seq", a["split_info"].split("/")[0])
+            chunk_path = chunks_dir / f"d{d}_batch{batch_seq}.ris"
             chunk_path.write_text("\n".join(chunk), encoding="utf-8")
             count += 1
 
@@ -447,7 +492,7 @@ def split_ris_chunks(items_summary: list[dict], agents: list[dict],
             actual = sum(1 for line in chunk_path.read_text(encoding="utf-8").split("\n")
                          if line.startswith("TY  - "))
             if actual != a["item_count"]:
-                errors.append(f"d{d}_batch{batch_num}: expected {a['item_count']}, got {actual}")
+                errors.append(f"d{d}_batch{batch_seq}: expected {a['item_count']}, got {actual}")
 
     if errors:
         print(f"Chunks generated: {count} files (with {len(errors)} ERRORS)", file=sys.stderr)
@@ -515,10 +560,12 @@ def main():
     else:
         effective_limit = args.limit
     agents = split_items(items, effective_limit)
+    assign_batch_seq(agents)
 
     # 贪心合并（仅 pool 模式）
     if args.merge_small and args.mode == "pool":
         agents = greedy_merge_small(agents, args.limit)
+        assign_batch_seq(agents)  # re-assign after merge creates new agent dicts
 
     # 校验（report 模式用 effective_limit，避免误报 OVER_LIMIT）
     errors = verify(items, agents, effective_limit)

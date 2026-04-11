@@ -272,6 +272,8 @@ def deduplicate(all_papers: list[dict]) -> list[dict]:
                 **p,
                 "source_directions": [p["direction"]],
                 "all_reasons": [p["reason"]],
+                "is_source": p.get("is_source", False),
+                "source_cite_key": p.get("source_cite_key", ""),
             }
         else:
             existing = seen[dk]
@@ -288,6 +290,11 @@ def deduplicate(all_papers: list[dict]) -> list[dict]:
             # 合并理由
             if p["reason"] not in existing["all_reasons"]:
                 existing["all_reasons"].append(p["reason"])
+            # 保留源项目溯源信息（无论哪方先出现）
+            if p.get("is_source") and not existing.get("is_source"):
+                existing["is_source"] = True
+            if p.get("source_cite_key") and not existing.get("source_cite_key"):
+                existing["source_cite_key"] = p["source_cite_key"]
 
     # 生成 citation key
     raw_keys = {}
@@ -456,6 +463,8 @@ def main():
                         help="Directory for output JSON")
     parser.add_argument("--agent-limit", type=int, default=30,
                         help="Agent item limit (default: 30)")
+    parser.add_argument("--source-pool", default=None,
+                        help="Path to _source_pool.json (source project citations, for dissertation projects)")
     args = parser.parse_args()
 
     report_dir = Path(args.report_dir)
@@ -473,9 +482,37 @@ def main():
         all_papers_raw.extend(papers)
         print(f"  Parsed {fp.name}: {len(papers)} papers", file=sys.stderr)
 
-    if not all_papers_raw:
+    if not all_papers_raw and not args.source_pool:
         print("ERROR: No papers found in reports", file=sys.stderr)
         sys.exit(1)
+
+    # 1.5 合并源项目文献（学位论文项目）
+    source_count = 0
+    if args.source_pool:
+        try:
+            with open(args.source_pool, encoding="utf-8") as f:
+                source_data = json.load(f)
+            source_project = source_data.get("source_project", "unknown")
+            for p in source_data.get("papers", []):
+                all_papers_raw.append({
+                    "direction": 0,  # 源项目 = direction 0
+                    "direction_name": f"源项目({source_project})",
+                    "author": p["author"],
+                    "title": p["title"],
+                    "year": p["year"],
+                    "journal": p.get("journal", ""),
+                    "tags": p.get("tags", []),
+                    "tier": p.get("tier", "important"),
+                    "reason": f"源项目引用（{'、'.join(c.get('section', '') for c in p.get('citation_contexts', [])[:2])}）",
+                    "source_cite_key": p.get("source_cite_key", ""),
+                    "is_source": True,
+                })
+                source_count += 1
+            print(f"  Source pool: {source_count} papers from {source_project}",
+                  file=sys.stderr)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"WARNING: Cannot read source pool {args.source_pool}: {e}",
+                  file=sys.stderr)
 
     # 2. 去重 + citation key
     papers = deduplicate(all_papers_raw)
@@ -495,7 +532,7 @@ def main():
     # 构建 citation key 映射表（供 subAgent 使用）
     key_map = []
     for i, p in enumerate(papers, 1):
-        key_map.append({
+        entry = {
             "seq": i,
             "citation_key": p["citation_key"],
             "author": p["author"],
@@ -506,7 +543,13 @@ def main():
             "tier": p["tier"],
             "reason": p.get("reason", ""),
             "source_directions": p.get("source_directions", []),
-        })
+        }
+        # 保留源项目 cite key（供 ris2bib.py 从源 bib 复制条目）
+        if p.get("source_cite_key"):
+            entry["source_cite_key"] = p["source_cite_key"]
+        if p.get("is_source"):
+            entry["is_source"] = True
+        key_map.append(entry)
 
     output_data = {
         "total_raw": len(all_papers_raw),

@@ -51,6 +51,43 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
   - 不存在 → 停止，提示先运行 `/lit-review`
 - 检查 `structure/2_literature/citation_pool/` 目录是否已存在
   - 已存在 → 询问用户：覆盖还是跳过？
+- **源项目检测**（仅学位论文项目）：检查 CLAUDE.md 是否包含 `源项目` 字段
+  - 如包含 → 提取源项目路径，定位 bib 文件和 manuscript.tex
+  - 如找到 → 设置 `HAS_SOURCE_PROJECT=true`，进入步骤 0.5
+  - 如未找到 → 按普通项目继续
+
+---
+
+## 步骤 0.5：源项目文献提取（仅限有源项目的学位论文项目）
+
+当 CLAUDE.md 声明了源项目时，运行源项目文献提取脚本，将源项目的已有引用整合到引用池。
+
+### 0.5.1 调用源项目提取脚本
+
+```bash
+python3 ~/.claude/skills/lit-pool/source_bib_to_pool.py \
+  --source-bib <源项目bib路径> \
+  --source-tex <源项目manuscript.tex路径> \
+  --output structure/2_literature/_source_pool.json \
+  --rq-count {RQ数量，默认2}
+```
+
+**脚本职责**（`source_bib_to_pool.py`）：
+1. 解析源项目 bib 文件所有条目
+2. 解析源项目 manuscript.tex，提取每个 section/subsection 中的 `\cite{}`/`\citep{}`/`\citet{}` 引用
+3. 按 section→标签映射规则分配功能标签：Introduction→BG+LR, Literature Review→LR, Methods→METHOD, Results/Discussion→DISC-RQx
+4. 为每篇文献生成新 citation key（`auth.lower + year + shorttitle(1,1)` 格式）
+5. 按引用频率推断分级（3+个section=core, 2个=important, 1个=backup）
+6. 输出 `_source_pool.json`
+
+**manuscript 版本选择**：优先用 `manuscript.tex`（通常是最新版），如不存在则按 R 编号倒序查找 `manuscript-R*.tex`。
+
+### 0.5.2 主 Agent 校验
+
+VERIFY 必须为 PASS。展示：
+- 源项目 bib 总条目数 vs 被引用条目数
+- 标签分布
+- Citation key 映射样本（source_key → new_key）
 
 ---
 
@@ -64,8 +101,12 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 python3 ~/.claude/skills/lit-pool/pool_prepare.py \
   --report-dir structure/2_literature/ \
   --output-dir structure/2_literature/ \
-  --agent-limit 30
+  --agent-limit 30 \
+  ${SOURCE_POOL_FLAG}
+# SOURCE_POOL_FLAG: 有源项目时为 --source-pool structure/2_literature/_source_pool.json；否则省略
 ```
+
+> **源项目整合**：当 `--source-pool` 传入时，脚本将源项目文献与方向报告文献合并去重。源项目文献的标签来自 manuscript 章节分析，分级来自引用频率推断。重复文献（源项目+新检索均含）保留方向报告的分级和理由，但合并两侧标签。
 
 **脚本职责**（`pool_prepare.py`）：
 1. 解析所有 `direction*_report.md` 的 markdown 表格，提取文献数据
@@ -380,8 +421,12 @@ python3 ~/.claude/skills/lit-pool/generate_master_report.py \
 python3 ~/.claude/skills/lit-pool/ris2bib.py \
   --ris-dir structure/2_literature/ \
   --prepare-json structure/2_literature/_pool_prepare.json \
-  --output structure/2_literature/citation_pool/master.bib
+  --output structure/2_literature/citation_pool/master.bib \
+  ${EXTRA_BIB_FLAG}
+# EXTRA_BIB_FLAG: 有源项目时为 --extra-bib <源项目bib路径>；否则省略
 ```
+
+> **源项目 bib 整合**：当 `--extra-bib` 传入时，源项目文献直接从源 bib 复制条目（仅更新 citation key），无需 RIS→BibTeX 转换。新检索文献仍通过 RIS 匹配转换。
 
 **脚本职责**（`ris2bib.py`）：
 1. 从 `_pool_prepare.json` 读取 citation key 映射表

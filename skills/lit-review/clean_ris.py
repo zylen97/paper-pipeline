@@ -98,12 +98,13 @@ def match_paper(entry: dict, selected_papers: list[dict]) -> bool:
     return False
 
 
-def find_ris_file(ris_dir: Path, direction: int) -> Path | None:
-    """Find the RIS file for a given direction number."""
-    for fp in ris_dir.glob("*.ris"):
+def find_ris_files(ris_dir: Path, direction: int) -> list[Path]:
+    """Find ALL RIS files for a given direction number (WoS + CNKI)."""
+    result = []
+    for fp in sorted(ris_dir.glob("*.ris")):
         if fp.name.startswith(f"{direction}-") or fp.name.startswith(f"{direction}_"):
-            return fp
-    return None
+            result.append(fp)
+    return result
 
 
 def main():
@@ -152,56 +153,62 @@ def main():
     for d in sorted(dir_selected.keys()):
         papers = dir_selected[d]
 
-        # Find RIS file
-        ris_file = find_ris_file(ris_dir, d)
-        if not ris_file:
+        # Find ALL RIS files for this direction (WoS + CNKI)
+        ris_files = find_ris_files(ris_dir, d)
+        if not ris_files:
             print(f"D{d}: RIS file not found, skipping")
             continue
 
-        # Parse RIS entries
-        with open(ris_file, encoding="utf-8-sig") as f:
-            content = f.read()
-        entries = parse_ris_entries(content)
-        before = len(entries)
-        total_before += before
+        # Process each RIS file separately, match against all selected papers
+        all_kept_titles = set()  # track matched titles across all files
+        dir_before = 0
+        for ris_file in ris_files:
+            with open(ris_file, encoding="utf-8-sig") as f:
+                content = f.read()
+            entries = parse_ris_entries(content)
+            before = len(entries)
+            dir_before += before
+            total_before += before
 
-        # Match entries — only against THIS direction's selected papers
-        kept = []
-        for entry in entries:
-            if match_paper(entry, papers):
-                kept.append(entry)
+            # Match entries against selected papers
+            kept = []
+            for entry in entries:
+                if match_paper(entry, papers):
+                    kept.append(entry)
+                    all_kept_titles.add(entry["title_norm"])
 
-        after = len(kept)
-        total_after += after
+            after = len(kept)
+            total_after += after
+            suffix = " (cnki)" if "_cnki" in ris_file.name else ""
+            print(f"D{d}{suffix}: {before} → {after}")
+
+            # Write if not dry-run
+            if not args.dry_run:
+                if after == 0:
+                    print(f"  ⚠️ D{d}{suffix}: 0 entries matched, NOT overwriting (safety check)")
+                else:
+                    with open(ris_file, "w", encoding="utf-8") as f:
+                        f.write("\n".join(e["raw"] for e in kept))
+
+        # Check unmatched across all files for this direction
         expected = len(papers)
-        unmatched = expected - after
+        matched = len(all_kept_titles)
+        unmatched = expected - matched
         if unmatched > 0:
             total_unmatched += unmatched
-            # Find which selected papers didn't match
             for p in papers:
-                found = False
-                for e in kept:
-                    if e["title_norm"] == p["title_norm"]:
-                        found = True
-                        break
-                    if (e["title_norm"][:60] == p["title_norm"][:60]
-                            and e["year"] == p["year"]):
-                        found = True
-                        break
-                if not found:
-                    unmatched_details.append(
-                        f"  D{d}: {p['first_author']} ({p['year']}) - {p['title'][:60]}"
+                if p["title_norm"] not in all_kept_titles:
+                    # Also check prefix match
+                    prefix_found = any(
+                        t[:60] == p["title_norm"][:60] for t in all_kept_titles
+                        if len(t) >= 30 and len(p["title_norm"]) >= 30
                     )
+                    if not prefix_found:
+                        unmatched_details.append(
+                            f"  D{d}: {p['first_author']} ({p['year']}) - {p['title'][:60]}"
+                        )
 
-        print(f"D{d}: {before} → {after} (matched {after}/{expected}, unmatched {max(0, unmatched)})")
-
-        # Write if not dry-run
-        if not args.dry_run:
-            if after == 0:
-                print(f"  ⚠️ D{d}: 0 entries matched, NOT overwriting (safety check)")
-            else:
-                with open(ris_file, "w", encoding="utf-8") as f:
-                    f.write("\n".join(e["raw"] for e in kept))
+        print(f"D{d} total: {dir_before} → {matched}/{expected} matched, {max(0, unmatched)} unmatched")
 
     print(f"Total: {total_before} → {total_after}")
     print(f"Unmatched: {total_unmatched}")

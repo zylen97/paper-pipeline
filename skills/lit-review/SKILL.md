@@ -346,11 +346,22 @@ import json, os, glob
 
 base = 'structure/2_literature'
 batch_dir = f'{base}/_batch'
-plan_quotas = {}  # 必须从 _dispatch_plan.json 提取实际值
-with open(f'{base}/_dispatch_plan.json') as f:
-    dp = json.load(f)
-    for d in dp['directions']:
+plan_quotas = {}
+# 优先从 _quota_result.json 读取 per-direction 总配额
+qr_path = f'{base}/_quota_result.json'
+dp_path = f'{base}/_dispatch_plan.json'
+if os.path.exists(qr_path):
+    with open(qr_path) as f:
+        qr = json.load(f)
+    for d in qr.get('directions', []):
         plan_quotas[int(d['id'])] = d['quota']
+elif os.path.exists(dp_path):
+    with open(dp_path) as f:
+        dp = json.load(f)
+    # 从 items_summary 聚合 per-direction 配额
+    for item in dp.get('items_summary', []):
+        d = item.get('direction', 0)
+        plan_quotas[d] = plan_quotas.get(d, 0) + item.get('quota', 0)
 expected_directions = len(plan_quotas)
 
 # 1. Artifact existence

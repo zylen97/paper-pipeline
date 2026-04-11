@@ -40,10 +40,10 @@ def normalize(s: str) -> str:
 
 
 def dedup_key(paper: dict) -> str:
-    """Cross-direction dedup key: first_author(lower) + year + title[:40](normalized)."""
+    """Cross-direction dedup key: first_author(lower) + year + title[:80](normalized)."""
     fa = paper.get("first_author", "").split(",")[0].split(";")[0].strip().lower()
     yr = str(paper.get("year", ""))
-    ti = normalize(paper.get("title", ""))[:40]
+    ti = normalize(paper.get("title", ""))[:80]
     return f"{fa}|{yr}|{ti}"
 
 
@@ -51,7 +51,13 @@ TIER_ORDER = {"core": 0, "important": 1, "backup": 2}
 
 
 def _is_cnki_paper(paper: dict) -> bool:
-    """Detect CNKI origin by checking for CJK characters in title/author/journal."""
+    """Detect CNKI origin. Prefer explicit source_type; fall back to CJK heuristic."""
+    st = paper.get("source_type", "")
+    if st == "cnki":
+        return True
+    if st == "wos":
+        return False
+    # Fallback: CJK character heuristic (backward compat for old batch files)
     for field in ("title", "first_author", "journal"):
         val = paper.get(field, "")
         if any('\u4e00' <= c <= '\u9fff' for c in val):
@@ -166,6 +172,9 @@ def parse_batch_md(filepath: Path) -> dict:
         if fname_m:
             direction = int(fname_m.group(1))
 
+    # Bug 4: extract source_type from metadata (if available)
+    source_type = meta.get("source_type", "")
+
     # 2. Parse tables with tier state machine
     current_tier = None
     selected = []
@@ -199,14 +208,17 @@ def parse_batch_md(filepath: Path) -> dict:
             line
         )
         if m:
-            selected.append({
+            paper = {
                 "title": m.group(3).strip(),
                 "first_author": m.group(2).strip(),
                 "year": int(m.group(4)),
                 "journal": m.group(5).strip(),
                 "tier": current_tier,
                 "reason": m.group(6).strip(),
-            })
+            }
+            if source_type:
+                paper["source_type"] = source_type
+            selected.append(paper)
 
     rejected_count = max(0, total_items - len(selected))
 

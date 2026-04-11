@@ -146,7 +146,11 @@ def generate_standard_batch(meta: dict, groups: dict[str, list[dict]],
     lines.append(f"> direction: {d}")
     lines.append(f"> direction_name: {direction_name}")
     lines.append(f"> batch_id: {batch_id}")
-    lines.append(f"> total_items: {total_items}\n")
+    lines.append(f"> total_items: {total_items}")
+    source_type = meta.get("source_type", "")
+    if source_type:
+        lines.append(f"> source_type: {source_type}")
+    lines.append("")
 
     for tier_label, tier_key in [("核心文献（Core）", "core"),
                                    ("重要文献（Important）", "important"),
@@ -193,22 +197,27 @@ def load_agent_metadata(plan_json_path: str) -> dict[str, dict]:
         if d and "source_file" in item:
             name = re.sub(r"^\d+[-_]", "", item["source_file"])
             name = re.sub(r"\.(ris|md)$", "", name)
+            name = re.sub(r"_cnki$", "", name)  # strip CNKI suffix
             name = re.sub(r"WOS_\d+_\d+$", "", name).strip("_").strip()
-            if name:
+            if name and d not in dir_names:  # keep first (WoS) name, don't overwrite
                 dir_names[d] = name
 
     for agent in plan.get("agents", []):
         d = agent.get("direction", 0)
-        split = agent.get("split_info", "1/1")
-        batch_num = split.split("/")[0] if "/" in split else "1"
+        # Bug 1 fix: prefer batch_seq (unique across source files), fallback to split_info
+        batch_num = agent.get("batch_seq")
+        if batch_num is None:
+            split = agent.get("split_info", "1/1")
+            batch_num = split.split("/")[0] if "/" in split else "1"
         batch_id = f"d{d}_batch{batch_num}"
 
         meta_map[batch_id] = {
             "direction": str(d),
-            "batch_num": batch_num,
+            "batch_num": str(batch_num),
             "batch_id": batch_id,
             "direction_name": dir_names.get(d, f"方向{d}"),
             "total_items": agent.get("item_count", 30),
+            "source_type": agent.get("source_type", ""),  # Bug 4: propagate source_type
         }
 
     return meta_map
@@ -270,6 +279,19 @@ def main():
                 entries = []
             else:
                 entries = parse_entries(text)
+
+            # Bug 5: validate entries — drop nearly-empty ones, warn about partial ones
+            valid_entries = []
+            for idx, e in enumerate(entries):
+                missing = [f for f in ("title", "author", "year", "tier") if not e.get(f)]
+                if len(missing) >= 3:
+                    print(f"  ⚠ {stem}: entry {idx+1} dropped (missing {', '.join(missing)})", file=sys.stderr)
+                else:
+                    if missing:
+                        print(f"  ⚠ {stem}: entry {idx+1} incomplete (missing {', '.join(missing)}): "
+                              f"title={e.get('title', '?')[:40]}", file=sys.stderr)
+                    valid_entries.append(e)
+            entries = valid_entries
 
             # 分组
             groups = group_by_tier(entries)

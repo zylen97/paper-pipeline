@@ -248,6 +248,8 @@ def verify(result: dict, directions: list[dict]) -> list[str]:
 
 
 def main():
+    global MIN_QUOTA  # Bug 2 fix: allow overriding for small-budget projects
+
     parser = argparse.ArgumentParser(description="Calculate literature search quotas")
     parser.add_argument("--directions", required=True,
                         help="JSON file with direction data")
@@ -259,7 +261,12 @@ def main():
                         help="CNKI budget (dual-budget mode)")
     parser.add_argument("--output", default=None,
                         help="Output JSON path (default: same dir as input / _quota_result.json)")
+    parser.add_argument("--min-quota", type=int, default=None,
+                        help="Override MIN_QUOTA constant (default: 20)")
     args = parser.parse_args()
+
+    if args.min_quota is not None:
+        MIN_QUOTA = args.min_quota
 
     # 判断模式
     dual_mode = args.budget_wos is not None and args.budget_cnki is not None
