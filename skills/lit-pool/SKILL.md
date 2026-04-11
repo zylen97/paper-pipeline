@@ -1,5 +1,5 @@
 ---
-description: "从direction reports生成按标签汇总的引用池（Citation Pool），含引用场景、分级排序和引用偏好，并生成 master.bib"
+description: "从direction reports生成按标签汇总的引用池（Citation Pool），含引用场景、分级排序和引用偏好，生成 master.bib，并同步到 Zotero 项目集合"
 ---
 
 # Lit-Pool — 引用池生成
@@ -488,6 +488,90 @@ git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + metho
 
 ---
 
+## 步骤 10：Zotero 项目集合同步
+
+将引用池中的文献同步到 Zotero，在 `01-research` 下创建项目集合及标签子集合。
+
+> **前提**：Zotero 桌面端正在运行且 MCP 工具可用。如果 MCP 不可用，跳过此步骤并提示用户。
+
+### 10.1 读取项目信息
+
+从项目目录名或 CLAUDE.md 中提取：
+- 项目编号（如 `zy06`）
+- 项目简称
+- 目标期刊缩写
+
+构造集合名：`{编号}_{简称}_{期刊}`（如 `zy06_碳标签博弈_BSE`）
+
+### 10.2 创建集合结构
+
+用 `zotero_search_collections` 检查 `01-research`（Key=`6QTFGTBZ`）下是否已存在同名集合：
+- **已存在**：复用现有集合，不重复创建
+- **不存在**：`zotero_create_collection(name="{编号}_{简称}_{期刊}", parent_collection="6QTFGTBZ")`
+
+在项目集合下创建 7 个子集合（并行调用）：
+
+```
+BG / LR / GAP / METHOD / DISC / COMP / others
+```
+
+每个：`zotero_create_collection(name="{tag}", parent_collection="{project_coll_key}")`
+
+### 10.3 解析引用数据
+
+1. **解析 `master.bib`**：提取 citation_key → DOI 映射
+   - 正则匹配 `@\w+\{([^,]+),` 提取 citation key，`doi\s*=\s*\{([^}]+)\}` 提取 DOI
+   - DOI 清洗：移除 `https://doi.org/` 前缀（若存在），移除尾部空白
+   - DOI 为空的条目跳过 DOI 导入，改用标题搜索（见 10.4）
+
+2. **解析 `citation_pool/*.md`**（BG/LR/GAP/METHOD/DISC/COMP）：
+   - 跳过文件头（`#` 标题行、`>` 注释行）和表格分隔线（`|:---`）
+   - 按 markdown 表格行解析，citation key 位于第 4 列：`| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |`
+   - **注意**：COMP.md 为 7 列（多一列"与本研究的关键差异"），citation key 仍在第 4 列，解析不受影响
+   - 文件名即标签名：`BG.md` → BG，`METHOD.md` → METHOD，以此类推
+   - METHOD.md 内部可能有 METHOD-基础/METHOD-先例 子标签、GAP.md 可能有 GAP-RQ1/GAP-RQ2 子标签——统一归入对应的 METHOD/GAP 子集合
+   - 同一 citation key 出现在多个 pool 文件中时，合并标签列表（放入多个子集合）
+
+### 10.4 批量导入
+
+对每篇论文：
+
+```
+zotero_add_by_doi(
+    doi = "{doi}",
+    collections = ["{BG_key}", "{METHOD_key}", ...],
+    tags = ["{project_id}"]
+)
+```
+
+执行要点：
+- **尽可能并行**调用多个导入
+- DOI 缺失时：`zotero_search_items(query="{title}")` 按标题搜索 → 找到后 `zotero_manage_collections(item_keys=[...], add_to=[...])` 添加到子集合
+- 失败不中断，记录标题和错误原因，继续处理其他论文
+
+### 10.5 同步报告
+
+```
+## Zotero 同步完成
+
+项目集合：{编号}_{简称}_{期刊}
+
+| 子集合 | 条目数 |
+|:-------|:-----:|
+| BG     | N     |
+| LR     | N     |
+| GAP    | N     |
+| METHOD | N     |
+| DISC   | N     |
+| COMP   | N     |
+
+成功: X / 失败: Y
+```
+
+如有失败论文，列出标题和原因。
+
+---
+
 ## 边界条件处理
 
 | 情况 | 处理 |
@@ -498,3 +582,5 @@ git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + metho
 | 某章节md不存在 | 跳过该章节的引用池更新 |
 | direction report 格式异常 | 报告错误，继续处理其他 reports |
 | tag_report.md 不存在 | 警告标签统计缺失，建议先运行 `/lit-tag` |
+| Zotero MCP 不可用 | 跳过步骤 10，提示用户确认 Zotero 已启动后手动重试 |
+| 项目集合已存在 | 复用现有集合，不重复创建 |

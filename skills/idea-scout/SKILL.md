@@ -148,13 +148,13 @@ cat ~/.claude/projects/-Users-zylen/memory/reference_chatanywhere_api.md
 cp data.json ~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{YYYY-MM-DD}_data.json
 
 # 保存到 App 仓库（用于部署）
-cp data.json ~/idea_scout/data/latest.json
+cp data.json ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.json
 ```
 
 ### 5. 推送到 GitHub → App 自动更新
 
 ```bash
-cd ~/idea_scout
+cd ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout
 
 # 提交数据到 main 分支
 git add data/latest.json
@@ -260,12 +260,12 @@ git push → GitHub Pages                     勾选论文 → Export
 
 ### App 仓库
 - GitHub: `zylen97/idea-scout`
-- 本地: `~/idea_scout/`
+- 本地: `~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/`
 - Pages URL: `https://zylen97.github.io/idea-scout/`
 - 数据文件: FT50 `data/latest.json` + `papers.json`，CE/PM `data/cepm_*.json`，CNKI `data/cnki_latest.json`
 
 ### 数据存储
-- **实时数据**: `~/idea_scout/data/latest.json` → 推送到 GitHub → App 加载
+- **实时数据**: `~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.json` → 推送到 GitHub → App 加载
 - **归档数据**: `~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{date}_data.json`
 - **用户选择**: App 中勾选 → Export JSON → 保存为 `idea_scout/selected.json`
 - **扫描记录**: `~/.claude/skills/idea-scout/scout_log.json`
