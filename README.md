@@ -4,37 +4,9 @@ A personal academic operating system built on [Claude Code](https://docs.anthrop
 
 ## System Architecture
 
-The system is organized in six layers. Each layer builds on the ones below it.
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Layer 6   Knowledge Dissemination                                  │
-│  blog-draft · wechat-publish · site-sync · peer-review              │
-├─────────────────────────────────────────────────────────────────────┤
-│  Layer 5   Quality Assurance (7 Specialized Agents)                 │
-│  sci-writer (en/zh) · strict-reviewer · idea-reviewer               │
-│  language-polisher (en/zh) · journal-scout                          │
-├─────────────────────────────────────────────────────────────────────┤
-│  Layer 4   Production Pipelines                                     │
-│  ┌─────────────┐ ┌──────────┐ ┌──────────────┐ ┌──────────────┐    │
-│  │ Eng. Paper   │ │Literature│ │ Dissertation │ │   Funding    │    │
-│  │  14 skills   │ │ 4 skills │ │   5 skills   │ │   6 skills   │    │
-│  └─────────────┘ └──────────┘ └──────────────┘ └──────────────┘    │
-├─────────────────────────────────────────────────────────────────────┤
-│  Layer 3   Literature Radar                                         │
-│  FT50 Scout (25 journals, 9:00) · CE/PM Scout (12, 9:10)           │
-│  CNKI Scout (43 journals, 9:20) → Idea Scout App → /idea-mine      │
-│  + /figure-harvest (journal figure collection)                      │
-├─────────────────────────────────────────────────────────────────────┤
-│  Layer 2   Cognition & Identity                                     │
-│  Persistent memory (4 types) · Personality modes                    │
-│  User profile · yinhui-perspective                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│  Layer 1   Infrastructure                                           │
-│  Zotero MCP · Gmail MCP · Google Calendar MCP                       │
-│  LaunchD scheduling · web-access · resume                           │
-└─────────────────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="assets/architecture.png" alt="Six-Layer Architecture" width="100%">
+</p>
 
 ## Layer 3: Literature Radar
 

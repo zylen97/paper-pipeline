@@ -1,0 +1,135 @@
+\documentclass[tikz, border=10pt]{standalone}
+\usepackage{newtxtext,newtxmath}
+\usetikzlibrary{positioning, fit, calc, backgrounds}
+
+% ── Morandi palette ──────────────────────────────────────
+\definecolor{L1bg}{HTML}{e8edf5}   % blue-gray  – Infrastructure
+\definecolor{L1bd}{HTML}{8b9dc3}
+\definecolor{L2bg}{HTML}{f0e2e2}   % rose       – Cognition
+\definecolor{L2bd}{HTML}{b57979}
+\definecolor{L3bg}{HTML}{dce8d8}   % sage green – Radar
+\definecolor{L3bd}{HTML}{7a9e7e}
+\definecolor{L4bg}{HTML}{fadcb4}   % warm gold  – Production
+\definecolor{L4bd}{HTML}{c9963a}
+\definecolor{L5bg}{HTML}{d8d0e8}   % lavender   – QA
+\definecolor{L5bd}{HTML}{7b68a0}
+\definecolor{L6bg}{HTML}{f5eedf}   % cream      – Dissemination
+\definecolor{L6bd}{HTML}{a89070}
+\definecolor{pipebg}{HTML}{fff8ee}  % inner boxes
+\definecolor{pipebd}{HTML}{d4b896}
+\definecolor{txtmain}{HTML}{333333}
+\definecolor{txtsub}{HTML}{666666}
+\definecolor{txtdim}{HTML}{999999}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  every node/.style={inner sep=0pt},
+  layer/.style={
+    rectangle, rounded corners=5pt,
+    minimum width=16.4cm, minimum height=2.0cm,
+    align=left, text=txtmain,
+  },
+  lnum/.style={
+    font=\sffamily\bfseries\Large, text=white,
+    fill=#1, rounded corners=3pt,
+    minimum width=0.75cm, minimum height=0.75cm,
+    inner sep=0pt,
+  },
+  ltitle/.style={font=\sffamily\bfseries\large, text=txtmain},
+  lsub/.style={font=\sffamily\small, text=txtsub},
+  ldim/.style={font=\sffamily\small, text=txtdim},
+  pipe/.style={
+    rectangle, rounded corners=4pt,
+    draw=pipebd, fill=pipebg, thick,
+    minimum height=1.1cm, align=center,
+    font=\sffamily\small, text=txtmain,
+    inner sep=6pt,
+  },
+]
+
+% ── Vertical spacing ────────────────────────────────────
+\def\gap{0.18}
+\def\LW{16.4}
+
+% ── Layer 1: Infrastructure ─────────────────────────────
+\node[layer, fill=L1bg, draw=L1bd, thick] (L1) at (0,0) {};
+\node[lnum=L1bd] at ([xshift=14pt, yshift=-14pt]L1.north west) {1};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L1.north west) {Infrastructure};
+\node[lsub, anchor=west] (L1a) at ([xshift=14pt, yshift=-8pt]L1.west)
+  {Zotero MCP\enspace·\enspace Gmail MCP\enspace·\enspace Google Calendar MCP};
+\node[ldim, anchor=west] at ([xshift=14pt, yshift=-22pt]L1.west)
+  {LaunchD scheduling\enspace·\enspace\texttt{/web-access}\enspace·\enspace\texttt{/resume}};
+
+% ── Layer 2: Cognition & Identity ───────────────────────
+\node[layer, fill=L2bg, draw=L2bd, thick,
+      anchor=south] (L2) at ([yshift=\gap cm]L1.north) {};
+\node[lnum=L2bd] at ([xshift=14pt, yshift=-14pt]L2.north west) {2};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L2.north west) {Cognition \& Identity};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-8pt]L2.west)
+  {Persistent memory (4 types)\enspace·\enspace Personality modes};
+\node[ldim, anchor=west] at ([xshift=14pt, yshift=-22pt]L2.west)
+  {User profile\enspace·\enspace\texttt{/yinhui-perspective}};
+
+% ── Layer 3: Literature Radar ───────────────────────────
+\node[layer, fill=L3bg, draw=L3bd, thick, minimum height=2.3cm,
+      anchor=south] (L3) at ([yshift=\gap cm]L2.north) {};
+\node[lnum=L3bd] at ([xshift=14pt, yshift=-14pt]L3.north west) {3};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L3.north west) {Literature Radar};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-4pt]L3.west)
+  {FT50 Scout (25 journals, 9:00)\enspace·\enspace CE/PM Scout (12, 9:10)};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-18pt]L3.west)
+  {CNKI Scout (43 journals, 9:20)\enspace$\to$\enspace Idea Scout App\enspace$\to$\enspace\texttt{/idea-mine}};
+\node[ldim, anchor=west] at ([xshift=14pt, yshift=-34pt]L3.west)
+  {+\enspace\texttt{/figure-harvest} (journal figure collection)};
+
+% ── Layer 4: Production Pipelines ───────────────────────
+\node[layer, fill=L4bg, draw=L4bd, thick, minimum height=3.0cm,
+      anchor=south] (L4) at ([yshift=\gap cm]L3.north) {};
+\node[lnum=L4bd] at ([xshift=14pt, yshift=-14pt]L4.north west) {4};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L4.north west) {Production Pipelines};
+
+% Four inner pipeline boxes
+\node[pipe, minimum width=3.4cm] (P1) at ([xshift=-4.7cm, yshift=-6pt]L4.center)
+  {\textbf{Eng.\ Paper}\\[2pt]14 skills};
+\node[pipe, minimum width=2.8cm, anchor=west] (P2) at ([xshift=8pt]P1.east)
+  {\textbf{Literature}\\[2pt]4 skills};
+\node[pipe, minimum width=3.0cm, anchor=west] (P3) at ([xshift=8pt]P2.east)
+  {\textbf{Dissertation}\\[2pt]5 skills};
+\node[pipe, minimum width=2.8cm, anchor=west] (P4) at ([xshift=8pt]P3.east)
+  {\textbf{Funding}\\[2pt]6 skills};
+
+% shared annotation
+\node[ldim, anchor=west] at ([xshift=8pt]P4.east) {\textit{shared}\\\textit{lit pipeline}};
+
+% ── Layer 5: Quality Assurance ──────────────────────────
+\node[layer, fill=L5bg, draw=L5bd, thick, minimum height=2.3cm,
+      anchor=south] (L5) at ([yshift=\gap cm]L4.north) {};
+\node[lnum=L5bd] at ([xshift=14pt, yshift=-14pt]L5.north west) {5};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L5.north west) {Quality Assurance\enspace{\normalfont\small\color{txtdim}(7 Specialized Agents)}};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-4pt]L5.west)
+  {sci-writer (en/zh)\enspace·\enspace strict-reviewer\enspace·\enspace idea-reviewer};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-20pt]L5.west)
+  {language-polisher (en/zh)\enspace·\enspace journal-scout};
+
+% ── Layer 6: Knowledge Dissemination ────────────────────
+\node[layer, fill=L6bg, draw=L6bd, thick,
+      anchor=south] (L6) at ([yshift=\gap cm]L5.north) {};
+\node[lnum=L6bd] at ([xshift=14pt, yshift=-14pt]L6.north west) {6};
+\node[ltitle, anchor=west] at ([xshift=32pt, yshift=-14pt]L6.north west) {Knowledge Dissemination};
+\node[lsub, anchor=west] at ([xshift=14pt, yshift=-8pt]L6.west)
+  {\texttt{/blog-draft}\enspace·\enspace\texttt{/wechat-publish}\enspace·\enspace\texttt{/site-sync}\enspace·\enspace\texttt{/peer-review}};
+
+% ── Title ───────────────────────────────────────────────
+\node[font=\sffamily\bfseries\Large, text=txtmain,
+      anchor=south] at ([yshift=10pt]L6.north)
+  {Claude Academic OS\enspace—\enspace System Architecture};
+
+% ── "Each layer builds on the ones below" arrow ────────
+\draw[ultra thick, -{Stealth[length=8pt]}, L1bd!60]
+  ([xshift=-26pt]L1.north west) -- ([xshift=-26pt]L6.south west)
+  node[midway, rotate=90, anchor=south, yshift=6pt,
+       font=\sffamily\small\itshape, text=txtdim] {each layer builds on the ones below};
+
+\end{tikzpicture}
+\end{document}
