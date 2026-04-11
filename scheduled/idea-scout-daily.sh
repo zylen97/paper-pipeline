@@ -4,8 +4,20 @@
 
 # ── 文件锁（防止睡眠唤醒后多脚本同时操作 git） ──
 LOCKDIR="/tmp/idea_scout_git.lock"
+LOCK_WAIT=0
 while ! mkdir "$LOCKDIR" 2>/dev/null; do
+    # 防腐：锁超过 10 分钟视为残留，强制清除
+    if [ -d "$LOCKDIR" ] && [ "$(( $(date +%s) - $(stat -f %m "$LOCKDIR") ))" -gt 600 ]; then
+        echo "WARN: stale lock detected (>10min), force removing" >> "${LOG_DIR:-/tmp}/idea-scout-lock.log"
+        rmdir "$LOCKDIR" 2>/dev/null || rm -rf "$LOCKDIR"
+        continue
+    fi
     sleep 10
+    LOCK_WAIT=$((LOCK_WAIT + 10))
+    if [ $LOCK_WAIT -ge 300 ]; then
+        echo "ERROR: lock wait timeout (5min), aborting" >> "${LOG_DIR:-/tmp}/idea-scout-lock.log"
+        exit 1
+    fi
 done
 trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
 
@@ -27,18 +39,18 @@ echo "=== Idea Scout Daily Scan (FT50) ===" >> "$LOG_FILE"
 echo "Started: $(date), range: $SCAN_FROM ~ $TODAY" >> "$LOG_FILE"
 
 # 在 idea_scout 仓库目录下运行
-cd "$HOME/idea_scout" || {
-    echo "ERROR: ~/idea_scout not found" >> "$LOG_FILE"
+cd "$HOME/Library/CloudStorage/Dropbox/04-Coding/idea_scout" || {
+    echo "ERROR: idea_scout not found in Dropbox/04-Coding" >> "$LOG_FILE"
     osascript -e 'display notification "idea_scout dir not found" with title "Idea Scout" subtitle "Failed" sound name "Basso"'
     exit 1
 }
 
 # ── 同步 App 端最新 user_state（App 通过 GitHub API 写入 main） ──
 # 必须在扫描前 pull，否则扫描产生的未提交文件会导致 rebase 失败
-git pull --rebase origin main --quiet >> "$LOG_FILE" 2>&1 || {
+perl -e 'alarm 60; exec @ARGV' git pull --rebase origin main --quiet >> "$LOG_FILE" 2>&1 || {
     echo "WARN: git pull --rebase failed, falling back to merge" >> "$LOG_FILE"
     git rebase --abort 2>/dev/null
-    git pull origin main --quiet >> "$LOG_FILE" 2>&1 || true
+    perl -e 'alarm 60; exec @ARGV' git pull origin main --quiet >> "$LOG_FILE" 2>&1 || true
 }
 cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
 
@@ -46,7 +58,7 @@ cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
 python3 "$SCRIPT_DIR/scout-scan.py" \
     --config "$HOME/.claude/skills/idea-scout/journals.json" \
     --from "$SCAN_FROM" --to "$TODAY" \
-    --output "$HOME/idea_scout/data/latest.json" \
+    --output "data/latest.json" \
     >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
@@ -160,7 +172,14 @@ fi
 # 部署到 gh-pages（只更新数据，不重建 Flutter）
 mkdir -p /tmp/idea_scout_all_data
 cp data/*.json /tmp/idea_scout_all_data/
-git checkout gh-pages 2>> "$LOG_FILE"
+if ! git checkout gh-pages >> "$LOG_FILE" 2>&1; then
+    echo "ERROR: git checkout gh-pages failed, skipping deploy" >> "$LOG_FILE"
+    rm -rf /tmp/idea_scout_all_data
+    echo "GitHub push done (gh-pages skipped)" >> "$LOG_FILE"
+    find "$LOG_DIR" -name "idea-scout-*.log" -mtime +30 -delete 2>/dev/null
+    find "$LOG_DIR" -name "cepm-*.log" -mtime +30 -delete 2>/dev/null
+    exit 0
+fi
 cp /tmp/idea_scout_all_data/*.json data/
 git add data/
 git commit -m "data: ft50 $TODAY" 2>> "$LOG_FILE"

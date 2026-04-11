@@ -215,7 +215,7 @@ def send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject
 if __name__ == '__main__':
     latest_path = sys.argv[1]
     scan_date = sys.argv[2]  # 显示用日期
-    seen_path = sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.expanduser('~/idea_scout/data'), 'seen_dois.json')
+    seen_path = sys.argv[3] if len(sys.argv) > 3 else 'data/seen_dois.json'
     source = sys.argv[4] if len(sys.argv) > 4 else 'ft50'
 
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')

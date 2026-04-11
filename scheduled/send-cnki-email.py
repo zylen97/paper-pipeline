@@ -154,7 +154,7 @@ def send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject
 if __name__ == '__main__':
     latest_path = sys.argv[1]
     scan_date = sys.argv[2]
-    seen_path = sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.expanduser('~/idea_scout/data'), 'cnki_seen_titles.json')
+    seen_path = sys.argv[3] if len(sys.argv) > 3 else 'data/cnki_seen_titles.json'
 
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', '465'))
