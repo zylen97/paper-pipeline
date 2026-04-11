@@ -87,7 +87,7 @@ description: "逐章撰写学位论文中文正文：基于扩写大纲 + 源英
 
 - 如用户指定 `chapter=N`：定位到第 N 章
 - 如用户指定 `section=X.Y`：定位到具体小节
-- 如未指定：从 CLAUDE.md 进度表中找到第一个状态为 `pending` 的章节，向用户确认
+- 如未指定：从 CLAUDE.md 进度表中找到第一个状态为 `pending` 或 `outlined`（尚未 `drafted`）的章节，向用户确认
 
 向用户展示待撰写章节的骨架信息：
 ```

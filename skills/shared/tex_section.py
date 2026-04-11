@@ -408,7 +408,7 @@ def parse_bib_entries(bib_content: str) -> dict[str, str]:
     entries = {}
     # 匹配 @type{key, ... }
     # 使用括号计数来正确找到结束位置
-    for m in re.finditer(r"@\w+\{(\w+)\s*,", bib_content):
+    for m in re.finditer(r"@\w+\{([^\s,}]+)\s*,", bib_content):
         key = m.group(1)
         start = m.start()
         # 从 @ 开始，用括号计数找到匹配的 }

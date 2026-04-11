@@ -527,6 +527,10 @@ git add {项目bib路径} && git commit -m "diss-outline: sync master.bib → re
 
 > 此步骤确保与全局 CLAUDE.md 定义的 `pending → outlined → drafted → polished` 状态机一致。`/diss-draft` 依赖此状态判断哪些章节已准备好进入写作阶段。
 
+### 阶段转换：`literature → drafting`
+
+如果当前项目阶段为 `literature`，更新为 `drafting`（开始生成大纲即进入 drafting 阶段）。
+
 ### Git Checkpoint + Push（里程碑：大纲定稿）
 
 ```bash

@@ -388,7 +388,7 @@ cd submission && latexmk coverletter.tex 2>&1 | tail -20
 ### 3.8 Git Checkpoint
 
 ```bash
-git add coverletter.tex && git commit -m "finalize: write Cover Letter"
+git add submission/coverletter.tex coverletter.tex 2>/dev/null; git commit -m "finalize: write Cover Letter"
 ```
 
 ---

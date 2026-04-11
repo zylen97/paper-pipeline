@@ -25,7 +25,7 @@ description: "作为期刊审稿人，阅读待审稿件PDF并按用户审稿风
 
 ### 0.2 读取 PDF
 
-使用 Read 工具读取 PDF 稿件。从稿件中提取以下信息：
+使用 Read 工具读取 PDF 稿件。**注意**：PDF 超过 10 页时必须使用 `pages` 参数分批读取（如 `pages: "1-10"`、`pages: "11-20"`），每次最多 20 页。从稿件中提取以下信息：
 
 - **目标期刊**：从 header/footer、首页元数据、投稿编号格式中识别（如 COENG = JCEM, PMJ = PMJ, MEENG = JME, JPMA = IJPM 等）
 - **稿件编号**：如 COENG-19268、PMJ-26-0131

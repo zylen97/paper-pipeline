@@ -957,10 +957,10 @@ structure/0_global/
 
 ### 初始化时打包到新项目的文件
 
-用户选定 idea 并运行初始化后，以下文件被复制到新项目 `structure/0_global/idea-context/`：
+用户选定 idea 并运行初始化后，以下文件被复制到新项目 `structure/0_global/idea-mine-ref/`（扁平结构）：
 
 - `source_paper.pdf` — 原始论文 PDF
 - `paper_note.md` — 精读报告
 - `migration_analysis.md` — 该 idea 的迁移方向预判（从 `_step3_matching.md` 提取）
-- `adaptations/idea_{NN}_*.md` — 该 idea 的所有期刊适配版本
-- `reviews/review_*_P{NN}.md` — 该 idea 的所有审稿评审
+- `idea_{NN}_*.md` — 该 idea 的所有期刊适配版本
+- `review_*_P{NN}.md` — 该 idea 的所有审稿评审

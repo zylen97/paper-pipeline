@@ -211,7 +211,7 @@ END FOR
 
 ### 2.3 Form 3（隐形结构）
 
-> 对于 Introduction 等内容高度顺序依赖的章节，改用顺序写作（每个 subsection 写完后将其输出作为下一个 subsection 的前文上下文）。
+> **调度策略**：默认并行写作。但对于 Introduction 等内容高度顺序依赖的章节，改用**顺序写作**（每个 subsection 写完后将其输出作为下一个 subsection 的前文上下文）。判断标准：如果前一个 subsection 的结论是后一个的前提（如 Background → Gap → Contribution），则顺序；否则并行。
 
 **2.3a 解析段落列表**：
 
