@@ -418,6 +418,35 @@ git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outl
 git add chapters/ch{N}_material.md && git commit -m "diss-outline: ch{N} material prepared"
 ```
 
+### 2.5.6 同步参考文献（master.bib → 项目 bib）
+
+素材文件中引用的 citation key 必须在项目 bib 中可用，否则 `/diss-draft` 写入的 `\cite{}` 将无法编译。本步骤确保 bib 同步。
+
+> **设计原理**：英文论文工作流中，`/method-end` 和 `/pen-outline` 在确认要点时逐条从 master.bib 同步到项目 bib。学位论文工作流中，`/diss-outline` 承担了等价职责，因此 bib 同步在此完成。
+
+**执行逻辑**（幂等，多次运行安全）：
+
+1. 检查 `structure/2_literature/citation_pool/master.bib` 是否存在
+   - 不存在 → WARNING: "master.bib 缺失，citation keys 可能无法解析。建议先运行 /lit-pool"，跳过本步骤
+2. 读取项目 bib 文件（从 CLAUDE.md 提取路径，通常为 `reference.bib`）
+3. 提取项目 bib 中已有的所有 citation key（`@type{key,` 行）
+4. 读取 master.bib 全部条目
+5. 逐条合并：key 已存在 → 跳过；不存在 → 追加
+6. 写入项目 bib
+7. 统计输出：`bib 同步完成：新增 {N} 条，跳过 {M} 条（已存在），项目 bib 共 {T} 条`
+
+> **为什么全量合并而非按需提取**：学位论文 100+ 引用 vs master.bib ~200 条，使用率 >50%。全量合并避免逐章追踪引用 key 的复杂性。biblatex 只输出实际 `\cite{}` 的条目，冗余条目不影响编译和参考文献列表。
+>
+> **改写节的隐性需求**：改写节没有 material 文件，但 sci-writer-zh 需要项目 bib 中的引用供选用。源项目文献在 `/lit-pool` Step 0.5 已收录到 master.bib，全量合并一并解决此需求。
+
+**Git Checkpoint**（含 bib 变更）：
+
+```bash
+git add {项目bib路径} && git commit -m "diss-outline: sync master.bib → reference.bib ({N} entries added)"
+```
+
+如 bib 无变更（全部 key 已存在），跳过 commit。
+
 ---
 
 ## 步骤 3：生成总览摘要
@@ -506,6 +535,7 @@ git push
 - [ ] chapters/ch*_material.md（每章一个写作素材文件——新增/展开节的文献素材包）
 - [ ] chapters/ch*.tex 注释已更新（每个 subsection 下方追加要点摘要）
 - [ ] outline_summary.md（总览：来源统计 + 映射表 + 术语总表 + 新增清单）
+- [ ] 项目 bib 已同步 master.bib（步骤 2.5.6，全量合并）
 - [ ] 项目 CLAUDE.md 已更新大纲进度
 
 ## 注意事项

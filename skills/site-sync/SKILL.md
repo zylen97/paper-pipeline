@@ -110,9 +110,10 @@ python3 ~/.claude/skills/site-sync/scan_projects.py
 ```bash
 cd /Users/zylen/Library/CloudStorage/Dropbox/04-Coding/academic-site
 npm run build
-git add -A && git commit -m "sync: update project index"
-git push
+npx gh-pages -d dist --dotfiles
 ```
+
+> **注意**：必须加 `--dotfiles`，否则 `public/.nojekyll` 不会被推送，GitHub Jekyll 会吞掉 `_astro/` 目录导致 CSS 404。
 
 ---
 
