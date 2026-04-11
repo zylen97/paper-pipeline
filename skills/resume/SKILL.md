@@ -90,10 +90,10 @@ git log -15 --date=short --format="%ad %s"
 
 ## 步骤 6：修改阶段检测（条件执行）
 
-如果存在 `revision/` 目录或 CLAUDE.md 阶段字段为 `revision-R*`，说明项目处于审稿修改阶段，额外读取：
+如果存在 `revision-R*/` 目录或 CLAUDE.md 阶段字段为 `revision-R*`，说明项目处于审稿修改阶段。检测最新轮次目录（如 `revision-R1/`、`revision-R2/`），额外读取：
 
-- `revision/comment-letter-clean.md`（审稿意见清单）
-- `revision/revision-guide.md`（修改策略，如存在）
+- `revision-R{N}/comment-letter-clean.md`（审稿意见清单）
+- `revision-R{N}/revision-guide.md`（修改策略，如存在）
 - `.revision-baseline`（如存在，读取当前基准文件名以确认轮次）
 - 扫描 `revision-R*/` 目录（如存在，统计历史轮次数）
 - `response-letter.tex` 中 `[TO BE FILLED]` 数量 → 计算完成进度
@@ -136,6 +136,6 @@ git log -15 --date=short --format="%ad %s"
 - **submitted**：无主动提醒
 - **revision-R{N}**：
   - 如果 response-letter.tex 中有 `[TO BE FILLED]` → 建议 `/rev-respond`
-  - 如果 revision/ 目录不存在 → 建议 `/rev-init`
+  - 如果 revision-R*/ 目录不存在 → 建议 `/rev-init`
 
 最后一句问用户："需要从哪里继续？"

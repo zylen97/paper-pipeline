@@ -31,8 +31,8 @@ description: "逐节撰写基金申请书：基于大纲 + 源项目内容，调
 
 ### 0.3 读取大纲文件
 
-- 读取 `structure/` 下对应章节的 `*_outline.md`
-- 读取 `structure/synthesis_summary.md`（综合摘要）
+- 读取 `sections/` 下对应章节的 `*_outline.md`
+- 读取 `sections/synthesis_summary.md`（综合摘要）
 - 如大纲文件不存在 → 提示用户先运行 `/fund-outline`
 
 ### 0.4 读取源项目材料

@@ -51,7 +51,7 @@ Section 3: Methodology → 行号范围 [L151-L280]
 
 ### 0.4 检查引用池（素材准备前置）
 
-检查 `structure/2_literature/citation_pool/` 目录是否存在且包含标签文件：
+检查 `structure/2_literature/citation_pool/` 目录是否存在且包含标签文件（此路径相对于**当前学位论文项目根目录**。如 `/lit-pool` 是在学位论文项目中运行的，则 citation_pool 在本项目的 `structure/2_literature/` 下；如仅在源英文论文项目中运行过，则需从源项目路径 `{SOURCE_PROJECT}/structure/2_literature/citation_pool/` 读取）：
 - **存在** → 标记 `CITATION_POOL_AVAILABLE = true`，记录可用标签文件列表
 - **不存在** → 标记 `CITATION_POOL_AVAILABLE = false`，在对话中提示用户：
   > ⚠️ 未检测到引用池（citation_pool/），步骤 2.5 的素材准备将跳过。
@@ -266,17 +266,16 @@ git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outl
 
 ### 2.5.1 前置：读取 citation_pool
 
-从 `structure/2_literature/citation_pool/` 读取当前章节相关的标签文件。tag-to-chapter 映射：
+从 `structure/2_literature/citation_pool/` 读取当前章节相关的标签文件。根据当前项目 CLAUDE.md 中的章节结构，动态生成 chapter-tag 映射表。核心章节（按 RQ 拆分的研究章节）对应 DISC-RQ{N} 标签，文献综述章对应 BG+LR 标签，绪论章对应 BG+GAP 标签。通用映射规则：
 
-| 章节 | 应读取的 citation_pool 文件 |
+| 章节类型 | 应读取的 citation_pool 文件 |
 |:--|:--|
-| Ch1 绪论 | BG.md, GAP.md |
-| Ch2 文献综述 | LR.md, METHOD.md, GAP.md |
-| Ch3 研究设计 | METHOD.md |
-| Ch4 组态分析 | DISC.md (RQ1 子节) |
-| Ch5 韧性分析 | DISC.md (RQ2 子节) |
-| Ch6 对策建议 | LR.md, DISC.md |
-| Ch7 结论 | 无（改写为主，跳过本步骤） |
+| 绪论 | BG.md, GAP.md |
+| 文献综述 | LR.md, METHOD.md, GAP.md |
+| 研究设计/方法 | METHOD.md |
+| 核心研究章（RQ{N}） | DISC.md (RQ{N} 子节) |
+| 对策建议 | LR.md, DISC.md |
+| 结论 | 无（改写为主，跳过本步骤） |
 
 如 citation_pool 目录不存在 → 跳过本步骤，在对话中提示"建议先运行 /lit-pool 生成引用池"。
 
@@ -522,6 +521,12 @@ git add {项目bib路径} && git commit -m "diss-outline: sync master.bib → re
 - ...
 ```
 
+同时更新项目 CLAUDE.md 中的章节级状态追踪（`## 撰写进度` 或等价字段）：
+- 已确认大纲的章节：状态更新为 `outlined`
+- 未生成大纲的章节：状态保持 `pending`
+
+> 此步骤确保与全局 CLAUDE.md 定义的 `pending → outlined → drafted → polished` 状态机一致。`/diss-draft` 依赖此状态判断哪些章节已准备好进入写作阶段。
+
 ### Git Checkpoint + Push（里程碑：大纲定稿）
 
 ```bash
@@ -536,7 +541,7 @@ git push
 - [ ] chapters/ch*.tex 注释已更新（每个 subsection 下方追加要点摘要）
 - [ ] outline_summary.md（总览：来源统计 + 映射表 + 术语总表 + 新增清单）
 - [ ] 项目 bib 已同步 master.bib（步骤 2.5.6，全量合并）
-- [ ] 项目 CLAUDE.md 已更新大纲进度
+- [ ] 项目 CLAUDE.md 已更新大纲进度 + 章节状态更新为 `outlined`
 
 ## 注意事项
 

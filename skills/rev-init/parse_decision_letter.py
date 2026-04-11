@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# DEPRECATED: This script is no longer used by /rev-init.
+# Step 4 of SKILL.md specifies that the main agent parses the decision letter directly.
+# Kept for reference only. Do not invoke.
 """
 parse_decision_letter.py — 审稿决定信解析（rev-init §4a-4d）
 

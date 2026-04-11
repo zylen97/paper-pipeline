@@ -90,7 +90,7 @@ Read `{WORK_DIR}/01_original_text.md`
   - **Logic coherence**: paragraph-to-paragraph transitions, argument progression, no logical jumps between claims, no missing intermediate steps in reasoning chains
   - **Cross-subsection coherence**: whether subsections connect naturally, whether the overall narrative has a clear arc from beginning to end
   - **Domain grounding**: arguments grounded in the specific industry context, not generic theory that could apply to any field
-- Do NOT suggest adding, removing, or changing any citations
+- 引用相关建议仅作参考，不纳入本轮必改项。Focus on prose quality, argumentation, and logical flow.
 - Do NOT give an overall verdict (accept/reject/revise) — just list concrete suggestions
 - Word count reference: {ORIGINAL_WORD_COUNT} (target ± 10%)
 

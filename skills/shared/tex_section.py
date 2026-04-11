@@ -50,11 +50,11 @@ def build_section_tree(tex_content: str) -> list[dict]:
     LEVEL_MAP = {"section": 1, "subsection": 2, "subsubsection": 3}
 
     # 匹配 \section{...}, \subsection{...}, \subsubsection{...}
-    # 忽略 \section*{...} 变体（带 *）
+    # 跳过 \section*{...} 等星号变体（Acknowledgments, Appendix 等非正文 section）
     # 使用括号计数来正确处理嵌套括号（如 \section{Introduction to \emph{Game Theory}}）
     cmd_pattern = re.compile(
         r"^[^%]*?"  # 忽略注释行
-        r"\\(section|subsection|subsubsection)\*?\{",
+        r"\\(section|subsection|subsubsection)\{",  # 不匹配 \section*
         re.MULTILINE
     )
 

@@ -337,6 +337,9 @@ def main():
             print(f"  ❌ {e}")
         if total_ok == 0:
             sys.exit(1)
+        else:
+            # Partial failures: some files OK but some failed — still non-zero exit
+            sys.exit(1)
     else:
         print("\n=== VERIFY: PASS ===")
 

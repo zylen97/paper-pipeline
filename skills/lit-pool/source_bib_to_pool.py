@@ -232,7 +232,8 @@ SECTION_TAG_RULES_ZH = [
     ("附录", []),
 ]
 
-# 子节标题关键词 → RQ 编号推断
+# PROJECT-SPECIFIC: Update these keywords for each project.
+# Fallback: if no keywords match, assigns to ALL RQs (see lines below).
 RQ_KEYWORDS = {
     # RQ1 相关（竞争优势、组态、SCA）
     "configuration": 1,

@@ -202,7 +202,7 @@ Read `drafts/writing_brief.md` for journal conventions and style guidance.
 ### 1.7 Git Checkpoint
 
 ```bash
-git add -A && git commit -m "finalize: write Conclusion"
+git add manuscript.tex && git commit -m "finalize: write Conclusion"
 ```
 
 ---
@@ -285,7 +285,7 @@ Block 5: Implications（理论/实践价值，1-2 句）
 ### 2.8 Git Checkpoint
 
 ```bash
-git add -A && git commit -m "finalize: write Abstract and Keywords"
+git add manuscript.tex && git commit -m "finalize: write Abstract and Keywords"
 ```
 
 ---
@@ -388,7 +388,7 @@ cd submission && latexmk coverletter.tex 2>&1 | tail -20
 ### 3.8 Git Checkpoint
 
 ```bash
-git add -A && git commit -m "finalize: write Cover Letter"
+git add coverletter.tex && git commit -m "finalize: write Cover Letter"
 ```
 
 ---
@@ -465,7 +465,7 @@ rm -rf drafts/
 ### 4.4 Git Checkpoint & Push
 
 ```bash
-git add -A && git commit -m "chore: clean up structure scaffolding after finalize"
+git add -u && git commit -m "chore: clean up structure scaffolding after finalize"
 git push
 ```
 

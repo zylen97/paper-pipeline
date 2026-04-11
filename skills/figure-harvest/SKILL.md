@@ -94,7 +94,7 @@ AskUserQuestion：
 ### 2. 检查 CDP 环境
 
 ```bash
-bash ~/.claude/skills/web-access/scripts/check-deps.sh
+node ~/.claude/skills/web-access/scripts/check-deps.mjs
 ```
 
 未通过 → 引导用户完成 Chrome CDP 设置。

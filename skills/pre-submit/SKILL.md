@@ -27,7 +27,7 @@ description: "投稿前终检：引用完整性、自引率、格式合规、图
 - 读取 `{MAIN_TEX}` 全文
 - 读取 `{BIB_FILE}` 全文
 - 扫描 `submission/` 目录下的所有 `.tex` 文件（coverletter, titlepage, highlights, declaration 等）
-- 检查 `drafts/method_audit_report.md` 是否存在（用于流程完整性检查）
+- 检查 `structure/3_methodology/benchmark/method_audit_report.md` 是否存在（用于流程完整性检查）
 
 ---
 
@@ -238,7 +238,7 @@ latexmk {MAIN_TEX} 2>&1 | tail -50
 
 | 检查项 | 检查方式 | 缺失级别 |
 |--------|---------|---------|
-| method-audit | `drafts/method_audit_report.md` 存在？ | 🟡 |
+| method-audit | `structure/3_methodology/benchmark/method_audit_report.md` 存在？ | 🟡 |
 | method-audit 红色项已清 | report 中无未修复的 🔴 | 🟡 |
 | writing brief | `drafts/writing_brief.md` 存在？ | 🟢 |
 

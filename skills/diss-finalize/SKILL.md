@@ -1,22 +1,23 @@
 ---
-description: "学位论文定稿收尾：中英文摘要 + 致谢 + 格式终检（页眉页脚、图表编号、参考文献格式）"
+description: "学位论文定稿收尾：中英文摘要 + 致谢 + 独创性声明 + 格式终检（页眉页脚、图表编号、参考文献格式）"
 ---
 
 # Diss-Finalize — 学位论文定稿收尾
 
-学位论文所有章节完成并打磨后的最终收尾流程，按固定顺序完成六个阶段：
+学位论文所有章节完成并打磨后的最终收尾流程，按固定顺序完成七个阶段：
 
 ```
-Phase 1: 中文摘要 → Phase 2: 英文摘要 → Phase 3: 致谢 → Phase 4: 格式终检 → Phase 5: 编译验证 → Phase 6: 更新项目阶段
+Phase 1: 中文摘要 → Phase 2: 英文摘要 → Phase 3: 致谢 → Phase 4: 独创性声明 → Phase 5: 格式终检 → Phase 6: 编译验证 → Phase 7: 更新项目阶段
 ```
 
-Phase 1-2 为写作阶段，Phase 3 为模板阶段，Phase 4-5 为检查阶段。每个 Phase 完成后 git checkpoint。
+Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶段。每个 Phase 完成后 git checkpoint。
 
 **输入** `$ARGUMENTS`：可选，指定从哪个阶段开始。示例：
-- `/diss-finalize` — 从 Phase 1 开始，完整走六步
+- `/diss-finalize` — 从 Phase 1 开始，完整走七步
 - `/diss-finalize abstract-en` — 从 Phase 2 开始（跳过中文摘要）
 - `/diss-finalize ack` — 从 Phase 3 开始
-- `/diss-finalize check` — 从 Phase 4 开始（只做格式终检 + 编译验证）
+- `/diss-finalize declaration` — 从 Phase 4 开始（独创性声明）
+- `/diss-finalize check` — 从 Phase 5 开始（只做格式终检 + 编译验证）
 
 ---
 
@@ -48,7 +49,8 @@ Phase 1-2 为写作阶段，Phase 3 为模板阶段，Phase 4-5 为检查阶段�
 - 空 → 从 Phase 1 开始
 - `abstract-en` → 从 Phase 2 开始，检查中文摘要是否已有内容
 - `ack` → 从 Phase 3 开始
-- `check` → 从 Phase 4 开始（跳过 0.2 的全文读取，Phase 4 直接检查 tex 文件）
+- `declaration` → 从 Phase 4 开始
+- `check` → 从 Phase 5 开始（跳过 0.2 的全文读取，Phase 5 直接检查 tex 文件）
 
 ### 0.4 前置门禁检查
 
@@ -274,9 +276,80 @@ git add -A && git commit -m "diss-finalize: add acknowledgement template"
 
 ---
 
-## Phase 4: 格式终检
+## Phase 4: 独创性声明与使用授权声明
 
-### 4.1 图表编号连续性检查
+中国学位论文必须包含「独创性声明」和「学位论文使用授权声明」页面，通常位于封面之后、摘要之前。
+
+### 4.1 检查模板是否已内置声明页
+
+扫描 `.cls` 文件和 `{MAIN_TEX}`，查找是否已有声明页命令：
+- 常见命令：`\makedeclaration`、`\declaration`、`\makeoriginalitystatement`、`\originality`
+- 或已内联的 `独创性声明` / `原创性声明` 文本块
+
+**判定**：
+- 模板已内置 → 跳到 4.3（仅验证编译正确）
+- 模板未内置 → 进入 4.2 生成声明页
+
+### 4.2 生成声明页内容
+
+在适当位置（`front/declaration.tex` 或 `{MAIN_TEX}` 的前言区域）生成标准声明页：
+
+```latex
+\chapter*{独创性声明}
+
+本人声明所呈交的学位论文是我个人在导师指导下进行的研究工作及取得的研究成果。据我所知，除文中已经标明引用的内容外，本论文不包含其他个人或集体已经发表或撰写过的研究成果。对本文的研究做出重要贡献的个人和集体，均已在文中以明确方式标明。本声明的法律结果由本人承担。
+
+\vspace{2cm}
+
+\noindent 论文作者签名：\underline{\hspace{4cm}} \hfill 日期：\underline{\hspace{3cm}}
+
+\vspace{4cm}
+
+\chapter*{学位论文使用授权声明}
+
+本人完全了解{SCHOOL}关于收集、保存、使用学位论文的规定，即：学校有权保留学位论文的复印件，允许被查阅和借阅；学校可以公布学位论文的全部或部分内容，可以采用复印、缩印或其他复制手段保存学位论文。
+
+保密的学位论文在解密后适用本声明。
+
+\vspace{2cm}
+
+\noindent 论文作者签名：\underline{\hspace{4cm}} \hfill 导师签名：\underline{\hspace{4cm}}
+
+\noindent 日期：\underline{\hspace{3cm}} \hfill 日期：\underline{\hspace{3cm}}
+```
+
+**注意**：以上为通用模板文本。如用户学校（`{SCHOOL}`）有官方指定措辞，应以学校版本为准。向用户确认是否需要调整措辞。
+
+### 4.3 验证声明页编译
+
+编译 `{MAIN_TEX}`，检查：
+- 声明页是否正常渲染（无编译错误）
+- 声明页位置是否正确（封面之后、摘要之前）
+- 页面格式是否符合要求（无页眉页脚、无页码，或按学校要求）
+
+### 4.4 用户确认
+
+```
+Phase 4 — 独创性声明
+
+{模板已内置 → "模板 .cls 已包含声明页命令，编译验证通过。"}
+{手动生成 → "已生成独创性声明 + 使用授权声明，写入 {DECLARATION_FILE}。"}
+
+声明页内容为标准模板，提交前需手写签名。
+确认？
+```
+
+### 4.5 Git Checkpoint
+
+```bash
+git add -A && git commit -m "diss-finalize: add originality declaration"
+```
+
+---
+
+## Phase 5: 格式终检
+
+### 5.1 图表编号连续性检查
 
 扫描所有 `chapters/*.tex`，检查：
 
@@ -288,14 +361,14 @@ git add -A && git commit -m "diss-finalize: add acknowledgement template"
 
 输出检查报告：
 ```
-Phase 4.1 — 图表编号检查
+Phase 5.1 — 图表编号检查
 
 [PASS] 图编号连续性：共 {N} 张图，编号连续
 [WARN] 表3.2 未在正文中引用（chapters/ch3.tex L120）
 [FAIL] \ref{fig:4-3} 找不到对应 \label（chapters/ch4.tex L85）
 ```
 
-### 4.2 参考文献格式检查（GB/T 7714-2015）
+### 5.2 参考文献格式检查（GB/T 7714-2015）
 
 检查 `{BIB_FILE}` 和编译产物：
 
@@ -304,7 +377,7 @@ Phase 4.1 — 图表编号检查
 - 编译 log 中是否有 `Citation undefined` 或 `Empty bibliography` 警告
 - 正文中 `\cite` 命令格式是否统一（`\cite{key}` vs `\citep{key}` vs `\parencite{key}`）
 
-### 4.3 页眉页脚检查
+### 5.3 页眉页脚检查
 
 检查 `.cls` 文件和 `{MAIN_TEX}` 中的页眉页脚设置：
 
@@ -313,7 +386,7 @@ Phase 4.1 — 图表编号检查
 - 页脚：页码居中
 - 摘要、目录页的页眉页脚是否符合要求（通常为空或罗马数字页码）
 
-### 4.4 目录检查
+### 5.4 目录检查
 
 编译后检查 `.toc` 文件：
 
@@ -322,7 +395,7 @@ Phase 4.1 — 图表编号检查
 - 页码是否正确（无 "??" 或 "0"）
 - 目录是否包含不应出现的内容（如致谢、附录标题格式）
 
-### 4.5 字体字号检查
+### 5.5 字体字号检查
 
 检查 `.cls` 和 `{MAIN_TEX}` 中的字体设置：
 
@@ -332,24 +405,24 @@ Phase 4.1 — 图表编号检查
 - 摘要标题、关键词：按学校模板要求
 - 是否正确加载了中文字体包（ctex / xeCJK）
 
-### 4.6 页边距检查
+### 5.6 页边距检查
 
 检查 `.cls` 或 `{MAIN_TEX}` 中的 geometry 设置：
 
 - 上下左右边距是否符合学校要求（常见：上2.5cm，下2.5cm，左3cm，右2cm）
 - 装订线是否设置
 
-### 4.7 行距检查
+### 5.7 行距检查
 
 - 正文行距：1.5 倍行距（`\linespread{1.5}` 或 `\onehalfspacing`）
 - 脚注、表格内容等是否为单倍行距
 
-### 4.8 格式检查汇总
+### 5.8 格式检查汇总
 
 汇总所有检查结果：
 
 ```
-Phase 4 — 格式终检报告
+Phase 5 — 格式终检报告
 
 | 检查项 | 状态 | 详情 |
 |--------|------|------|
@@ -368,23 +441,23 @@ FAIL: 0 | WARN: 1 | PASS: 6
 - WARN 项 → 展示警告，用户决定是否处理
 - 全部 PASS → 继续
 
-### 4.9 本科特殊检查（仅 `{DEGREE_TYPE}` == 本科）
+### 5.9 本科特殊检查（仅 `{DEGREE_TYPE}` == 本科）
 
-#### 4.9.1 外文翻译附录
+#### 5.9.1 外文翻译附录
 
 检查 `appendix/trans-body.tex`（或类似路径）：
 - 文件是否存在
 - 内容是否为空或仍为 TODO
 - 翻译字数是否达到要求（通常 >=3000 字）
 
-#### 4.9.2 原文 PDF
+#### 5.9.2 原文 PDF
 
 检查 `appendix/origin.tex` 或 `appendix/origin.pdf`：
 - 文件是否存在
 - 是否已通过 `\includepdf` 或类似方式引入 main.tex
 
 ```
-Phase 4.9 — 本科附录检查
+Phase 5.9 — 本科附录检查
 
 | 检查项 | 状态 | 详情 |
 |--------|------|------|
@@ -392,7 +465,7 @@ Phase 4.9 — 本科附录检查
 | 原文PDF | {PASS/FAIL} | {详情} |
 ```
 
-### 4.10 Git Checkpoint
+### 5.10 Git Checkpoint
 
 ```bash
 git add -A && git commit -m "diss-finalize: format compliance fixes"
@@ -402,21 +475,21 @@ git add -A && git commit -m "diss-finalize: format compliance fixes"
 
 ---
 
-## Phase 5: 编译验证
+## Phase 6: 编译验证
 
-### 5.1 清理并完整编译
+### 6.1 清理并完整编译
 
 ```bash
 latexmk -C
 latexmk {MAIN_TEX}
 ```
 
-### 5.2 检查编译输出
+### 6.2 检查编译输出
 
 分析编译 log，分类报告：
 
 ```
-Phase 5 — 编译验证
+Phase 6 — 编译验证
 
 Errors: {N}
 Warnings: {N}（其中 {M} 条需关注）
@@ -431,16 +504,16 @@ Overfull/Underfull boxes: {N}
 - 关键 Warning（如 `Citation undefined`、`Reference undefined`、`Float specifier changed`） → 报告并建议修复
 - Overfull box > 5mm → 报告位置，建议调整
 
-### 5.3 PDF 页数验证
+### 6.3 PDF 页数验证
 
 检查生成的 PDF 页数是否合理（根据学位类型）：
 - 本科：30-60 页
-- 硕士：60-100 页
+- 硕士：80-140 页
 - 博士：100-200 页
 
 超出范围 → 警告（不阻塞）
 
-### 5.4 Git Checkpoint
+### 6.4 Git Checkpoint
 
 ```bash
 git add -A && git commit -m "diss-finalize: final compilation verified"
@@ -448,21 +521,24 @@ git add -A && git commit -m "diss-finalize: final compilation verified"
 
 ---
 
-## Phase 6: 更新项目阶段
+## Phase 7: 更新项目阶段
 
-### 6.1 更新 CLAUDE.md
+### 7.1 更新 CLAUDE.md
 
-在项目 CLAUDE.md 中查找 `## 项目阶段` 部分：
-- 已存在 → 更新状态为 `polishing`，更新时间为 `{TODAY}`
-- Phase 4 全部 PASS 且用户确认准备提交 → 更新为 `submitted`
+在项目 CLAUDE.md 中查找 `## 项目阶段` 部分，根据条件判定目标阶段：
 
-### 6.1.5 Git Push（里程碑：定稿完成）
+- **Phase 5 格式终检全部 PASS（无 FAIL 项）且用户明确确认准备提交** → 更新为 `submitted`，更新时间为 `{TODAY}`
+- **否则** → 保持 `polishing`，更新时间为 `{TODAY}`，并附注说明：
+  - 如有 FAIL 项未修复 → 列出待修复项
+  - 如用户未确认提交 → 提示"全部检查通过后，再次运行 `/diss-finalize check` 并确认提交即可转为 submitted"
+
+### 7.1.5 Git Push（里程碑：定稿完成）
 
 ```bash
 git push
 ```
 
-### 6.2 完成报告
+### 7.2 完成报告
 
 ```
 diss-finalize 完成！
@@ -487,8 +563,8 @@ PDF 页数：{PAGE_COUNT} 页
 
 ### 交互模式
 - Phase 1-2：逐块提议 → 用户确认 → 循环
-- Phase 3：模板确认，一步完成
-- Phase 4：自动检查 → 汇总报告 → FAIL 项交互修复
+- Phase 3-4：模板确认，一步完成
+- Phase 5：自动检查 → 汇总报告 → FAIL 项交互修复
 - 用户可以在任何 Phase 输入 "skip" 跳过该阶段
 - 用户可以在任何 Phase 结束后输入 "stop" 中断流程
 
@@ -499,8 +575,8 @@ PDF 页数：{PAGE_COUNT} 页
 - 格式检查报告：中文
 
 ### 不越界
-- Phase 1-3：不修改正文章节内容（chapters/*.tex 的正文部分），只写摘要和致谢
-- Phase 4：格式问题修复限于标签、引用、cls/sty 配置层面，不改正文内容
+- Phase 1-4：不修改正文章节内容（chapters/*.tex 的正文部分），只写摘要、致谢和声明
+- Phase 5：格式问题修复限于标签、引用、cls/sty 配置层面，不改正文内容
 - 不修改 bib 条目内容（只报告问题）
 
 ### 幂等

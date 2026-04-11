@@ -505,9 +505,9 @@ git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + metho
 
 ### 10.2 创建集合结构
 
-用 `zotero_search_collections` 检查 `01-research`（Key=`6QTFGTBZ`）下是否已存在同名集合：
+使用 `zotero_search_collections` 搜索名为 `01-research` 的集合获取其 Key（不要硬编码 Key 值，因为 Zotero 集合重建后 Key 会变化）。然后检查该集合下是否已存在同名项目集合：
 - **已存在**：复用现有集合，不重复创建
-- **不存在**：`zotero_create_collection(name="{编号}_{简称}_{期刊}", parent_collection="6QTFGTBZ")`
+- **不存在**：`zotero_create_collection(name="{编号}_{简称}_{期刊}", parent_collection="{01-research的Key}")`
 
 在项目集合下创建 7 个子集合（并行调用）：
 

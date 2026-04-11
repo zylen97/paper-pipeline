@@ -43,7 +43,7 @@ description: "基金项目 idea 挖掘：基于已有科研项目 + 已读论文
 请选择 2-3 个你希望作为基金选题基础的科研项目。
 请提供项目编号或文件夹名（如 zy15、dj03 等）。
 
-个人项目目录：/Users/zylen/Library/CloudStorage/Dropbox/02-Research/Zylen paper
+个人项目目录：/Users/zylen/Library/CloudStorage/Dropbox/02-Research/papers
 合作项目目录：/Users/zylen/Library/CloudStorage/Dropbox/02-Research/_GYM group dropbox/_gym paper
 ```
 

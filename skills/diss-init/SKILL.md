@@ -261,7 +261,7 @@ git add *.bib && git commit -m "diss-init: migrate bib from source project"
 
 同时更新：
 - 中文题目、英文题目
-- 项目阶段保持 `init`（等文献补充完成后转 `literature`）
+- 项目阶段更新为 `literature`（diss-init 完成即转入文献补充阶段）
 - 如 `{DEGREE_TYPE}` == 本科，在 CLAUDE.md 中加入：
   ```markdown
   ## 本科附录准备（待完成）

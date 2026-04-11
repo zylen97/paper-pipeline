@@ -59,7 +59,7 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
 
 当目标 section 匹配以下关键词时触发检查：`model/method/formul/equilibrium/result/analysis/simulation/numerical`
 
-- 检查 `drafts/method_audit_report.md` 是否存在
+- 检查 `structure/3_methodology/benchmark/method_audit_report.md` 是否存在
 - **不存在** → 警告用户：
   ```
   ⚠️ 检测到你正在 draft 技术章节（{section name}），但尚未运行 /method-audit。
@@ -209,7 +209,9 @@ END FOR
 > Do not redefine symbols or introduce alternative notation.
 > ```
 
-### 2.3 Form 3（隐形结构 — 并行调度）
+### 2.3 Form 3（隐形结构）
+
+> 对于 Introduction 等内容高度顺序依赖的章节，改用顺序写作（每个 subsection 写完后将其输出作为下一个 subsection 的前文上下文）。
 
 **2.3a 解析段落列表**：
 
@@ -275,7 +277,7 @@ You are writing **{Section Title}** for this manuscript.
 ## Instructions
 - Read `drafts/writing_brief.md` for journal conventions and style guidance
 - Read the bib file for available citations
-- Do NOT read the manuscript file. All necessary context (structure, notation, prior subsection outputs) is provided in this prompt. Reading the manuscript risks being influenced by existing content that is being replaced.
+- sci-writer agent 会自行读取 manuscript.tex 获取结构和风格上下文。
 
 ## Research Context (from idea.md)
 {IDEA_CONTEXT}
