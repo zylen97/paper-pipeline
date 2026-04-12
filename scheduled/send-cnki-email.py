@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """CNKI Scout 日报邮件：从 cnki_latest.json 读取论文，按期刊分组生成邮件"""
 
-import json, sys, os, smtplib, random
+import json, sys, os, smtplib, random, base64, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date
+
+GMAIL_TOKEN_PATH = os.path.join(os.path.dirname(__file__), 'gmail_token.json')
+SENDER_NAME = 'Zylen的论文检索助手'
 
 
 def load_new_papers(latest_path, seen_path):
@@ -124,14 +127,47 @@ def build_email_html(papers, scan_date):
     return html, total, journal_count
 
 
-def send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject, html_body):
+def send_email_api(recipients, subject, html_body):
+    """Gmail API via HTTPS（主力）"""
+    import requests
+
+    with open(GMAIL_TOKEN_PATH) as f:
+        token = json.load(f)
+
+    resp = requests.post(token['token_uri'], data={
+        'client_id': token['client_id'],
+        'client_secret': token['client_secret'],
+        'refresh_token': token['refresh_token'],
+        'grant_type': 'refresh_token'
+    }, timeout=15)
+    resp.raise_for_status()
+    access_token = resp.json()['access_token']
+
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
-    msg['From'] = f'Zylen的论文检索助手 <{smtp_user}>'
+    msg['From'] = f'{SENDER_NAME} <zylenw97@gmail.com>'
     msg['Bcc'] = ', '.join(recipients)
     msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
-    import time
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+    resp = requests.post(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        headers={'Authorization': f'Bearer {access_token}'},
+        json={'raw': raw},
+        timeout=30
+    )
+    resp.raise_for_status()
+
+
+def send_email_smtp(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject, html_body):
+    """Gmail SMTP（fallback）"""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = f'{SENDER_NAME} <{smtp_user}>'
+    msg['Bcc'] = ', '.join(recipients)
+    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+
     for attempt in range(3):
         try:
             if smtp_port == 465:
@@ -146,7 +182,7 @@ def send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject
             return
         except (TimeoutError, OSError) as e:
             if attempt < 2:
-                time.sleep(5)
+                time.sleep(10)
             else:
                 raise
 
@@ -172,7 +208,19 @@ if __name__ == '__main__':
     html_body, total, jcount = build_email_html(papers, scan_date)
     subject = f'CNKI Scout {today} - {total}篇中文新论文'
 
-    send_email(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject, html_body)
+    # 主力：Gmail API（HTTPS），fallback：SMTP
+    sent = False
+    if os.path.exists(GMAIL_TOKEN_PATH):
+        try:
+            send_email_api(recipients, subject, html_body)
+            print(f'[Gmail API] ', end='')
+            sent = True
+        except Exception as e:
+            print(f'Gmail API failed ({e}), falling back to SMTP...', file=sys.stderr)
+
+    if not sent:
+        send_email_smtp(smtp_server, smtp_port, smtp_user, smtp_pass, recipients, subject, html_body)
+        print(f'[SMTP] ', end='')
 
     # 成功后更新 seen_titles
     all_titles = seen_titles | {p['title'] for p in papers if p.get('title')}
