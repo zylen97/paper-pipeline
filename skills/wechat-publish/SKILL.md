@@ -91,7 +91,7 @@ source ~/.claude/scheduled/email-config.sh
 
 ### 3.1 压缩
 
-微信 `uploadimg` 接口限制图片 ≤1MB。DALL-E 生成的 PNG 通常 2-3MB，必须压缩：
+微信 `uploadimg` 接口限制图片 ≤1MB。NB2（Nano Banana 2）生成的 PNG 通常 1-2MB，必须压缩：
 
 ```bash
 sips -s format jpeg -s formatOptions 60 "{input}.png" --out "/tmp/wechat-upload/{name}.jpg"
@@ -104,7 +104,15 @@ sips -s format jpeg -s formatOptions 60 "{input}.png" --out "/tmp/wechat-upload/
 ```bash
 ASSETS="/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/blog/{slug}"
 mkdir -p "$ASSETS"
-cp public/blog/{slug}*.png "$ASSETS/"
+# 根据博客 md 中实际引用的图片路径 cp，不要用 {slug}* glob（实际文件名可能不匹配）
+# 例如：从 md 中提取 ![](/academic-site/blog/fc-01-midnight-lights.png) → cp public/blog/fc-01-midnight-lights.png
+# 封面图从 frontmatter cover 字段提取路径
+for img in $(grep -oP '(?<=\(/academic-site/blog/)[^)]+' "src/data/blog/{slug}.md"); do
+  cp "public/blog/$img" "$ASSETS/" 2>/dev/null
+done
+# 封面图
+cover=$(grep '^cover:' "src/data/blog/{slug}.md" | sed 's|cover: "/academic-site/blog/||;s|"||g')
+[ -n "$cover" ] && cp "public/blog/$cover" "$ASSETS/" 2>/dev/null
 ```
 
 > **素材归档目录**：`/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/`
@@ -141,11 +149,10 @@ curl -s -X POST \
 
 ### 4.0 阅读时间
 
-在正文最前面插入阅读时间提示（博客 md 和公众号 HTML 都加）：
+博客 md 中已由 `/blog-draft` 插入了阅读时间行（`*阅读时间：约 {N} 分钟 · {字数} 字*`），**不要重复插入或修改源文件**。
 
-- 计算方式：统计正文汉字数 ÷ 500（中文平均阅读速度），向上取整
-- 博客 md 格式：在 frontmatter 后、正文第一行前插入 `*阅读时间：约 {N} 分钟 · {字数} 字*`
-- 公众号 HTML 格式：`<p style="font-size:13px;color:#999;margin:0 0 24px;text-align:center;">阅读时间：约 {N} 分钟 · {字数} 字</p>`
+转换为公众号 HTML 时，检测以 `*阅读时间：` 开头的段落，使用专属样式（不走普通斜体规则）：
+- `<p style="font-size:13px;color:#999;margin:0 0 24px;text-align:center;">阅读时间：约 {N} 分钟 · {字数} 字</p>`
 
 ### 4.1 转换规则
 
@@ -156,16 +163,20 @@ curl -s -X POST \
 | `## 标题` | `<h2 style="font-size:20px;font-weight:600;color:#191918;margin:32px 0 12px;border-left:4px solid #C9714E;padding-left:12px;">{text}</h2>` |
 | `### 标题` | `<h3 style="font-size:17px;font-weight:600;color:#191918;margin:24px 0 8px;">{text}</h3>` |
 | 段落 | `<p style="font-size:15px;line-height:2;color:#3b3b3b;margin:12px 0;text-align:justify;">{text}</p>` |
-| `> 引用` | `<blockquote style="border-left:3px solid #C9714E;padding:8px 16px;margin:16px 0;color:#888;font-style:italic;font-size:15px;line-height:1.8;">{text}</blockquote>` |
+| `> 引用`（单行或多行） | `<blockquote style="border-left:3px solid #C9714E;padding:8px 16px;margin:16px 0;color:#888;font-style:italic;font-size:15px;line-height:1.8;">{text}</blockquote>`。**多行引用**：连续的 `> ` 行合并为同一个 `<blockquote>`，行间用 `<br>` 分隔 |
 | `**加粗**` | `<strong style="color:#191918;">{text}</strong>` |
-| `*斜体*` | `<em>{text}</em>` |
-| `- 列表项` | `<ul style="padding-left:1.5em;margin:12px 0;"><li style="font-size:15px;line-height:2;color:#3b3b3b;">{text}</li></ul>` |
+| `*斜体*` | `<em>{text}</em>`（注意：`*阅读时间：` 开头的行走 Step 4.0 专属样式，不走此规则） |
+| `- 列表项`（无序列表） | 连续的 `- ` 行合并为一个 `<ul>`，每行一个 `<li>`：`<ul style="padding-left:1.5em;margin:12px 0;"><li style="font-size:15px;line-height:2;color:#3b3b3b;">{text}</li>...</ul>` |
+| `1. 列表项`（有序列表） | 连续的 `N. ` 行合并为一个 `<ol>`：`<ol style="padding-left:1.5em;margin:12px 0;"><li style="font-size:15px;line-height:2;color:#3b3b3b;">{text}</li>...</ol>` |
+| `` `code` ``（行内代码） | `<code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:14px;">{text}</code>` |
+| 围栏代码块（` ``` `） | `<pre style="background:#f5f5f5;padding:16px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:16px 0;"><code>{code}</code></pre>` |
 | `![](url)` | `<p style="text-align:center;margin:24px 0;"><img src="{wechat_cdn_url}" style="max-width:100%;border-radius:12px;" /></p>` |
 
 注意事项：
 - 图片 URL 必须替换为 Step 3 上传后的微信 CDN URL（`mmbiz.qpic.cn` 域名）
 - 不支持外部图片链接
 - `<p>` 之间的空行由 margin 控制，不需要 `<br>`
+- 列表和引用按 block（段落）为单位转换，不是逐行独立转换——连续的同类行属于同一个 block
 
 ### 配色方案
 
@@ -247,11 +258,13 @@ requests.post(f"https://api.weixin.qq.com/cgi-bin/draft/delete?access_token={tok
 
 ### 6.2 标题回同步
 
-用户在公众号后台确认/修改标题并发布后，将最终标题同步回博客源文件：
+用户在公众号后台确认/修改标题并发布后，**询问用户是否需要**将最终标题同步回博客源文件：
 
 1. 询问用户最终标题（可能与 API 推送时的 ≤10 字标题不同）
-2. 更新 `src/data/blog/{slug}.md` 的 frontmatter `title` 字段
-3. 部署到 GitHub Pages（询问用户）：
+2. **展示对比**：「博客原标题：{原标题}」vs「公众号最终标题：{新标题}」
+3. 用户确认要同步后，更新 `src/data/blog/{slug}.md` 的 frontmatter `title` 字段
+4. 如果用户选择保持两端标题不同（博客用长标题，公众号用短标题），则不修改
+5. 部署到 GitHub Pages（询问用户）：
 
 ```bash
 cd /Users/zylen/Library/CloudStorage/Dropbox/04-Coding/academic-site
@@ -272,7 +285,7 @@ npx gh-pages -d dist --dotfiles
 | 标题 10 字限制 | `45003 title size out of limit` | 个人订阅号 API 限 10 汉字（30 bytes），后台编辑无此限制 |
 | 摘要字数限制 | `45004 description size out of limit` | digest 控制在 ≤15 汉字 |
 | IP 白名单 | `40164 invalid ip` | 到微信开发者平台添加调用方 IP |
-| 图片 >1MB | uploadimg 报错 | DALL-E PNG 通常 2-3MB，必须 `sips` 压缩为 JPEG quality=60 |
+| 图片 >1MB | uploadimg 报错 | NB2 PNG 通常 1-2MB，必须 `sips` 压缩为 JPEG quality=60 |
 | f-string 中文引号 | Python SyntaxError | 中文引号 `""「」` 在 f-string 中可能被误识别，用字符串拼接代替 |
 | access_token 过期 | `40014 invalid access_token` | token 有效期 2 小时，每次推送前重新获取 |
 | 开发接口迁移 | 公众号后台找不到 AppSecret | 2025-12-01 起迁移至「微信开发者平台」管理 |
@@ -291,4 +304,5 @@ npx gh-pages -d dist --dotfiles
 | 已有同标题草稿 | 微信允许重复标题，但提醒用户检查是否重复推送 |
 | 凭证缺失 | 提示用户检查 `~/.claude/scheduled/email-config.sh`（→ secrets-vault 符号链接） |
 | 所有图片上传失败 | 询问用户是否推送无图草稿，或放弃本次推送 |
-| 博客 frontmatter 缺字段 | 报错并指出缺少哪个字段（title/cover 为必须） |
+| 博客 frontmatter 缺 title | 报错，title 为必须字段 |
+| 博客 frontmatter 缺 cover | 提醒用户补充封面图（可用 `/blog-draft` 重新生成），或询问是否使用默认封面 |
