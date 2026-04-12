@@ -15,9 +15,9 @@ description: "将博客文章适配并推送到微信公众号「夕阳乃常事
 ### 凭证位置
 
 ```bash
-# ~/.claude/scheduled/email-config.sh 中存储：
-WECHAT_APPID="wxf24058aabe5b9abd"
-WECHAT_APPSECRET="..."
+# Dropbox/Apps/secrets-vault/email-config.sh 中存储（通过 ~/.claude/scheduled/email-config.sh 符号链接访问）：
+# WECHAT_APPID 和 WECHAT_APPSECRET
+source ~/.claude/scheduled/email-config.sh
 ```
 
 ### IP 白名单
@@ -29,7 +29,23 @@ WECHAT_APPSECRET="..."
 
 ---
 
+## Step 0.5：板块确认
+
+「夕阳乃常事」设三个板块，根据文章内容确认归属：
+
+| 板块 | 内容类型 | 对应 blog tags |
+|:-----|:---------|:---------------|
+| **夕阳随笔** | 人生哲学、存在主义、价值观思辨 | 人生哲学, 存在主义, 心态, 注意力 |
+| **词间散记** | 歌词解读（Eason 为主，不限于 Eason） | Eason, 林夕, 歌词 |
+| **求索手记** | 科研方法论、青椒生活、AI/新技术使用与思考 | 科研, 学术, Ikigai, AI, 技术 |
+
+根据博客 frontmatter 的 tags 自动判断板块归属。如果不确定，向用户确认。板块信息将体现在公众号草稿的摘要中（如「夕阳随笔 · 第 N 篇」）。
+
+---
+
 ## Step 1：读取博客源文件
+
+> **上游来源**：由 `/blog-draft` 输出到 `src/data/blog/{slug}.md`
 
 读取：`/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/academic-site/src/data/blog/{slug}.md`
 
@@ -273,6 +289,6 @@ npx gh-pages -d dist --dotfiles
 | 图片压缩后仍 >1MB | 降低 quality 到 40 重试 |
 | API 返回未知错误 | 打印完整错误信息，不静默吞掉 |
 | 已有同标题草稿 | 微信允许重复标题，但提醒用户检查是否重复推送 |
-| 凭证缺失 | 提示用户检查 `~/.claude/scheduled/email-config.sh` |
+| 凭证缺失 | 提示用户检查 `~/.claude/scheduled/email-config.sh`（→ secrets-vault 符号链接） |
 | 所有图片上传失败 | 询问用户是否推送无图草稿，或放弃本次推送 |
 | 博客 frontmatter 缺字段 | 报错并指出缺少哪个字段（title/cover 为必须） |
