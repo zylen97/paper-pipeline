@@ -1,6 +1,6 @@
 # Claude Academic OS
 
-A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 38 skills, 7 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge dissemination.
+A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 37 skills, 7 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge dissemination.
 
 ## System Architecture
 
@@ -132,11 +132,13 @@ Seven specialized agents that skills dispatch as sub-agents. They are not invoke
 
 ## Layer 6: Knowledge Dissemination
 
+The knowledge dissemination layer includes a personal values knowledge base (`/kb`) backed by an Obsidian vault with 8 theme files, a living mental model (`_mental-model.md`), and a writing craft guide. The mental model evolves with each ingest cycle and serves as the cognitive foundation for blog writing and WeChat publishing.
+
 | Skill | Description |
 |:------|:------------|
-| `/blog-draft` | Generate long-form blog posts from Obsidian value notes + DALL-E cover images → Academic Site |
+| `/blog-draft` | Generate long-form blog posts from Obsidian value notes + NB2 cover images → Academic Site |
 | `/wechat-publish` | Adapt blog posts and push to WeChat Official Account draft box |
-| `/site-sync` | Scan research project CLAUDE.md files → sync project index to Academic Site (with Obsidian copy) |
+| `/kb` | Personal values knowledge base with 3 modes: `ingest` (batch import with content filtering + parallel sub-agents), `lint` (health check: contradictions, duplicates, format, sensitive content), `model` (view/update living mental model `_mental-model.md`). Supports pre-classification + parallel sub-agent integration for large batches |
 | `/peer-review` | Act as journal reviewer: read manuscript PDF, generate structured review comments to Word |
 
 ## Utilities
@@ -152,6 +154,8 @@ Seven specialized agents that skills dispatch as sub-agents. They are not invoke
 |:----|:------------|:-----|
 | **Idea Scout** | Flutter Web PWA for browsing daily journal scans on mobile. 3 sources with in-app switcher, read/idea/delete states, GitHub sync | [Live](https://zylen97.github.io/idea-scout/) · [Repo](https://github.com/zylen97/idea-scout) |
 | **Claude Usage Dashboard** | Python dashboard for monitoring Claude Code token usage and cost tracking | Local `http://127.0.0.1:8080` |
+| **Twitter Bookmark Exporter** | Node.js CLI to export all Twitter/X bookmarks via CDP network interception. Zero dependencies | [Repo](https://github.com/zylen97/twitter-bookmark-exporter) |
+| **Academic Site** | Personal academic website with Publications, Blog, Projects, Life pages. Built with Astro | [Live](https://zylen97.github.io/academic-site/) |
 
 ## Installation
 
@@ -180,7 +184,7 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── language-polisher.md  # English polisher
 │   ├── language-polisher-zh.md # Chinese polisher
 │   └── journal-scout.md      # Journal guidelines
-├── skills/                   # 38 slash-command skills
+├── skills/                   # 37 slash-command skills
 │   ├── idea-scout/           # Literature radar management
 │   ├── paper-init/           # Project scaffolding (6 publishers, 4 method types)
 │   ├── lit-*/                # Literature pipeline (4 skills)
@@ -190,7 +194,7 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── fund-*/               # Funding pipeline (6 skills)
 │   ├── blog-draft/           # Blog generation
 │   ├── wechat-publish/       # WeChat publishing
-│   ├── site-sync/            # Academic site sync
+│   ├── kb/                   # Personal knowledge base (ingest/lint/model)
 │   └── shared/               # Shared utilities (Python)
 ├── scheduled/                # Daily scan scripts + email senders
 │   ├── scout-scan.py         # FT50 + CE/PM scanner (OpenAlex)
