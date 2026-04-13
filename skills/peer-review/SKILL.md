@@ -173,6 +173,12 @@ practical contributions].
 
 使用 `python-docx` 写入 Word 文档：
 
+先确保 python-docx 已安装：
+
+```bash
+python3 -c "import docx" 2>/dev/null || pip3 install python-docx
+```
+
 ```python
 from docx import Document
 from docx.shared import Pt

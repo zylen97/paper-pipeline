@@ -456,7 +456,12 @@ rm -f structure/3_methodology/*.md structure/3_methodology/_citation_paths.json
 rm -f structure/4_results/*.md structure/4_results/_citation_paths.json
 rm -f structure/5_simulation/*.md structure/5_simulation/_citation_paths.json
 # 如果技术章节目录删完 md 后只剩空目录（无 benchmark/ 等子目录），则删除空目录
+find structure/ -name .DS_Store -delete 2>/dev/null
 find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null
+
+# 保留 writing_brief 到 submission/ 供 pre-submit 使用
+mkdir -p submission/
+[ -f drafts/writing_brief.md ] && mv drafts/writing_brief.md submission/writing_brief.md
 
 # 写作中间产物
 rm -rf drafts/
@@ -484,6 +489,7 @@ git push
 📄 Abstract: {WORD_COUNT_ABS} 词 → manuscript.tex
 📄 Cover Letter: {WORD_COUNT_CL} 词 → submission/coverletter.tex
 🗑️ Structure 清理完成（施工脚手架已拆除）
+📂 submission/ 目录已就绪（含 coverletter.tex、writing_brief.md 等投稿文件）
 🚀 已推送至远程仓库
 
 下一步：

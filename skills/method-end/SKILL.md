@@ -69,6 +69,7 @@ AskUserQuestion 等待用户选择。用户选 (2) → 退出。用户选 (1) �
 4. 读取引用池文件 → `{CITATION_POOL_CONTENT}`（按成稿 md 底部 `## 引用池` 指引）
 5. 读取 bib 文件 → 用于验证 citation key 存在性
 6. 读取其他章节成稿 md 的标题和已有内容摘要 → `{CROSS_REF_CONTEXT}`（用于一致性参考）
+7. 如存在 `structure/2_literature/method_landscape.md`（由 /method-audit 生成），读取其中的方法论创新汇总和对标定位，作为凝练时的参考。
 
 显示已读取的文件列表：
 
@@ -290,7 +291,7 @@ FOR each unit IN {ALL_UNITS}:
   **同步 bib**：写入成稿 md 后，立即将本 subsection 新增的 citation key 同步到项目 bib：
   1. 从刚写入的内容中提取所有 `\citep{}`/`\citet{}` 中的 citation key（正则提取，去重）
   2. 检查每个 key 是否已在项目 bib 中
-  3. 不在的 → 从 `master.bib` 中提取对应条目，追加到项目 bib 末尾
+  3. 不在的 → 从 `structure/2_literature/citation_pool/master.bib`（由 /lit-pool 生成）中提取对应条目，追加到项目 bib 末尾
   4. master.bib 中也找不到 → 跳过（该 key 可能是手动添加的老文献，已在项目 bib 中，或标记为 `(ref)` 的待补文献）
   5. 显示同步结果：`📚 Bib 同步：{N} 个 key，新增 {M} 条到项目 bib`（M=0 时不显示）
 
@@ -530,7 +531,7 @@ git commit -m "Checkpoint: method-end condense complete"
 ### 可重复运行
 
 - 支持对已填充的成稿 md 重新运行 `/method-end`
-- 步骤 2.1 检查已有内容时，如果某个 subsection 已有实质内容（非 TODO），进入步骤 5.1 式的选择：
+- 步骤 2.1 检查已有内容时，如果某个 subsection 已有实质内容（非 TODO），展示以下选择界面：
   ```
   📋 该子节已有以下内容：
   {展示已有内容摘要}

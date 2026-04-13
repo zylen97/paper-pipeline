@@ -1,7 +1,7 @@
 ---
 name: latex-table
 description: "Elsarticle表格模板与格式规范，创建或修改LaTeX表格时使用"
-user-invocable: false
+user-invocable: true
 auto-invoke: true
 ---
 

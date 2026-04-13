@@ -55,7 +55,7 @@ CDP 模式需要 **Node.js 22+** 和 Chrome 开启远程调试：
 运行环境检查：
 
 ```bash
-bash ~/.claude/skills/web-access/scripts/check-deps.sh
+node ~/.claude/skills/web-access/scripts/check-deps.mjs
 ```
 
 ## CDP Proxy API

@@ -25,7 +25,7 @@ Pipeline 在标准期刊推荐（纯 idea 驱动）之外，额外评估每个 i
 | Building and Environment | 3 | B&E |
 | Engineering, Construction and Architectural Management | 7 | ECAM |
 | International Journal of Project Management | 13 | IJPM |
-| Journal of Building Engineering | 14 | JBE |
+| Journal of Building Engineering | 14 | JOBE |
 | Journal of Construction Engineering and Management | 17 | JCEM |
 | Journal of Management in Engineering | 18 | JME |
 | Safety Science | 23 | SS |
@@ -63,7 +63,7 @@ Pipeline 全程生成的所有 md 文件（paper-notes、idea-raw、ideas、idea
 idea-mine 必须在符合以下标准结构的项目根目录下调用：
 
 ```
-idea{NN}_{源论文研究领域}/
+batch{NNN}_{topic}/
 ├── papers/                              ← 【输入】论文PDF池（必须存在）
 │   ├── xxx.pdf
 │   └── ...
@@ -86,7 +86,7 @@ idea{NN}_{源论文研究领域}/
 ```
 
 **命名说明**：
-- **项目文件夹名**中的`{源论文研究领域}`描述的是输入论文池的研究主题（如"碳交易+可持续管理"）
+- **项目文件夹名**中的`{topic}`描述的是输入论文池的研究主题（如"碳交易+可持续管理"），`{NNN}`为三位数批次编号
 - 论文统一放在 `papers/` 子目录，不要散落在项目根目录
 
 ## 前置检查
@@ -895,55 +895,13 @@ pipeline 完成后，用户选定 idea 时由主 agent 根据 challenge 直接�
 
 ## Pipeline 完成后的操作
 
-用户可随时（当天或数周后）选择感兴趣的 idea 进行初始化：
+用户可随时（当天或数周后）选择感兴趣的 idea 进行项目初始化：
 
 ```
 用户：我要初始化 P{NN}，投 {期刊名}，项目路径 {path}，编号 {ID}
 ```
 
-主 agent 执行：
-1. 读取该 idea 在指定期刊的适配版本
-2. 读取 review 文件中该 idea 的 challenge，回填 §5 风险评估
-3. 按 paper-init 的 idea.md 模板生成完整 idea.md（§1-§5，§5 已含 challenge）
-4. 根据期刊的 `@publisher` 标签从 journals.md 推断出版社
-5. `mkdir -p {path}` → `cd {path}` → 运行 `/paper-init {ID}`
-6. paper-init 成功后，将 idea.md 写入 `structure/0_global/idea.md`
-7. **打包 idea-mine 上下文到新项目**（见下方详细说明）
-
-#### Step 7：打包 idea-mine 上下文
-
-将 idea-mine 项目中与该 idea 相关的所有上下文材料复制到新项目的 `structure/0_global/idea-mine-ref/` 目录，为后续 idea 细化、文献规划和方法讨论提供完整参考。
-
-**目录结构**：
-
-```
-structure/0_global/
-├── idea.md                        ← 正式的 idea 方案（§5 已回填 challenge）
-└── idea-mine-ref/                 ← idea-mine 上下文包（本步骤生成）
-    ├── source_paper.pdf           ← 原始论文 PDF（从 papers/ 复制并重命名）
-    ├── paper_note.md              ← 精读报告（从 paper-notes/ 复制）
-    ├── migration_analysis.md      ← 从 _step3_matching.md 提取该 idea 的迁移方向预判段落
-    ├── idea_{NN}_{主题}_{期刊1}.md  ← 该 idea 的期刊适配版本
-    ├── idea_{NN}_{主题}_{期刊2}.md
-    ├── review_{期刊1}_P{NN}.md    ← 该 idea 的审稿评审
-    ├── review_{期刊2}_P{NN}.md
-    └── ...
-```
-
-**具体操作**：
-
-1. **创建目录**：`mkdir -p {path}/structure/0_global/idea-mine-ref`
-2. **复制原始论文 PDF**：从 idea-mine 项目的 `papers/` 目录中找到该 idea 对应的论文 PDF，复制到 `idea-mine-ref/source_paper.pdf`。论文文件名从 `paper-notes/{论文名}.md` 的 frontmatter `paper` 字段获取
-3. **复制精读报告**：将 `paper-notes/{论文名}.md` 复制到 `idea-mine-ref/paper_note.md`
-4. **提取迁移方向预判**：从 `idea-raw/_step3_matching.md` 中提取该 idea 对应的迁移方向预判段落（包括匹配表中该行 + "## 迁移方向预判"中该 idea 的完整内容 + "## 学科迁移方向"中该 idea 的完整内容 + "## 学科亲和力评估"中该 idea 的完整内容），写入 `idea-mine-ref/migration_analysis.md`
-5. **复制所有适配版本**：将 `ideas/idea_{NN}_*.md`（该 idea 编号的所有期刊适配文件）复制到 `idea-mine-ref/`
-6. **复制所有审稿评审**：将 `idea-review/review_*_P{NN}.md`（该 idea 编号的所有单篇评审文件）复制到 `idea-mine-ref/`
-
-**用途说明**：这些上下文材料在新项目中的作用：
-- `source_paper.pdf` + `paper_note.md`：随时回查原文方法细节和核心假设，支撑 idea 细化讨论
-- `migration_analysis.md`：迁移方向的理论差异和假设变化，供 `/lit-plan` 设计检索方向时参考
-- `idea_{NN}_*.md`：横向对比不同期刊的叙事策略差异，帮助打磨目标期刊版本
-- `review_*_P{NN}.md`：审稿人的 challenge 和预防性回应，指导方法论设计和风险规避
+运行 `/paper-init source=idea-mine batch={BATCH_DIR} paper={P_ID}` 完成项目初始化。详细初始化逻辑见 paper-init SKILL.md。
 
 **到此为止**，后续的文献工作流（/lit-plan → /lit-review → /lit-tag → /lit-pool）由用户在项目目录中自行启动。
 

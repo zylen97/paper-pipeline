@@ -16,6 +16,23 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 
 ---
 
+## 步骤 0.5：项目类型检测
+
+在加载上下文前，先检测当前项目类型：
+1. 存在 `structure/` 目录 + `manuscript.tex` → **英文论文项目**（走现有流程）
+2. 存在 `chapters/` 目录 + CLAUDE.md 含 `## 撰写进度` → **学位论文项目**
+   - 读取 CLAUDE.md 阶段 + 撰写进度表
+   - 读取 chapters/*.tex 了解章节结构
+   - 读取源项目信息（如有）
+3. 存在 `sections/` 目录 + CLAUDE.md 含 `## 章节规划` → **基金项目**
+   - 读取 CLAUDE.md 阶段 + 章节规划
+   - 读取 sections/*.md 了解撰写进度
+4. 都不匹配 → **通用模式**（仅读 CLAUDE.md + git log）
+
+检测到项目类型后，后续步骤按类型分支执行。英文论文项目走步骤 1-8 完整流程；学位论文和基金项目走各自的简化流程（重点读取对应的章节文件和进度信息）；通用模式跳过步骤 2-4，直接读 CLAUDE.md + git log 后输出简述。
+
+---
+
 ## 步骤 1：读取项目元数据
 
 `CLAUDE.md` 已自动加载，从中提取：
@@ -31,7 +48,7 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 - `状态: drafting` → 叙述型章节撰写 + 全文定稿阶段（pipeline ⑥-⑨）。重点看各章节 md 和 manuscript.tex 的填充进度
 - `状态: submitted` → 已投稿，等待审稿
 - `状态: revision-R{N}` → 第 N 轮修改（额外读取基准文件名和轮次历史）
-- `状态: accepted` → 已录用
+- `状态: accepted` → 已录用（`accepted` 由用户手动设置，表示论文已被接收，无主动提醒。）
 
 如果有阶段字段，后续步骤可以有的放矢：foundation 阶段重点看 _dev.md 和 idea.md，drafting 阶段重点看章节 md 和 manuscript.tex，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
 
@@ -137,5 +154,22 @@ git log -15 --date=short --format="%ad %s"
 - **revision-R{N}**：
   - 如果 response-letter.tex 中有 `[TO BE FILLED]` → 建议 `/rev-respond`
   - 如果 revision-R*/ 目录不存在 → 建议 `/rev-init`
+
+- **学位论文阶段**（项目类型为学位论文时）：
+  - **init**：建议 `/diss-init`（如尚未完成初始化）
+  - **literature**：建议 `/lit-plan`（文献检索）或 `/lit-review`（文献分析）
+  - **drafting**：
+    - 如果有章节未 outlined → 建议 `/diss-outline`
+    - 如果有章节已 outlined 但未 drafted → 建议 `/diss-draft`
+  - **polishing**：
+    - 如果有章节已 drafted 但未 polished → 建议 `/diss-polish`
+    - 如果所有章节已 polished → 建议 `/diss-finalize`
+- **基金项目阶段**（项目类型为基金项目时）：
+  - **init**：建议 `/fund-init`（如尚未完成初始化）
+  - **literature**：建议 `/lit-plan` 或 `/lit-review`
+  - **outlining**：建议 `/fund-outline`
+  - **drafting**：建议 `/fund-draft`
+  - **reviewed**：建议 `/fund-polish`（评审完成后进入润色）
+  - **polishing**：建议 `/fund-polish`（继续润色）
 
 最后一句问用户："需要从哪里继续？"

@@ -20,7 +20,9 @@ description: "分析RIS文献（含CNKI转换）、生成方向报告与总报�
 - 不存在 → 停止，提示用户先运行 `/lit-plan`
 - 提取：`{TOTAL_BUDGET}`（总预算）、方向列表、每方向的配额、优先级
 
-### 0.2b 检查并转换 CNKI 导出文件（仅需时执行）
+### 0.1b 检查并转换 CNKI 导出文件（仅需时执行）
+
+> **注**：步骤 0.1b 与 0.2 是独立的前置检查，无依赖关系，可按任意顺序执行。
 
 扫描 `structure/2_literature/` 下的 `.enw` 文件：
 
@@ -298,7 +300,7 @@ python3 ~/.claude/skills/lit-review/merge_screening.py \
 2. 同方向合并 `selected` 数组，去重（key = `first_author + year + title[:40]`）
 3. 按方向配额截断（从 plan 文件提取配额）：core ≤ 25%, important ≤ 40%, backup ≤ 35%
 4. 跨方向去重统计
-5. 生成 7 个 `direction{N}_*_report.md`（含 markdown 表格）
+5. 生成 N 个（N = 实际方向数）`direction{N}_*_report.md`（含 markdown 表格）
 6. 生成 `screening_summary_report.md`
 7. 生成 `_screening_merged.json`（全局结构化数据，供步骤 5 使用）
 8. stdout 输出校验摘要

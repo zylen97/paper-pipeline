@@ -51,7 +51,12 @@ Section 3: Methodology → 行号范围 [L151-L280]
 
 ### 0.4 检查引用池（素材准备前置）
 
-检查 `structure/2_literature/citation_pool/` 目录是否存在且包含标签文件（此路径相对于**当前学位论文项目根目录**。如 `/lit-pool` 是在学位论文项目中运行的，则 citation_pool 在本项目的 `structure/2_literature/` 下；如仅在源英文论文项目中运行过，则需从源项目路径 `{SOURCE_PROJECT}/structure/2_literature/citation_pool/` 读取）：
+**citation_pool 路径解析**（按优先级）：
+1. 本项目 CLAUDE.md 中定义的 citation_pool 路径（如已通过 /lit-pool 生成）
+2. 源项目路径下的 `structure/2_literature/citation_pool/`（从 CLAUDE.md 的「源项目」字段读取源项目路径）
+3. 都不存在 → 提示用户先运行 /lit-pool
+
+检查解析到的 citation_pool 目录是否存在且包含标签文件：
 - **存在** → 标记 `CITATION_POOL_AVAILABLE = true`，记录可用标签文件列表
 - **不存在** → 标记 `CITATION_POOL_AVAILABLE = false`，在对话中提示用户：
   > ⚠️ 未检测到引用池（citation_pool/），步骤 2.5 的素材准备将跳过。
@@ -266,7 +271,7 @@ git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outl
 
 ### 2.5.1 前置：读取 citation_pool
 
-从 `structure/2_literature/citation_pool/` 读取当前章节相关的标签文件。根据当前项目 CLAUDE.md 中的章节结构，动态生成 chapter-tag 映射表。核心章节（按 RQ 拆分的研究章节）对应 DISC-RQ{N} 标签，文献综述章对应 BG+LR 标签，绪论章对应 BG+GAP 标签。通用映射规则：
+从步骤 0.4 解析到的 citation_pool 路径读取当前章节相关的标签文件。根据当前项目 CLAUDE.md 中的章节结构，动态生成 chapter-tag 映射表。核心章节（按 RQ 拆分的研究章节）对应 DISC-RQ{N} 标签，文献综述章对应 BG+LR 标签，绪论章对应 BG+GAP 标签。通用映射规则：
 
 | 章节类型 | 应读取的 citation_pool 文件 |
 |:--|:--|
@@ -285,7 +290,7 @@ git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outl
 - **≤ 60 篇**：主 agent 直接读取并匹配（GAP ~26、METHOD ~46、BG ~53 通常满足）
 - **> 60 篇**：启动 subAgent 读取并返回匹配结果（DISC ~90、LR ~161 必定触发）
 
-> **DISC.md 子节优化**：DISC.md 按 RQ 分为两个子节（DISC-RQ1 ~54篇 L7-L66、DISC-RQ2 ~36篇 L67+），单个子节 ≤ 60 篇。当章节映射只需某个 RQ 子节时（Ch4→RQ1、Ch5→RQ2），主 agent 用 Read 的 offset/limit 参数只读取对应子节即可，无需 subAgent。仅当需要完整 DISC.md 时（Ch6 对策建议）才触发 subAgent。
+> **DISC.md 子节优化**：DISC.md 按 RQ 分为多个子节，动态检测 RQ 子节的行号范围（通过搜索 `## DISC-RQ{N}` 标题定位）。当章节映射只需某个 RQ 子节时，主 agent 用 Read 的 offset/limit 参数只读取对应子节即可，无需 subAgent。仅当需要完整 DISC.md 时（对策建议章）才触发 subAgent。
 
 ### 2.5.2 逐节匹配文献
 

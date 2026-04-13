@@ -57,7 +57,15 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
 
 ### 0.5 方法论审计检查（仅技术章节）
 
-当目标 section 匹配以下关键词时触发检查：`model/method/formul/equilibrium/result/analysis/simulation/numerical`
+叙述型章节判定（显式列表，与 /pen-outline 一致）：
+- Introduction（含变体：introduction, 绪论）
+- Literature Review（含变体：literature, 文献综述）
+- Discussion（含变体：discussion, 讨论）
+- Conclusion（含变体：conclusion, 结论）→ 此章由 /finalize 处理，停止并提示用户
+
+其余所有章节视为技术型。
+
+当目标 section 为技术型章节时触发检查：
 
 - 检查 `structure/3_methodology/benchmark/method_audit_report.md` 是否存在
 - **不存在** → 警告用户：
@@ -396,6 +404,16 @@ Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
 - Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：运行 `/pen-polish` 进行审稿和润色
 
+#### 写入 manuscript.tex
+
+向用户确认："draft 已生成并保存。是否写入 manuscript.tex 对应位置？"
+- 用户确认 → 从 `final.md` 提取 ```latex``` 代码块内的 LaTeX 内容，
+  用 Edit 工具定位 manuscript.tex 中对应 \section{} / \subsection{} 位置（通过标题语义匹配，忽略大小写和编号前缀），
+  替换该 section 下的 TODO 占位符或已有内容
+- 用户拒绝 → 仅保留 draft，提示用户稍后手动处理
+
+注意：定位使用 section 标题语义匹配（非行号），避免多次写入后行号偏移。
+
 ### Form 2
 显示：
 - ✅ 全部 {N} 个 subsection 完成
@@ -403,7 +421,16 @@ Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
 - 汇总表：Subsection / 工作目录 / 便捷入口 / 字数 / Key point coverage
 - Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：逐个或整体运行 `/pen-polish` 进行审稿和润色
-- ⚠️ 提醒手动合并到 manuscript.tex
+
+#### 写入 manuscript.tex
+
+向用户确认："draft 已生成并保存。是否写入 manuscript.tex 对应位置？"
+- 用户确认 → 对每个 subsection，从其 `final.md` 提取 ```latex``` 代码块内的 LaTeX 内容，
+  用 Edit 工具定位 manuscript.tex 中对应 \section{} / \subsection{} 位置（通过标题语义匹配，忽略大小写和编号前缀），
+  替换该 section 下的 TODO 占位符或已有内容
+- 用户拒绝 → 仅保留 draft，提示用户稍后手动处理
+
+注意：定位使用 section 标题语义匹配（非行号），避免多次写入后行号偏移。
 
 ### Form 3
 显示：
@@ -414,4 +441,13 @@ Form 2 不拼接——每个 subsection 的 `final.md` 保持独立。
 - 总字数
 - Bib 验证：N 个 key 全部存在 / M 个缺失已兜底补充（列出补充的 key）
 - 💡 提示：运行 `/pen-polish` 进行审稿和润色
-- ⚠️ 提醒手动合并到 manuscript.tex
+
+#### 写入 manuscript.tex
+
+向用户确认："draft 已生成并保存。是否写入 manuscript.tex 对应位置？"
+- 用户确认 → 从拼接后的 `final.md` 提取 ```latex``` 代码块内的 LaTeX 内容，
+  用 Edit 工具定位 manuscript.tex 中对应 \section{} / \subsection{} 位置（通过标题语义匹配，忽略大小写和编号前缀），
+  替换该 section 下的 TODO 占位符或已有内容
+- 用户拒绝 → 仅保留 draft，提示用户稍后手动处理
+
+注意：定位使用 section 标题语义匹配（非行号），避免多次写入后行号偏移。

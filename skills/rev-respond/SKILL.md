@@ -169,8 +169,6 @@ AskUserQuestion：
 完整的回复文本，可直接粘贴到 `response-letter.tex`：
 
 ```latex
-\responseheader
-
 \response{[感谢/认同 — 1-2句，措辞独特]}
 
 \response{First, [第一方面回应]. [展开 2-3 句].}
@@ -183,6 +181,8 @@ AskUserQuestion：
 
 \response{[总结句]}
 ```
+
+注意：`\responseheader` 已在骨架中存在，回复内容只需填入 `\response{}` 中，不要重复添加 `\responseheader`。
 
 **格式规则**（铁律）：
 - `\response{}`、`\manuscriptquote{}`、`\lineref{}` **不可嵌套**
@@ -500,9 +500,12 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 ```
 
 4. **批量回填 `\lineref{}` 行号**：
-   - 编译 `manuscript.tex` 生成最终 PDF
-   - 打开 PDF，逐条定位每个 `\manuscriptquote{}` 对应段落的 PDF running line numbers
-   - 在 `response-letter.tex` 中将所有 `\lineref{Lines [TBD]}` 替换为真实 PDF 行号
+
+   行号回填方式（按可行性降序选择）：
+   a. 从 .tex 源码中搜索对应文本，用 \lineref 引用最近的 label 或手动标注 .tex 行号作为近似
+   b. 留空 `\lineref{Lines ???--???}` 并提示用户："请在 PDF 中查找对应段落行号后手动填入"
+
+   - 在 `response-letter.tex` 中将所有 `\lineref{Lines [TBD]}` 替换为真实行号或 `???--???` 占位
    - 同步更新 `revision-R{ROUND}/drafts/Comment_*.md` 中的 `[TBD]`
    - 重新编译 `response-letter.tex` 确认无误
 

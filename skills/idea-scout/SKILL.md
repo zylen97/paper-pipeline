@@ -97,19 +97,16 @@ python3 ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/pipeline/scanners/op
 
 scanner 自动处理：OpenAlex API 拉取 → 摘要重建 → ChatAnywhere 并发翻译（50线程）→ 输出 JSON。
 
-### 4. 保存数据
+### 3. 保存数据
 
 将论文数据保存为 JSON：
 
 ```bash
 # 保存到 Dropbox（归档）
-cp data.json ~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{YYYY-MM-DD}_data.json
-
-# 保存到 App 仓库（用于部署）
-cp data.json ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.json
+cp data/latest.json ~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{YYYY-MM-DD}_data.json
 ```
 
-### 5. 推送到 GitHub → App 自动更新
+### 4. 推送到 GitHub → App 自动更新
 
 Flutter App 已预构建并部署在 gh-pages 分支，交互式扫描只需更新数据文件，不需要重建 App。
 
@@ -135,11 +132,11 @@ rm -rf /tmp/idea_scout_all_data
 
 **推送完成后，App 会在 1-2 分钟内自动加载最新数据。**
 
-### 6. 更新扫描记录
+### 5. 更新扫描记录
 
 将本次扫描结果写入 `~/.claude/skills/idea-scout/scout_log.json`。
 
-### 7. 完成提示
+### 6. 完成提示
 
 ```
 ✅ 扫描完成

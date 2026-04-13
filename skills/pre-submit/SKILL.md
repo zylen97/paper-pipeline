@@ -240,15 +240,18 @@ latexmk {MAIN_TEX} 2>&1 | tail -50
 |--------|---------|---------|
 | method-audit | `structure/3_methodology/benchmark/method_audit_report.md` 存在？ | 🟡 |
 | method-audit 红色项已清 | report 中无未修复的 🔴 | 🟡 |
-| writing brief | `drafts/writing_brief.md` 存在？ | 🟢 |
+| writing brief | `submission/writing_brief.md` 存在？ | 🟢 |
+| finalize: Conclusion | manuscript.tex 的 Conclusion section 有实质内容（非 TODO） | 🔴 |
+| finalize: Abstract | manuscript.tex 的 Abstract 有实质内容（非 TODO） | 🔴 |
+| finalize: Cover Letter | `submission/coverletter.tex` 或 `submission/coverletter.pdf` 存在？ | 🔴 |
 
 ---
 
 ## 步骤 8：生成报告
 
-写入前确保目录存在（`/finalize` Phase 4 可能已清理 `drafts/`）：`mkdir -p drafts/`
+写入前确保目录存在：`mkdir -p submission/`
 
-将所有检查结果写入 `drafts/pre_submit_report.md`：
+将所有检查结果写入 `submission/pre_submit_report.md`：
 
 ```markdown
 # Pre-Submission Checklist — {PAPER_TITLE}
@@ -346,7 +349,7 @@ AskUserQuestion 等待用户确认。用户选 (1) → 在 CLAUDE.md 中更新 `
 **pre-submit 不修改任何文件。** 只扫描、只报告。修改是用户的事。
 
 ### 幂等
-可以反复运行。每次运行覆盖上一次的 `drafts/pre_submit_report.md`。
+可以反复运行。每次运行覆盖上一次的 `submission/pre_submit_report.md`。
 
 ### 容错
 单项检查失败（如 texcount 不可用、图片路径无法访问）不阻断整个流程，标记该项为 `⚠️ 检查跳过：{原因}` 并继续。

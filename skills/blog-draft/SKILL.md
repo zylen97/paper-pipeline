@@ -340,10 +340,11 @@ BASE="public/blog"
 
 generate_nb2_image() {
   local output_path="$1"; local prompt="$2"
+  SAFE_PROMPT=$(echo "$prompt" | jq -Rs .)
   curl -s -X POST "https://api.chatanywhere.tech/v1/chat/completions" \
     -H "Authorization: Bearer $CHATANYWHERE_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "{\"model\":\"gemini-3.1-flash-image-preview\",\"messages\":[{\"role\":\"user\",\"content\":\"Generate an image: $prompt\"}]}" \
+    -d "{\"model\":\"gemini-3.1-flash-image-preview\",\"messages\":[{\"role\":\"user\",\"content\":$SAFE_PROMPT}]}" \
     | python3 -c "
 import sys, json, base64, re
 d = json.load(sys.stdin)
@@ -501,7 +502,7 @@ npx gh-pages -d dist --dotfiles
 | NB2 返回无图片 | 检查 response content 是否有 base64 数据，无则重试换 prompt 措辞 |
 | `public/blog/` 目录不存在 | 自动创建 |
 | 博客渲染器不支持图片 | 提醒用户需更新 `[slug].astro`，不自动修改 |
-| `_mental-model.md` 不存在 | 跳过心智模型加载，提醒用户先运行 `/kb model` 生成 |
+| `_mental-model.md` 不存在 | 跳过心智模型加载并建议用户稍后运行 `/kb model` 生成 |
 
 ---
 

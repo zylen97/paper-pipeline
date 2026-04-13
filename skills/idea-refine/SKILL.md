@@ -86,9 +86,10 @@ Glob 检查每项，记录存在/不存在：
 
 | 材料 | 路径 | 用途 |
 |------|------|------|
-| 源论文精读 | `structure/0_global/idea-context/paper_note.md` | reviewer 理解迁移基础 |
-| 期刊适配版本 | `structure/0_global/idea-context/adaptations/*.md` | reviewer 了解期刊定制 |
-| idea-mine 审稿 | `structure/0_global/idea-context/reviews/*.md` | reviewer 参考前序评审 |
+| 源论文精读 | `structure/0_global/idea-mine-ref/paper_note.md` | reviewer 理解迁移基础 |
+| 迁移方向预判 | `structure/0_global/idea-mine-ref/migration_analysis.md` | reviewer 了解迁移假设变化 |
+| 期刊适配版本 | `structure/0_global/idea-mine-ref/idea_*.md` | reviewer 了解期刊定制 |
+| idea-mine 审稿 | `structure/0_global/idea-mine-ref/review_*.md` | reviewer 参考前序评审 |
 | 方法论综述 | `structure/2_literature/method_landscape.md` | reviewer 对标方法论现状 |
 | 方法引用池 | `structure/2_literature/citation_pool/METHOD.md` | reviewer 了解方法先例 |
 | 文献总报告 | `structure/2_literature/master_report.md` | reviewer 交叉验证 Gap |
@@ -103,7 +104,7 @@ Glob 检查每项，记录存在/不存在：
   ✅ manuscript.tex (State C)
   ✅ citation_pool/METHOD.md
   ✅ benchmark/cross_comparison.md
-  ❌ idea-context/reviews/ — 未找到
+  ❌ idea-mine-ref/review_* — 未找到
   ❌ method_landscape.md — 未找到
   ...
 ```
@@ -338,7 +339,7 @@ git commit -m "Checkpoint: idea-refine round {M} complete (v{FINAL_VERSION})"
 |:-----|:-----|
 | idea.md 不存在或近空 | 停止，提示先创建 |
 | idea.md 无版本号字段 | 默认 v0.0，首次修改时新增字段 |
-| 无 idea-context/ 目录 | 正常运行，reviewer 上下文更少 |
+| 无 idea-mine-ref/ 目录 | 正常运行，reviewer 上下文更少 |
 | method_landscape.md 不存在 | 正常运行，reviewer 跳过此文件 |
 | 用户立即选 "done" | 不创建 confirmed/修改文件，只保留快照和 review，进入收尾 |
 | lit-pool 之前调用（极早期） | 正常运行，展示 "⚠️ 可用上下文材料有限" 提示 |

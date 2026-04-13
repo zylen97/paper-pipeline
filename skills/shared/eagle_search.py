@@ -31,6 +31,7 @@ def load_all_images(library_path):
         meta["thumbnail_path"] = os.path.join(
             folder, f"{meta['name']}_thumbnail.{meta['ext']}"
         )
+        meta["mtime"] = meta.get("mtime", 0)
         images.append(meta)
     return images
 

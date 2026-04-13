@@ -206,9 +206,10 @@ def cmd_inventory(args):
             errors.append(f"R parse error {f}: {e}")
 
     # Also scan data/scripts/ if it exists (common location for R/Python scripts)
+    # Search relative to project root (cwd), not relative to figures directory
+    project_root = os.getcwd()
     for scripts_dir in ["data/scripts", "scripts", "code"]:
-        parent = os.path.dirname(fdir.rstrip("/"))
-        sdir = os.path.join(parent, scripts_dir)
+        sdir = os.path.join(project_root, scripts_dir)
         if os.path.isdir(sdir):
             for ext, extractor in [("*.py", extract_python_style), ("*.R", extract_r_style)]:
                 for f in sorted(glob.glob(os.path.join(sdir, ext))):

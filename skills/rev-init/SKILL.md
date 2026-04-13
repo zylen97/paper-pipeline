@@ -47,7 +47,11 @@ description: "一次性初始化修改工作流（冻结基准 → 解析决定�
 
 ```
 检测逻辑（按优先级）：
-1. CLAUDE.md 的 ## 项目阶段 字段中有 revision-R{N} → ROUND = N（状态表示"当前在第 N 轮"）
+1. CLAUDE.md 的 `## 项目阶段` 字段中有 `revision-R{N}` →
+   - 检查 `revision-R{N}/revision-guide.md` 是否存在：
+     → 存在（R{N} 已初始化完成）→ ROUND = N + 1
+     → 不存在（R{N} 初始化未完成或被清理）→ ROUND = N
+   - 当 ROUND > 1 时，向用户确认："检测到 R{N} 已初始化，即将创建 R{ROUND} 修改结构，是否继续？"
 2. 统计已有的 revision-R*/ 归档目录 → ROUND = 最大编号 + 1
 3. 存在 manuscript-original.tex（旧格式）且无 revision-R*/ 归档 → ROUND = 1（遗留项目首次使用新系统）
 4. 以上都没有 → ROUND = 1（全新项目）
@@ -66,7 +70,7 @@ description: "一次性初始化修改工作流（冻结基准 → 解析决定�
 在任何文件移动或覆盖之前，先保存当前状态：
 
 ```bash
-git add -A && git commit -m "R${ROUND} pre-init: snapshot before archiving R$((ROUND-1)) files" --allow-empty
+git add CLAUDE.md && git commit -m "R${ROUND} pre-init: snapshot before archiving R$((ROUND-1)) files" --allow-empty
 ```
 
 > 这是安全网。如果后续归档或初始化出错，可以 `git reset --hard HEAD~1` 回到此状态。
@@ -437,6 +441,7 @@ AskUserQuestion：是否自动追加修改工作流配置到项目 CLAUDE.md？
 1. 编译验证：`latexmk -pvc- -pv- response-letter.tex` + `latexmk manuscript.tex`
 2. Git 提交所有初始化产物：
    ```bash
-   git add -A && git commit -m "R${ROUND} rev-init: complete initialization (guide + response skeleton + general responses)"
+   git add revision-R${ROUND}/ response-letter.tex tools/ .claude/hooks/ .claude/settings.local.json .revision-baseline manuscript-R$((ROUND-1)).tex && \
+   git commit -m "R${ROUND} rev-init: complete initialization (guide + response skeleton + general responses)"
    ```
 3. 展示摘要：文件树 + 当前轮次 R{ROUND} + Cluster 总览 + 推荐执行顺序 + 下一步指引（`/rev-respond {first anchor ID}`）

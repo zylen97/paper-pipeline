@@ -91,7 +91,7 @@ VERIFY 必须为 PASS。展示：
 
 ---
 
-## 步骤 1-2：提取 + 去重 + Citation Key + 调度计划（Python 脚本）
+## 步骤 1：提取 + 去重 + Citation Key + 调度计划（Python 脚本）
 
 **本步骤由 Python 脚本一次性完成**，替代主 Agent 手动读报告、去重、生成 key、拆分 agent。
 
@@ -138,7 +138,7 @@ subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严
 
 从 `_pool_prepare.json` 的 `agents` 字段读取调度信息。拆分和贪心合并已由 Python 脚本完成，主 Agent **不做任何算术**。
 
-基于步骤1的调度计划，严格按 **AGENT_ITEM_LIMIT = 30** 分配subAgent任务。
+基于步骤 1 的调度计划，严格按 **AGENT_ITEM_LIMIT = 30** 分配subAgent任务。
 
 ### 2.1 展示调度计划
 
@@ -477,7 +477,7 @@ rm -f  structure/2_literature/_*.json              # _dispatch_plan.json, _scree
 
 ```bash
 git add structure/2_literature/citation_pool/ \
-       structure/2_literature/master.bib \
+       structure/2_literature/citation_pool/master.bib \
        structure/2_literature/master_report.md \
        structure/2_literature/method_landscape.md \
        structure/2_literature/screening_summary_report.md

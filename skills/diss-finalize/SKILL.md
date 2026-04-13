@@ -57,7 +57,7 @@ Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶�
 在正式开始前，检查章节完成状态：
 
 1. **骨架残留扫描**：扫描所有 `chapters/*.tex`，检查是否存在残留的骨架注释（`% 目标字数：`、`% 内容来源：`、`% Guidelines:`），存在则列出文件和行号
-2. **进度状态检查**：读取 CLAUDE.md 撰写进度，检查是否有 `pending` 或 `skipped` 状态的章节
+2. **进度状态检查**：读取 CLAUDE.md 撰写进度，任何状态非 `drafted` 或 `polished` 的章节触发警告（包括 `pending`、`outlined`、`skipped`）。这可以捕获已生成大纲但从未撰写正文的章节。
 3. **判定**：
    - 发现未完成章节 → 展示清单 + 警告，用户选择：
      - [1] 继续 finalize（跳过门禁，最终报告中标注"部分章节未完成"）
@@ -527,7 +527,7 @@ git add -A && git commit -m "diss-finalize: final compilation verified"
 
 在项目 CLAUDE.md 中查找 `## 项目阶段` 部分，根据条件判定目标阶段：
 
-- **Phase 5 格式终检全部 PASS（无 FAIL 项）且用户明确确认准备提交** → 更新为 `submitted`，更新时间为 `{TODAY}`
+- **Phase 5 格式终检无 FAIL 项即可转换（WARN 项由用户自行决定是否处理，不阻塞转换）且用户明确确认准备提交** → 更新为 `submitted`，更新时间为 `{TODAY}`
 - **否则** → 保持 `polishing`，更新时间为 `{TODAY}`，并附注说明：
   - 如有 FAIL 项未修复 → 列出待修复项
   - 如用户未确认提交 → 提示"全部检查通过后，再次运行 `/diss-finalize check` 并确认提交即可转为 submitted"

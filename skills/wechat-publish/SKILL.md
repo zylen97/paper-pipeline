@@ -107,7 +107,7 @@ mkdir -p "$ASSETS"
 # 根据博客 md 中实际引用的图片路径 cp，不要用 {slug}* glob（实际文件名可能不匹配）
 # 例如：从 md 中提取 ![](/academic-site/blog/fc-01-midnight-lights.png) → cp public/blog/fc-01-midnight-lights.png
 # 封面图从 frontmatter cover 字段提取路径
-for img in $(grep -oP '(?<=\(/academic-site/blog/)[^)]+' "src/data/blog/{slug}.md"); do
+for img in $(grep -o '/academic-site/blog/[^)]*' "src/data/blog/{slug}.md" | sed 's|/academic-site/blog/||"); do
   cp "public/blog/$img" "$ASSETS/" 2>/dev/null
 done
 # 封面图

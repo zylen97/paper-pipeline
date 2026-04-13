@@ -157,7 +157,9 @@ description: "初始化学位论文项目：交互式确认章节骨架（到三
 | 1  | 1.1.1 | xxx | 550 | 新增 |
 | 1  | 1.1.2 | xxx | 550 | 新增 |
 | ...| ... | ... | ... | ... |
-| 合计 | | | ~37,000 | |
+| 合计 | | | 见下方 | |
+
+总字数目标根据学位类型确定：硕士论文 40,000-50,000 字，本科论文 35,000-45,000 字（具体以学校要求为准）。
 ```
 
 **内容来源标注**：
@@ -180,9 +182,12 @@ description: "初始化学位论文项目：交互式确认章节骨架（到三
 - chapters/introduction.tex（第一章）
 - chapters/ch2.tex ~ chN-1.tex（中间章节）
 - chapters/conclusion.tex（最后一章）
-- 更新 main-thesis.tex 和 main-thesis-with-appendix.tex 的 `\include` 列表
+- 更新项目 CLAUDE.md 中定义的 `{MAIN_TEX}` 主文件（通常为 `main.tex`）和相关附录文件。具体文件名从 LaTeX 模板实际结构确认。
 
 每个 .tex 文件写入章节标题骨架：
+
+> 注意：`\chapter{}` 参数只写标题文字（如 `\chapter{绪论}`），章节编号由 cls 自动生成，不要写成 `\chapter{第一章 绪论}`（会导致双重编号）。
+
 ```latex
 \chapter{第X章标题}
 
@@ -262,6 +267,17 @@ git add *.bib && git commit -m "diss-init: migrate bib from source project"
 同时更新：
 - 中文题目、英文题目
 - 项目阶段更新为 `literature`（diss-init 完成即转入文献补充阶段）
+
+在 CLAUDE.md 中生成 `## 撰写进度` 表：
+
+| 章节 | 状态 | 字数目标 | 实际字数 |
+|------|------|---------|---------|
+| 第一章 绪论 | pending | XXXX | - |
+| 第二章 文献综述 | pending | XXXX | - |
+| ... | pending | ... | - |
+
+所有章节初始状态为 `pending`。
+- 记录文件名 → 章节号映射表（如 `introduction.tex → ch1`、`conclusion.tex → ch7`），供下游 /diss-outline、/diss-draft 使用。
 - 如 `{DEGREE_TYPE}` == 本科，在 CLAUDE.md 中加入：
   ```markdown
   ## 本科附录准备（待完成）

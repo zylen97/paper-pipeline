@@ -83,10 +83,10 @@ description: "方法论优化：对标行业实践 → 审计方法问题 → �
 
 ### 1.1 加载必备元素清单
 
-读取各成稿 md 的 `## 必备元素` 列表，逐项检查对应的 `###` 小节是否有实质内容。同时检查以下维度是否覆盖：
+从各成稿 md（如 `methodology.md`）的 `## 必备元素` 读取**元素清单名称和要求**，然后到对应的 `_dev.md`（如 `methodology_dev.md`）中搜索每个元素是否有实质内容。报告中标注来源为 `_dev.md` 而非成稿 md。同时检查以下维度是否覆盖：
 
 **modeling**：
-- [ ] methodology.md: 方法选择论证（为什么用此方法 + 对比表）
+- [ ] methodology.md: 方法选择论证（为什么用此方法）
 - [ ] methodology.md: 问题描述与假设（供应链结构 + 假设 + 符号表 → Table）
 - [ ] methodology.md: 各模型的收益函数 + 均衡求解结果
 - [ ] results.md: 命题（显式编号 + 证明思路 + 经济直觉）
@@ -526,6 +526,29 @@ git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 
 > 注：显式添加 benchmark.md、figures/、tables/，**不添加 PDF**（二进制大文件不入 git）。_visual_index.md 和 cross_comparison.md 保留在 benchmark 根目录。
 
+### 2.5.1 生成 method_landscape.md
+
+从 `cross_comparison.md` 和各 `{key}_benchmark.md` 中汇总，生成 `structure/2_literature/method_landscape.md`：
+
+- **方法论创新汇总**：从各 benchmark 报告的 B3（模型创新）条目提取，表格形式
+- **模型设计技巧矩阵**：论文 × 技巧，从 cross_comparison.md 表1 提取
+- **本文的对标定位**：差异化定位和核心改进策略
+
+> 此文件在 `/finalize` Phase 4 清理时**保留**（位于 `2_literature/`，不是 `literature.md`，因此不删除）。
+
+AskUserQuestion（允许用户在进入审计前做策略性决定）：
+
+```
+基于以上对标发现，进入深度审计前有什么想法？
+(1) 直接进入审计（推荐）
+(2) 先讨论某个维度的策略（如"GOF 要不要报"）
+(3) 调整对标论文列表后重新分析
+```
+
+用户选 (1) → 进入步骤 3
+用户选 (2) → 讨论后再进入步骤 3（讨论结果作为审计的额外约束，如"GOF 不报→审计时不将 GOF 列为问题"）
+用户选 (3) → 回到 2.1
+
 ### 2.6 展示比对结果
 
 向用户展示比对的**关键发现**（摘要级别，不展示全表）：
@@ -563,28 +586,6 @@ git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 完整比对表已保存至 structure/3_methodology/benchmark/cross_comparison.md
 ```
 
-### 2.5.1 生成 method_landscape.md
-
-从 `cross_comparison.md` 和各 `{key}_benchmark.md` 中汇总，生成 `structure/2_literature/method_landscape.md`：
-
-- **方法论创新汇总**：从各 benchmark 报告的 B3（模型创新）条目提取，表格形式
-- **模型设计技巧矩阵**：论文 × 技巧，从 cross_comparison.md 表1 提取
-- **本文的对标定位**：差异化定位和核心改进策略
-
-> 此文件在 `/finalize` Phase 4 清理时**保留**（位于 `2_literature/`，不是 `literature.md`，因此不删除）。
-
-AskUserQuestion（允许用户在进入审计前做策略性决定）：
-
-```
-基于以上对标发现，进入深度审计前有什么想法？
-(1) 直接进入审计（推荐）
-(2) 先讨论某个维度的策略（如"GOF 要不要报"）
-(3) 调整对标论文列表后重新分析
-```
-
-用户选 (1) → 进入步骤 3
-用户选 (2) → 讨论后再进入步骤 3（讨论结果作为审计的额外约束，如"GOF 不报→审计时不将 GOF 列为问题"）
-用户选 (3) → 回到 2.1
 
 ---
 
@@ -598,7 +599,7 @@ AskUserQuestion（允许用户在进入审计前做策略性决定）：
 审计依据 = 对标数据（步骤 2 的 cross_comparison.md + 行业基线）
          + 视觉对标（benchmark/{key}/figures/ + tables/ 中的提取图表）
          + Claude 方法论知识（理论最佳实践、常见审稿意见）
-         + 论文具体内容（methodology.md + results.md 的实际情况）
+         + 论文具体内容（methodology_dev.md + results_dev.md 的实际情况）
 ```
 
 **视觉对标使用场景**：
@@ -614,7 +615,7 @@ AskUserQuestion（允许用户在进入审计前做策略性决定）：
 
 #### 维度 A：假设合理性
 
-逐个审查 methodology.md 中的每条假设：
+逐个审查 methodology_dev.md 中的每条假设：
 - 合理性论证是否充分？有没有遗漏的边界条件？
 - 假设之间是否存在矛盾或冗余？
 - 放松某个假设后，核心结论是否仍然成立？（识别最脆弱的假设）
@@ -1267,7 +1268,7 @@ git add structure/3_methodology/methodology_dev.md \
 git commit -m "Checkpoint: method-audit fixes applied"
 ```
 
-> 仅 `git add` 实际被修改的文件。如果某些文件未被修改（如 simulation_dev.md 未涉及），不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。叙述型章节 md（introduction.md、literature.md、discussion.md）在步骤 5.8 字数确认后可能被修改，也应纳入。
+> 仅 git add 实际存在且被修改的文件（非 modeling 类型项目无 simulation 相关文件）。如果某些文件未被修改（如 simulation_dev.md 未涉及）或不存在，不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。叙述型章节 md（introduction.md、literature.md、discussion.md）在步骤 5.8 字数确认后可能被修改，也应纳入。
 
 ---
 
