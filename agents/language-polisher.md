@@ -17,8 +17,8 @@ When invoked from `/draft` or `/polish` with structured context (prompt referenc
 ### Mode B: Ad-hoc invocation
 When invoked directly with raw text and no pipeline context:
 - **Skip**: Writing Brief, manuscript/bibliography reading, 要点 enforcement
-- **Do**: Apply all Categories A–T to the provided text
-- **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, **culture-specific term: X**, **sentence focus: X**, and **number/format: X**, dedicated Chinglish Fixes table, top 3 changes)
+- **Do**: Apply all Categories A–U to the provided text
+- **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, **culture-specific term: X**, **nominalization: X**, **negative-to-affirmative: X**, **sentence focus: X**, **number/format: X**, **transition/keyword: X**, dedicated Chinglish Fixes table, top 3 changes)
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
@@ -194,11 +194,13 @@ Rewrite these sentence-level patterns completely:
 - as a result (NOT "as the result", unless specific)
 - in the field of (NOT "in field of")
 
-### Category E: Redundancy and Nominalization
+### Category E: Redundancy, Nominalization, and Clutter
 
 Compress ruthlessly:
 
-| Verbose Chinglish | Concise English |
+**Type 1 — Verbose phrases**:
+
+| Verbose | Concise |
 |---|---|
 | "carry out an investigation of" | "investigate" |
 | "make an analysis of" | "analyze" |
@@ -210,9 +212,50 @@ Compress ruthlessly:
 | "a large number of" | "many" / "numerous" |
 | "at the present time" | "currently" |
 | "in spite of the fact that" | "although" / "despite" |
-| "it is worth noting that" | (delete — just state the point) |
-| "it can be seen that" | (delete — just state the finding) |
-| "as we all know" / "it is well known that" | (delete or replace with a citation) |
+| "on the basis of" | "based on" |
+| "in the event that" | "if" |
+| "in light of the fact that" | "because" / "since" |
+| "a majority of" | "most" |
+| "in terms of" | (rewrite to be specific) |
+
+**Type 2 — Dead-weight sentence openers** (delete the shell — just state the point):
+- "It is worth noting that..." → delete
+- "It can be seen that..." → delete
+- "As we all know" / "It is well known that..." → delete or replace with a citation
+- "As is well known, ..." → delete or replace with a citation
+- "It should be emphasized that..." → delete
+- "It can be regarded that..." → delete
+- "It is important to note that..." → delete
+- "It is interesting to note that..." → delete
+
+**Type 3 — Nominalization** (restore the verb — "Verbs move sentences along; nouns slow them down"):
+
+| Nominalization | Direct verb |
+|---|---|
+| "provides a description of" | "describes" |
+| "conducts an assessment of" | "assesses" |
+| "performs an analysis of" | "analyzes" |
+| "achieves a reduction in" | "reduces" |
+| "makes an adjustment to" | "adjusts" |
+| "offers a confirmation of" | "confirms" |
+| "has seen an expansion in" | "has expanded" |
+| "provides a review of" | "reviews" |
+| "obtains an estimate of" | "estimates" |
+| "the implementation of X" | "implementing X" |
+| "the utilization of X" | "using X" |
+| "the examination of X" | "examining X" |
+
+**Audit**: Flag every "noun + of" structure and check whether a direct verb form exists.
+
+**Type 4 — Redundant modifiers** (the modifier repeats what the noun/verb already means — delete it):
+- "completely eliminate" → "eliminate"
+- "future plans" → "plans"
+- "currently underway" → "underway"
+- "end result" → "result"
+- "basic fundamentals" → "fundamentals"
+- "past experience" → "experience"
+- "final outcome" → "outcome"
+- "general consensus" → "consensus"
 
 **"Such as" and "etc." mutual exclusion**:
 - `such as` = incomplete list follows; `etc.` = incomplete list ends. 二者功能重复，**禁止同时使用**。
@@ -424,6 +467,25 @@ basically, actually, essentially, naturally, obviously, clearly, certainly, inde
 
 **Audit**: Every "there is/are/exist" must be converted. The only acceptable use is when existence itself is the point ("There is no consensus on X" → acceptable if emphasis is on absence).
 
+**Negative-to-affirmative conversion（否定转肯定）**:
+
+核心原则：肯定表达比否定表达更直接有力。当存在单词替代时，优先使用肯定形式。
+
+| Negative | Affirmative |
+|---|---|
+| "did not succeed" | "failed" |
+| "does not have" | "lacks" |
+| "did not remember" | "forgot" |
+| "did not pay attention to" | "ignored" |
+| "not able to" | "unable to" |
+| "not important" | "unimportant" / "negligible" |
+| "not harmful" | "safe" / "harmless" |
+| "not the same" | "different" |
+| "not allow" | "prevent" / "prohibit" |
+| "not include" | "exclude" / "omit" |
+
+**Audit**: Flag every "not + verb/adj" structure. If a single-word affirmative replacement exists, use it.
+
 ### Category O: Repetitive "This paper/study" Subject
 
 **核心原则：同一段落内 "This study/paper/research" 做主语不超过 2 次。**
@@ -558,6 +620,30 @@ basically, actually, essentially, naturally, obviously, clearly, certainly, inde
 
 **Audit**: 扫描所有句首数字、行内数学符号、Figure/Table 引用格式，逐一检查。
 
+### Category U: Transition Discipline and Keyword Consistency
+
+**Part 1 — Transition word austerity（过渡词节制）**
+
+核心原则：过渡词不能修补不健全的底层逻辑。如果去掉过渡词后段落逻辑不通，问题出在逻辑而非过渡词。
+
+**Audit**:
+1. 标记段落中连续 3+ 句以过渡词开头的情况（Therefore, Moreover, Furthermore, Additionally, Meanwhile, Hence, Consequently...）
+2. 删除不必要的过渡词——如果前后句的逻辑关系从内容本身就能推断，过渡词是多余的
+3. 每段过渡词不超过 2 个（不含 and/but/however/or 这类基本连接词）
+4. "Moreover" / "Furthermore" / "Additionally" / "Besides" / "In addition" 不得在同一段落中出现 2 个以上——它们是同义词，堆叠使用说明作者在用过渡词填充而非组织逻辑
+
+**Part 2 — Keyword consistency over synonym variation（关键词重复优于同义词替换，"香蕉法则"）**
+
+核心原则：不要把 "banana" 叫做 "elongated yellow fruit" 来避免重复。技术术语的同义替换会迫使读者猜测是否引入了新概念。
+
+规则：
+- 如果 Methods 中用 "RAG channel"，全文不得改为 "retrieval pathway" / "search mechanism" 来避免重复
+- 关键词重复是可以接受的——在考虑用同义词之前，先问：(1) 这次重复真的有问题吗？(2) 同义词真的比直接重复更好吗？
+- **允许的变化**：代词指代（"the framework... it..."）、缩写（"Function Calling (FC)... FC..."）
+- **禁止的变化**：用不同术语指代同一技术概念、方法、变量或实验组
+
+**Audit**: 从 Methods/Model 中提取所有关键术语，检查 Results/Discussion 中是否使用了完全相同的术语。标记每一处用同义词替代了已定义术语的情况。
+
 ## Basic Grammar Checks (Secondary Priority)
 
 After Chinglish elimination:
@@ -567,6 +653,7 @@ After Chinglish elimination:
 4. Hedging balance
 5. Sentence length: split any sentence >~35 words
 6. Repetitive sentence openings (see Category O for "This study" limits; also vary "The results...", "The findings...")
+7. Subject-verb distance: if >12 words separate the main subject from the main verb, restructure (move intervening material to end or use em-dash parenthetical)
 
 ## Output Protocol (Mode A)
 
@@ -576,7 +663,7 @@ After Chinglish elimination:
 2. Indicate the line range in manuscript
 3. **Change Summary**:
    - Total changes
-   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **existential/pronoun/respectively/dangling: X** (Categories N–R), **sentence focus: X** (Category S), **number/format: X** (Category T)
+   - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **nominalization: X** (Category E Type 3), **existential/pronoun/respectively/dangling: X** (Categories N–R), **negative-to-affirmative: X** (Category N), **sentence focus: X** (Category S), **number/format: X** (Category T), **transition/keyword: X** (Category U)
    - Dedicated **Chinglish Fixes** subsection: every fix with original → corrected (include Category M culture-specific term fixes)
    - Top 3 most significant changes
 
