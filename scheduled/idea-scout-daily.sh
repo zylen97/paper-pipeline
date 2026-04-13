@@ -29,7 +29,7 @@ SCAN_FROM=$(date -v-5d +%Y-%m-%d)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # 设置 PATH（launchd 环境不继承 shell 的 PATH）
-export PATH="$HOME/.local/bin:$HOME/develop/flutter/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export PATH="$HOME/anaconda3/bin:$HOME/.local/bin:$HOME/develop/flutter/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 # 加载配置
 source "$SCRIPT_DIR/email-config.sh"

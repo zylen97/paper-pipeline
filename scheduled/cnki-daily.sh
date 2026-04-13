@@ -28,7 +28,7 @@ TODAY=$(date +%Y-%m-%d)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # 设置 PATH
-export PATH="$HOME/.local/bin:$HOME/develop/flutter/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export PATH="$HOME/anaconda3/bin:$HOME/.local/bin:$HOME/develop/flutter/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 # 加载配置（CNKI 不需要翻译 API，只用 SMTP 发邮件）
 source "$SCRIPT_DIR/email-config.sh"
