@@ -54,15 +54,51 @@ perl -e 'alarm 60; exec @ARGV' git pull --rebase origin main --quiet >> "$LOG_FI
 }
 cp data/user_state.json /tmp/idea_scout_user_state.json 2>/dev/null
 
-# ── 扫描（独立 Python 脚本） ──
-python3 "$SCRIPT_DIR/scout-scan.py" \
-    --config "$SCRIPT_DIR/cepm-journals.json" \
-    --from "$SCAN_FROM" --to "$TODAY" \
-    --output "data/cepm_latest.json" \
-    >> "$LOG_FILE" 2>&1
+# ── 扫描（独立 Python 脚本，失败过半则重试一次） ──
+run_cepm_scan() {
+    set -o pipefail
+    python3 "$SCRIPT_DIR/scout-scan.py" \
+        --config "$SCRIPT_DIR/cepm-journals.json" \
+        --from "$SCAN_FROM" --to "$TODAY" \
+        --output "data/cepm_latest.json" \
+        2>&1 | tee -a "$LOG_FILE"
+}
 
-EXIT_CODE=$?
+SCAN_OUTPUT=$(run_cepm_scan)
+EXIT_CODE=${PIPESTATUS[0]:-$?}
 echo "Scan finished: $(date), exit code: $EXIT_CODE" >> "$LOG_FILE"
+
+# 检查成功期刊数，不足 3 本则等 30 秒重试一次（共 12 本）
+JOURNAL_COUNT=$(echo "$SCAN_OUTPUT" | sed -n 's/.*from \([0-9]*\) journals.*/\1/p' | tail -1)
+JOURNAL_COUNT=${JOURNAL_COUNT:-0}
+if [ "$JOURNAL_COUNT" -lt 3 ]; then
+    echo "RETRY: only $JOURNAL_COUNT journals succeeded (<3), retrying in 30s..." >> "$LOG_FILE"
+    sleep 30
+    SCAN_OUTPUT=$(run_cepm_scan)
+    EXIT_CODE=${PIPESTATUS[0]:-$?}
+    echo "Retry scan finished: $(date), exit code: $EXIT_CODE" >> "$LOG_FILE"
+
+    # 重试后仍不足，发邮件提醒手动重跑
+    RETRY_COUNT=$(echo "$SCAN_OUTPUT" | sed -n 's/.*from \([0-9]*\) journals.*/\1/p' | tail -1)
+    RETRY_COUNT=${RETRY_COUNT:-0}
+    if [ "$RETRY_COUNT" -lt 3 ]; then
+        echo "NOTIFY: retry still only $RETRY_COUNT journals, sending alert email" >> "$LOG_FILE"
+        export SMTP_SERVER SMTP_PORT SMTP_USER SMTP_PASS
+        python3 -c "
+import smtplib
+from email.mime.text import MIMEText
+import os
+msg = MIMEText('CE/PM 扫描两次尝试均失败（成功期刊数: ${JOURNAL_COUNT} → ${RETRY_COUNT}/12），可能是电脑睡眠导致网络未就绪。\n\n请手动重跑：\nbash ~/.claude/scheduled/cepm-daily.sh\n\n日志: ${LOG_FILE}', 'plain', 'utf-8')
+msg['Subject'] = '⚠️ CE/PM Scout 扫描失败，请手动重跑'
+msg['From'] = os.environ['SMTP_USER']
+msg['To'] = os.environ['SMTP_USER']
+with smtplib.SMTP_SSL(os.environ['SMTP_SERVER'], int(os.environ['SMTP_PORT'])) as s:
+    s.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])
+    s.send_message(msg)
+print('Alert email sent')
+" >> "$LOG_FILE" 2>&1 || echo "Alert email failed" >> "$LOG_FILE"
+    fi
+fi
 
 if [ $EXIT_CODE -ne 0 ] || [ ! -s "data/cepm_latest.json" ]; then
     echo "Scan failed, aborting" >> "$LOG_FILE"
