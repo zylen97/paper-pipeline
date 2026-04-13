@@ -4,6 +4,8 @@ description: "从UTD24/FT50顶刊扫描最新论文，翻译摘要后推送到Id
 
 # Idea Scout — 顶刊 Idea 迁移雷达
 
+> Scanner scripts: [journal-scout](https://github.com/zylen97/journal-scout)
+
 从 25 本 UTD24/FT50 顶级期刊中，扫描最新论文摘要，批量翻译为中文，推送到 Idea Scout App（GitHub Pages PWA）供用户在手机上浏览、筛选。
 
 **核心逻辑**：Skill = 数据管线（获取+翻译+推送），App = 浏览器/选择器（用户手动筛选）。
@@ -78,66 +80,22 @@ C - Org & Management（组织与管理，12本）：
 
 根据用户选择确定 `target_journals`，默认最近 5 天（自动扫描脚本使用 `-v-5d`）。手动执行时可指定更长时间范围。
 
-### 2. OpenAlex API 批量拉取
+### 2. 调用 journal-scout 扫描器
 
-对每本目标期刊，调用 OpenAlex API 获取论文列表：
+使用 journal-scout 的 scanner 脚本批量拉取 + 翻译：
 
 ```bash
-curl -s "https://api.openalex.org/works?filter=primary_location.source.id:{openalex_id},from_publication_date:{start_date},type:article&sort=publication_date:desc&per_page=50&mailto=zylenw97@usts.edu.cn"
+cd ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout
+source ~/.claude/scheduled/email-config.sh
+export CHATANYWHERE_API_KEY
+
+python3 ~/Library/CloudStorage/Dropbox/04-Coding/journal-scout/scanners/openalex_scanner.py \
+    --config ~/.claude/skills/idea-scout/journals.json \
+    --from "{start_date}" --to "{end_date}" \
+    --output data/latest.json
 ```
 
-**摘要重建**：OpenAlex 用 inverted index 格式存储摘要，需重建：
-```python
-def rebuild_abstract(inverted_index):
-    if not inverted_index:
-        return ""
-    word_positions = []
-    for word, positions in inverted_index.items():
-        for pos in positions:
-            word_positions.append((pos, word))
-    word_positions.sort()
-    return ' '.join(w for _, w in word_positions)
-```
-
-**分页处理**：如结果超过 50 条（`meta.count > 50`），用 `cursor` 分页继续拉取。每次请求间隔 0.3 秒。
-
-**过滤**：保留无摘要的论文（仅翻译标题，摘要留空）。
-
-**数据格式**（每篇论文）：
-```json
-{
-    "journal_id": "MS",
-    "journal_name": "Management Science",
-    "title": "...",
-    "authors": ["Smith, John", "Zhang, Wei"],  // 从 authorships[].author.display_name 提取
-    "doi": "https://doi.org/...",
-    "date": "2026-04-01",
-    "abstract": "...",
-    "topics": ["Topic1", "Topic2"],
-    "cited_by": 0,
-    "oa": true,            // Paper.fromJson 兼容 "oa" 和 "is_oa"
-    "pdf_url": "...",
-    "tier": 1,
-    "title_cn": "",
-    "abstract_cn": ""
-}
-```
-
-### 3. 批量翻译（ChatAnywhere API）
-
-读取 API 配置：
-```bash
-cat ~/.claude/projects/-Users-zylen/memory/reference_chatanywhere_api.md
-```
-
-用 Python 脚本并发翻译标题和摘要：
-- API: `https://api.chatanywhere.tech/v1/chat/completions`
-- Model: `gpt-4o-mini`
-- 并发数: 50（ThreadPoolExecutor）
-- System prompt: `你是学术翻译助手。将以下英文学术文本翻译为中文，保持学术术语准确，语言流畅自然。只返回翻译结果。`
-- 先翻译所有标题，再翻译所有摘要
-
-翻译后填充 `title_cn` 和 `abstract_cn` 字段。
+scanner 自动处理：OpenAlex API 拉取 → 摘要重建 → ChatAnywhere 并发翻译（50线程）→ 输出 JSON。
 
 ### 4. 保存数据
 

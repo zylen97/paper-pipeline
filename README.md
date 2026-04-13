@@ -10,7 +10,7 @@ A personal academic operating system built on [Claude Code](https://docs.anthrop
 
 ## Layer 3: Literature Radar
 
-An automated intelligence-gathering system that scans 80 journals daily and pushes results to email and a companion app.
+An automated intelligence-gathering system that scans 80 journals daily. Scanner code lives in [`journal-scout`](https://github.com/zylen97/journal-scout).
 
 | Scanner | Journals | Schedule | Source | Recipients |
 |:--------|:---------|:---------|:-------|:-----------|
@@ -18,7 +18,7 @@ An automated intelligence-gathering system that scans 80 journals daily and push
 | **CE/PM Scout** | 12 CE/PM | Daily 9:10 | OpenAlex + LLM translation | 4 |
 | **CNKI Scout** | 43 Chinese core | Daily 9:20 | CNKI RSS | 1 |
 
-**Flow**: launchd triggers scan scripts → OpenAlex/RSS fetch → LLM translates abstracts → email digest → [Idea Scout App](https://zylen97.github.io/idea-scout/) displays → user selects → `/idea-mine` analyzes
+**Flow**: launchd triggers [`journal-scout`](https://github.com/zylen97/journal-scout) pipelines → OpenAlex/RSS fetch → LLM translates abstracts → email digest → [Idea Scout App](https://zylen97.github.io/idea-scout/) displays → user selects → `/idea-mine` analyzes
 
 | Skill | Description |
 |:------|:------------|
@@ -152,6 +152,7 @@ The knowledge dissemination layer includes a personal values knowledge base (`/k
 
 | App | Description | Link |
 |:----|:------------|:-----|
+| **Journal Scout** | Automated daily scanning pipeline for 80 academic journals. OpenAlex/CNKI fetch + LLM translation + email digests | [Repo](https://github.com/zylen97/journal-scout) |
 | **Idea Scout** | Flutter Web PWA for browsing daily journal scans on mobile. 3 sources with in-app switcher, read/idea/delete states, GitHub sync | [Live](https://zylen97.github.io/idea-scout/) · [Repo](https://github.com/zylen97/idea-scout) |
 | **Claude Usage Dashboard** | Python dashboard for monitoring Claude Code token usage and cost tracking | Local `http://127.0.0.1:8080` |
 | **Twitter Bookmark Exporter** | Node.js CLI to export all Twitter/X bookmarks via CDP network interception. Zero dependencies | [Repo](https://github.com/zylen97/twitter-bookmark-exporter) |
@@ -196,11 +197,7 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── wechat-publish/       # WeChat publishing
 │   ├── kb/                   # Personal knowledge base (ingest/lint/model)
 │   └── shared/               # Shared utilities (Python)
-├── scheduled/                # Daily scan scripts + email senders
-│   ├── scout-scan.py         # FT50 + CE/PM scanner (OpenAlex)
-│   ├── cnki-scan.py          # CNKI RSS scanner
-│   ├── *-daily.sh            # LaunchD entry scripts
-│   └── send-*-email.py       # Email digest senders
+# scheduled/ → github.com/zylen97/journal-scout
 └── config/                   # Runtime state
 ```
 

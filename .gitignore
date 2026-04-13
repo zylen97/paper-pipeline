@@ -27,10 +27,7 @@
 !skills/**/*.json
 !config/
 !config/**
-!scheduled/
-!scheduled/*.py
-!scheduled/*.sh
-!scheduled/*.json
+# scheduled/ → see github.com/zylen97/journal-scout
 !skills_pipeline.pdf
 !skills_pipeline.tex
 
@@ -39,9 +36,6 @@ CLAUDE.md
 settings.json
 settings.local.json
 memory/
-scheduled/gmail_credentials.json
-scheduled/gmail_token.json
-scheduled/email-config.sh
 
 # Never track these even if unignored above
 *.backup
