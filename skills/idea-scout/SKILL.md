@@ -4,7 +4,7 @@ description: "从UTD24/FT50顶刊扫描最新论文，翻译摘要后推送到Id
 
 # Idea Scout — 顶刊 Idea 迁移雷达
 
-> Scanner scripts: [journal-scout](https://github.com/zylen97/journal-scout)
+> Scanner scripts: [idea-scout/pipeline](https://github.com/zylen97/idea-scout)
 
 从 25 本 UTD24/FT50 顶级期刊中，扫描最新论文摘要，批量翻译为中文，推送到 Idea Scout App（GitHub Pages PWA）供用户在手机上浏览、筛选。
 
@@ -80,16 +80,16 @@ C - Org & Management（组织与管理，12本）：
 
 根据用户选择确定 `target_journals`，默认最近 5 天（自动扫描脚本使用 `-v-5d`）。手动执行时可指定更长时间范围。
 
-### 2. 调用 journal-scout 扫描器
+### 2. 调用扫描器
 
-使用 journal-scout 的 scanner 脚本批量拉取 + 翻译：
+使用 scanner 脚本批量拉取 + 翻译：
 
 ```bash
 cd ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout
 source ~/.claude/scheduled/email-config.sh
 export CHATANYWHERE_API_KEY
 
-python3 ~/Library/CloudStorage/Dropbox/04-Coding/journal-scout/scanners/openalex_scanner.py \
+python3 ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/pipeline/scanners/openalex_scanner.py \
     --config ~/.claude/skills/idea-scout/journals.json \
     --from "{start_date}" --to "{end_date}" \
     --output data/latest.json

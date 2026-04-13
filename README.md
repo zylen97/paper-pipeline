@@ -10,7 +10,7 @@ A personal academic operating system built on [Claude Code](https://docs.anthrop
 
 ## Layer 3: Literature Radar
 
-An automated intelligence-gathering system that scans 80 journals daily. Scanner code lives in [`journal-scout`](https://github.com/zylen97/journal-scout).
+An automated intelligence-gathering system that scans 80 journals daily. Scanner code lives in [`idea-scout/pipeline`](https://github.com/zylen97/idea-scout).
 
 | Scanner | Journals | Schedule | Source | Recipients |
 |:--------|:---------|:---------|:-------|:-----------|
@@ -18,7 +18,7 @@ An automated intelligence-gathering system that scans 80 journals daily. Scanner
 | **CE/PM Scout** | 12 CE/PM | Daily 9:10 | OpenAlex + LLM translation | 4 |
 | **CNKI Scout** | 43 Chinese core | Daily 9:20 | CNKI RSS | 1 |
 
-**Flow**: launchd triggers [`journal-scout`](https://github.com/zylen97/journal-scout) pipelines → OpenAlex/RSS fetch → LLM translates abstracts → email digest → [Idea Scout App](https://zylen97.github.io/idea-scout/) displays → user selects → `/idea-mine` analyzes
+**Flow**: launchd triggers [`idea-scout`](https://github.com/zylen97/idea-scout) pipelines → OpenAlex/RSS fetch → LLM translates abstracts → email digest → [Idea Scout App](https://zylen97.github.io/idea-scout/) displays → user selects → `/idea-mine` analyzes
 
 | Skill | Description |
 |:------|:------------|
@@ -152,8 +152,7 @@ The knowledge dissemination layer includes a personal values knowledge base (`/k
 
 | App | Description | Link |
 |:----|:------------|:-----|
-| **Journal Scout** | Automated daily scanning pipeline for 80 academic journals. OpenAlex/CNKI fetch + LLM translation + email digests | [Repo](https://github.com/zylen97/journal-scout) |
-| **Idea Scout** | Flutter Web PWA for browsing daily journal scans on mobile. 3 sources with in-app switcher, read/idea/delete states, GitHub sync | [Live](https://zylen97.github.io/idea-scout/) · [Repo](https://github.com/zylen97/idea-scout) |
+| **Idea Scout** | Full-stack academic paper radar: 80-journal daily scanning pipeline + Flutter PWA for browsing/selecting. 3 sources, email digests, GitHub sync | [Live](https://zylen97.github.io/idea-scout/) · [Repo](https://github.com/zylen97/idea-scout) |
 | **Claude Usage Dashboard** | Python dashboard for monitoring Claude Code token usage and cost tracking | Local `http://127.0.0.1:8080` |
 | **Twitter Bookmark Exporter** | Node.js CLI to export all Twitter/X bookmarks via CDP network interception. Zero dependencies | [Repo](https://github.com/zylen97/twitter-bookmark-exporter) |
 | **Academic Site** | Personal academic website with Publications, Blog, Projects, Life pages. Built with Astro | [Live](https://zylen97.github.io/academic-site/) |
@@ -197,7 +196,7 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── wechat-publish/       # WeChat publishing
 │   ├── kb/                   # Personal knowledge base (ingest/lint/model)
 │   └── shared/               # Shared utilities (Python)
-# scheduled/ → github.com/zylen97/journal-scout
+# scheduled/ → github.com/zylen97/idea-scout/pipeline
 └── config/                   # Runtime state
 ```
 

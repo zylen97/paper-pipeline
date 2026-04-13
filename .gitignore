@@ -27,7 +27,7 @@
 !skills/**/*.json
 !config/
 !config/**
-# scheduled/ → see github.com/zylen97/journal-scout
+# scheduled/ → see github.com/zylen97/idea-scout/pipeline
 !skills_pipeline.pdf
 !skills_pipeline.tex
 
