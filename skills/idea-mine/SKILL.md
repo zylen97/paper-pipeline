@@ -903,7 +903,7 @@ pipeline 完成后，用户选定 idea 时由主 agent 根据 challenge 直接�
 
 运行 `/paper-init source=idea-mine batch={BATCH_DIR} paper={P_ID}` 完成项目初始化。详细初始化逻辑见 paper-init SKILL.md。
 
-**到此为止**，后续的文献工作流（/lit-plan → /lit-review → /lit-tag → /lit-pool）由用户在项目目录中自行启动。
+**到此为止**，后续的文献工作流（/lit-plan → [/lit-screen] → /lit-review → /lit-tag → /lit-pool）由用户在项目目录中自行启动。
 
 ## 输出文件
 

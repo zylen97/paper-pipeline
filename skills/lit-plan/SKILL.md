@@ -333,7 +333,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 2. 配额分配
 3. 标签覆盖检查结果
 4. 建议的检索顺序
-5. 提醒用户：去WoS检索后将RIS文件放入 `structure/2_literature/`；如启用CNKI，从CNKI导出EndNote格式(.enw)也放入同目录，然后调用 `/lit-review`
+5. 提醒用户：去WoS检索后将RIS文件放入 `structure/2_literature/`；如启用CNKI，从CNKI导出EndNote格式(.enw)也放入同目录。文献量大时先调用 `/lit-screen` 筛选（XR2026分区+LLM相关性），再调用 `/lit-review`
 
 ---
 

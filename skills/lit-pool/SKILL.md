@@ -453,7 +453,7 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 
 ## 步骤 9：清理 pipeline 中间文件
 
-文献工作流（lit-plan → lit-review → lit-tag → lit-pool）全部完成后，清理所有中间文件。
+文献工作流（lit-plan → [lit-screen] → lit-review → lit-tag → lit-pool）全部完成后，清理所有中间文件。
 
 ```bash
 # 按约定：所有以 _ 开头的文件/目录均为 pipeline 中间产物
@@ -484,7 +484,7 @@ git add structure/2_literature/citation_pool/ \
 git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + method_landscape)"
 ```
 
-> **为什么**：这是 lit-plan → lit-review → lit-tag → lit-pool 四步管线的最终交付物，直接喂给下游 pen-draft 写作。
+> **为什么**：这是 lit-plan → [lit-screen] → lit-review → lit-tag → lit-pool 管线的最终交付物，直接喂给下游 pen-draft 写作。
 
 ---
 
