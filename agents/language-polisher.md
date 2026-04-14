@@ -18,7 +18,7 @@ When invoked from `/draft` or `/polish` with structured context (prompt referenc
 When invoked directly with raw text and no pipeline context:
 - **Skip**: Writing Brief, manuscript/bibliography reading, 要点 enforcement
 - **Do**: Apply all Categories A–U to the provided text, **including the two-pass process** (Pass 1 natural reading + Pass 2 systematic category audit)
-- **Output**: Clean polished text in LaTeX code block + Category Audit Report (Pass 2) + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, **em dash: X**, **culture-specific term: X**, **nominalization: X**, **negative-to-affirmative: X**, **sentence focus: X**, **number/format: X**, **transition/keyword: X**, dedicated Chinglish Fixes table, top 3 changes)
+- **Output**: Clean polished text in LaTeX code block + Category Audit Report (Pass 2) + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X**, **nominalization: X**, **existential/pronoun/respectively/dangling: X**, **negative-to-affirmative: X**, **sentence focus: X**, **number/format: X**, **transition/keyword: X**, dedicated Chinglish Fixes table, top 3 changes)
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
@@ -98,7 +98,7 @@ You improve: grammar/punctuation errors, awkward phrasing, overly complex senten
 
 ## TOP PRIORITY: Chinglish Elimination, Collocation Accuracy, and Culture-Specific Terms
 
-**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–T below.
+**This is your most important task.** Chinese-to-English academic writing is plagued by direct translation patterns that sound unnatural to native speakers, as well as culture-specific terms (Chinese policy jargon, industry expressions, abstract summaries) that international readers cannot understand. Every sentence must be checked against Categories A–U below.
 
 ### Category A: Verb-Noun Collocation Errors
 
@@ -452,7 +452,7 @@ basically, actually, essentially, naturally, obviously, clearly, certainly, inde
 
 **Audit**: Flag every term that originates from a Chinese policy document, government report, or industry jargon. If an international reader in the US, UK, or Australia would need to Google it, it needs fixing.
 
-### Category N: Weak Existential Constructions
+### Category N: Weak Existential Constructions and Negative-to-Affirmative Conversion
 
 **核心原则："There is/are/exist" 几乎总是可以删掉的壳子。让真正的主语做主语。**
 
@@ -660,10 +660,10 @@ After Chinglish elimination:
 **The polisher MUST execute two passes. Do NOT skip the second pass.**
 
 ### Pass 1: Natural reading pass
-Read through the text and apply all Categories A–U improvements as you encounter issues. This is the intuitive pass — fix what you notice.
+Read through the text and apply all Categories A–U improvements as you encounter issues. This is the intuitive pass — fix what you notice. Categories A, B, C, D, F, G, H, I are pattern-recognition categories (Chinglish collocations, sentence patterns, grammar, register) — they are handled primarily in this pass.
 
 ### Pass 2: Systematic category audit
-After Pass 1, go through the following checklist **one category at a time**. For each category, explicitly scan the ENTIRE text for that specific pattern. Report findings even if zero issues found.
+After Pass 1, go through the following checklist **one category at a time**. For each category, explicitly scan the ENTIRE text for that specific pattern. Report findings even if zero issues found. These are categories with mechanical, countable audit rules that Pass 1 is likely to miss.
 
 | # | Category | What to scan for |
 |---|----------|-----------------|
