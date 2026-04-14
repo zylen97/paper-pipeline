@@ -212,6 +212,41 @@ Read `{WORK_DIR}/{最新版本}`
 
 保存润色版 → `{WORK_DIR}/06_polished.md`
 
+## 步骤 4.5：language-auditor 系统审查
+
+从 `06_polished.md` 提取润色后的 LaTeX 文本，**并行**调用 3 个 language-auditor（`subagent_type: "language-auditor"`），每个负责一组审查项：
+
+```
+FOR EACH group IN [1, 2, 3] (PARALLEL):
+  Agent(
+    subagent_type: "language-auditor",
+    prompt: """
+    Audit the following polished text. Your assigned group is **Group {group}**.
+    ONLY check items in Group {group}. Report every item, even if 0 issues.
+
+    ## Polished Text
+    {polished LaTeX text from 06_polished.md}
+    """
+  )
+END FOR
+```
+
+收集 3 个 auditor 的报告后：
+
+1. **汇总 issues**：合并 3 份报告中 issues found > 0 的条目
+2. **展示给用户**（AskUserQuestion）：
+   ```
+   🔍 Language Audit 完成（3 组并行）：
+   - Group 1 (Sentence Mechanics): {N} issues
+   - Group 2 (Structural Patterns): {N} issues
+   - Group 3 (Consistency & Flow): {N} issues
+
+   {列出每条 issue 的 ID + 原文 + 建议修改}
+
+   是否应用这些修改？(yes/no/选择性应用)
+   ```
+3. **用户确认后**：主 agent 将 auditor 建议的修改应用到 `06_polished.md`，保存更新版
+
 ## 步骤 5：生成输出文件
 
 ### 文件 1：`{WORK_DIR}/final.md`

@@ -17,8 +17,9 @@ When invoked from `/draft` or `/polish` with structured context (prompt referenc
 ### Mode B: Ad-hoc invocation
 When invoked directly with raw text and no pipeline context:
 - **Skip**: Writing Brief, manuscript/bibliography reading, 要点 enforcement
-- **Do**: Apply all Categories A–U to the provided text, **including the two-pass process** (Pass 1 natural reading + Pass 2 systematic category audit)
-- **Output**: Clean polished text in LaTeX code block + Category Audit Report (Pass 2) + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X**, **nominalization: X**, **existential/pronoun/respectively/dangling: X**, **negative-to-affirmative: X**, **sentence focus: X**, **number/format: X**, **transition/keyword: X**, dedicated Chinglish Fixes table, top 3 changes)
+- **Do**: Apply all Categories A–U to the provided text
+- **Output**: Clean polished text in LaTeX code block + Change Summary (total changes, category breakdown including **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X**, **nominalization: X**, **existential/pronoun/respectively/dangling: X**, **negative-to-affirmative: X**, **sentence focus: X**, **number/format: X**, **transition/keyword: X**, dedicated Chinglish Fixes table, top 3 changes)
+- **Note**: After polisher completes, the caller should invoke `language-auditor` (3 parallel calls, one per Group) for systematic category audit
 
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
@@ -655,56 +656,16 @@ After Chinglish elimination:
 6. Repetitive sentence openings (see Category O for "This study" limits; also vary "The results...", "The findings...")
 7. Subject-verb distance: if >12 words separate the main subject from the main verb, restructure (move intervening material to end or use em-dash parenthetical)
 
-## Mandatory Audit Protocol (Two-Pass Process)
-
-**The polisher MUST execute two passes. Do NOT skip the second pass.**
-
-### Pass 1: Natural reading pass
-Read through the text and apply all Categories A–U improvements as you encounter issues. This is the intuitive pass — fix what you notice. Categories A, B, C, D, F, G, H, I are pattern-recognition categories (Chinglish collocations, sentence patterns, grammar, register) — they are handled primarily in this pass.
-
-### Pass 2: Systematic category audit
-After Pass 1, go through the following checklist **one category at a time**. For each category, explicitly scan the ENTIRE text for that specific pattern. Report findings even if zero issues found. These are categories with mechanical, countable audit rules that Pass 1 is likely to miss.
-
-| # | Category | What to scan for |
-|---|----------|-----------------|
-| 1 | E-Type 3 | Every "noun + of" → check if a direct verb exists |
-| 2 | E-Type 4 | Every adjective-noun pair → check for redundant modifier |
-| 3 | J | Count passive sentences per paragraph → if >60%, convert 2-3 |
-| 4 | K | Every modifier → three-function test (narrow / specify / disambiguate) |
-| 5 | L | Count em dashes per paragraph → if >1 (or 1 pair), check use case (strong aside or abrupt contrast ONLY; data/evidence insertions use parentheses) |
-| 6 | M | Every domain term → would a US/UK/AU reader need to Google it? |
-| 7 | N-exist | Every "there is/are/exist" → convert |
-| 8 | N-neg | Every "not + verb/adj" → check for single-word affirmative |
-| 9 | O | Count "This study/paper/research" as subject per paragraph → if >2, rewrite |
-| 10 | P | Every pronoun subject (this/it/they/these) → point-back test |
-| 11 | Q | Every "respectively" → verify two equal-length parallel lists |
-| 12 | R | Every sentence-initial participle/preposition → "who does it?" test |
-| 13 | S | Every sentence-initial subordinate clause → is subordinate info the paragraph focus? If not, move main clause forward |
-| 14 | T | Every sentence-initial number, inline math symbol, Fig/Table reference → format check |
-| 15 | U-trans | Count transition words per paragraph → if >2 (excl. and/but/however/or), reduce |
-| 16 | U-key | Check technical terms against first definition → flag synonym substitutions |
-| 17 | Grammar-5 | Every sentence → word count → if >35, split |
-| 18 | Grammar-7 | Every sentence → subject-verb distance → if >12 words, restructure |
-
-**If Pass 2 finds issues that Pass 1 missed, apply the fixes to the polished text before outputting.**
-
 ## Output Protocol (Mode A)
 
 **You must NEVER directly modify the main manuscript file.** Output is text in the conversation.
 
+**Note**: Systematic category audit is handled by a separate `language-auditor` agent (called after polisher completes). The polisher focuses on holistic editing.
+
 1. Present complete polished LaTeX text (clean, no `\textbf{}`) as a code block
 2. Indicate the line range in manuscript
-3. **Category Audit Report** (from Pass 2 — one line per category, even if 0 issues):
-   ```
-   Pass 2 Audit:
-   E-Type3 nominalization: 0 | E-Type4 redundant modifier: 0 | J passive: 0
-   K modifier: 0 | L em-dash: 0 | M culture-term: 0
-   N-exist: 0 | N-neg: 0 | O this-study: 0 | P pronoun: 0
-   Q respectively: 0 | R dangling: 0 | S focus: 0 | T format: 0
-   U-trans: 0 | U-key: 0 | Grammar-5 length: 0 | Grammar-7 SV-dist: 0
-   ```
-4. **Change Summary**:
-   - Total changes (Pass 1 + Pass 2)
+3. **Change Summary**:
+   - Total changes
    - Category breakdown: **Chinglish collocation: X**, grammar: X, clarity: X, flow: X, style: X, **em dash: X**, **culture-specific term: X**, **sentence pattern: X** (banned patterns from 句式禁令), **nominalization: X** (Category E Type 3), **existential/pronoun/respectively/dangling: X** (Categories N–R), **negative-to-affirmative: X** (Category N), **sentence focus: X** (Category S), **number/format: X** (Category T), **transition/keyword: X** (Category U)
    - Dedicated **Chinglish Fixes** subsection: every fix with original → corrected (include Category M culture-specific term fixes)
    - Top 3 most significant changes
