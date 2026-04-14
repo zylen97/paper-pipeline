@@ -127,6 +127,7 @@ Seven specialized agents that skills dispatch as sub-agents. They are not invoke
 | `strict-reviewer` | Harsh peer reviewer simulation | `/pen-polish` |
 | `idea-reviewer` | Idea & method design auditor | `/idea-refine` |
 | `language-polisher` | English prose polish (grammar, flow, Chinglish patterns) | `/pen-polish`, `/finalize` |
+| `language-auditor` | Systematic 18-item category audit (3 groups, parallel, read-only) | `/pen-polish`, `/finalize`, `/rev-respond` |
 | `language-polisher-zh` | Chinese prose polish (register, terminology, coherence) | `/diss-polish`, `/fund-polish` |
 | `journal-scout` | Fetch target journal guidelines & conventions | `/pen-draft`, `/pen-polish` |
 
@@ -176,12 +177,13 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 ├── CLAUDE.md                 # Personal instructions (gitignored)
 ├── settings.json             # Claude Code settings (gitignored)
 ├── memory/                   # Persistent memory system (gitignored)
-├── agents/                   # 7 specialized sub-agents
+├── agents/                   # 8 specialized sub-agents
 │   ├── sci-writer.md         # English academic writer
 │   ├── sci-writer-zh.md      # Chinese academic writer
 │   ├── strict-reviewer.md    # Peer reviewer
 │   ├── idea-reviewer.md      # Idea & method auditor
-│   ├── language-polisher.md  # English polisher
+│   ├── language-polisher.md  # English polisher (editing)
+│   ├── language-auditor.md   # English auditor (systematic checklist, read-only)
 │   ├── language-polisher-zh.md # Chinese polisher
 │   └── journal-scout.md      # Journal guidelines
 ├── skills/                   # 37 slash-command skills
