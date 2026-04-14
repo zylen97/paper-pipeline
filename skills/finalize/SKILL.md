@@ -183,6 +183,10 @@ Read `drafts/writing_brief.md` for journal conventions and style guidance.
 - Word count: maintain within ±5%
 ```
 
+### 1.5b Language Auditor 系统审查
+
+对润色后的文本，**并行**调用 3 个 language-auditor（`subagent_type: "language-auditor"`），分别指定 Group 1/2/3。收集报告后，如有 issues，展示给用户并在确认后应用修改（流程同 pen-polish 步骤 4.5）。
+
 ### 1.6 用户确认并写入
 
 展示润色后的英文全文。AskUserQuestion：
@@ -275,6 +279,10 @@ Block 5: Implications（理论/实践价值，1-2 句）
 ### 2.6 Language Polisher 润色
 
 调用 language-polisher（`subagent_type: "language-polisher"`），prompt 同 Phase 1 结构，section 改为 "Abstract"。
+
+### 2.6b Language Auditor 系统审查
+
+同步骤 1.5b：并行调用 3 个 language-auditor（Group 1/2/3），汇总 issues 后展示给用户确认。
 
 ### 2.7 用户确认并写入
 
@@ -372,6 +380,10 @@ Block 1-4 逐块提议中文要点 → 用户确认。称呼和标准结尾自�
 ### 3.6 Language Polisher 润色
 
 调用 language-polisher（`subagent_type: "language-polisher"`），prompt 同前，section 改为 "Cover Letter"。
+
+### 3.6b Language Auditor 系统审查
+
+同步骤 1.5b：并行调用 3 个 language-auditor（Group 1/2/3），汇总 issues 后展示给用户确认。
 
 ### 3.7 用户确认并写入
 

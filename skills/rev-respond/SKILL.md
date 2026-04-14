@@ -362,12 +362,17 @@ Agent(
 )
 ```
 
+### 3b2. Language Auditor 系统审查
+
+对润色后的文本，**并行**调用 3 个 language-auditor（`subagent_type: "language-auditor"`），分别指定 Group 1/2/3。收集报告后，如有 issues，汇总到润色结果中一并展示给用户。
+
 ### 3c. 展示润色结果
 
-将 language-polisher 返回的内容展示给用户：
+将 language-polisher + language-auditor 的结果展示给用户：
 - 润色后的 Part A（完整 LaTeX 回复文本）
 - 润色后的 Part B（修改方案中的新文本）
 - Change Summary（language-polisher 自动生成：总改动数、分类统计、Chinglish 修复表、Top 3 改动）
+- Audit Report（language-auditor 汇总：3 组审查结果，列出 issues 及建议修改）
 
 AskUserQuestion：
 
