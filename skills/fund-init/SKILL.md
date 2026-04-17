@@ -170,7 +170,7 @@ case "$FUND_TYPE" in
     ;;
   provincial)
     cp "$TEMPLATE_DIR/provincial.tex.tmpl" main.tex
-    CHAPTERS=(01_立项依据与研究意义 02_研究目标与内容 03_研究方案与技术路线 04_创新点 05_研究基础与工作条件)
+    CHAPTERS=(01_立项依据与研究意义 02_研究目标与内容 03_研究方案与技术路线 04_创新点与可行性 05_研究基础与工作条件 06_经费预算)
     ;;
   university)
     cp "$TEMPLATE_DIR/university.tex.tmpl" main.tex

@@ -58,8 +58,10 @@ description: "根据研究idea规划文献检索方向，生成WoS/CNKI检索式
 - 如果降级链全部失败（所有源都 < 100 字或不存在）→ 停止，提示用户至少提供研究主题和大致方向（fund 项目：先跑 `/fund-mine`；diss 项目：先跑 `/diss-init`）
 - 将成熟度标记为 `{IDEA_MATURITY}` = `mature` / `exploratory`，传递给后续 `/lit-review` 使用
 
+> **占位符展开契约**：`{LIT_DIR}` 是主 agent 内部变量（当前三种工作流下均解析为 `structure/2_literature/`，见上表）。在向用户展示路径或写入 md 文件时，**必须先展开为字面路径**，不要让用户看到字面的 `{LIT_DIR}`。
+
 ### 0.3 检查已有检索方案
-- 检查 `{LIT_DIR}literature_search_plan.md` 是否已存在
+- 检查 `{LIT_DIR}literature_search_plan.md`（展开：`structure/2_literature/literature_search_plan.md`）是否已存在
 - 已存在 → 提示用户：已有检索方案，是覆盖还是增量更新？等待确认
 
 ---
@@ -271,7 +273,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 
 ## 步骤 4：生成输出
 
-### 输出文件：`{LIT_DIR}literature_search_plan.md`
+### 输出文件：`{LIT_DIR}literature_search_plan.md`（写入时展开为 `structure/2_literature/literature_search_plan.md`）
 
 模板结构：
 
@@ -343,7 +345,7 @@ python3 ~/.claude/skills/lit-plan/quota_calc.py \
 2. 配额分配
 3. 标签覆盖检查结果
 4. 建议的检索顺序
-5. 提醒用户：去WoS检索后将RIS文件放入 `{LIT_DIR}`；如启用CNKI，从CNKI导出EndNote格式(.enw)也放入同目录。文献量大时先调用 `/lit-screen` 筛选（XR2026分区+LLM相关性），再调用 `/lit-review`
+5. 提醒用户：去WoS检索后将RIS文件放入文献目录（`{LIT_DIR}` → `structure/2_literature/`）；如启用CNKI，从CNKI导出EndNote格式(.enw)也放入同目录。文献量大时先调用 `/lit-screen` 筛选（XR2026分区+LLM相关性），再调用 `/lit-review`
 
 ---
 

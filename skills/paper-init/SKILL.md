@@ -144,7 +144,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 2. **复制 paper note 并重命名**：将匹配到的 `{BATCH_DIR}/paper-notes/{原文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/paper_note.md`（**重命名为 `paper_note.md`**，不保留原作者文件名）
 
-3. **提取 migration_analysis.md**：从 `{BATCH_DIR}/idea-raw/_step3_matching.md` 中提取 P{PAPER_ID} 对应的"迁移方向预判"段落（通常是该 idea 的备选期刊映射 + 迁移假设变化），写入 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/migration_analysis.md`。
+3. **提取 migration_analysis.md**：从 `{BATCH_DIR}/idea-raw/_step3_matching.md` 中提取 `### P{PAPER_ID}:` 小节的内容（实际段落结构：**标准推荐迁移方向 + 学科迁移方向**；期刊映射在 `_step3_matching.md` 顶部表格，不在 P{NN} 分段内，不包含在本文件），写入 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/migration_analysis.md`。
    - 若 `{BATCH_DIR}/idea-raw/migration_analysis.md` 已由 /idea-mine 阶段三预先生成（推荐路径），直接复制即可。
    - 若未预先生成，现场提取：grep/parse `_step3_matching.md` 的 `## P{PAPER_ID}` 或等价小节，整段写入。
 
@@ -280,11 +280,9 @@ gh repo create paper_{ID} --private --source=. --remote=origin
 
 ### Step 1.5: Idea-mine 导入执行（条件步骤，仅当选择导入时执行）
 
-按照本文件上方「导入操作」小节的 6 步逐步执行（PDF 双份复制、paper_note 重命名、migration_analysis 提取、idea/review glob 复制、idea.md 重组）。
+按照本文件上方「导入操作」小节**执行操作 1-5**（PDF 双份复制、paper_note 重命名、migration_analysis 提取、idea/review glob 复制）。**操作 6（重组写入 idea.md）延至 Step 3 末尾执行**（见 Step 3 末尾的「Idea-mine 内容写入」），因为它需要 Step 3 已生成的 idea.md 骨架作为写入目标。
 
 > **唯一权威清单**：以上方「导入操作」6 步为准（L139-160），此处不再重复罗列以避免漂移。
->
-> **操作 6（重组写入 idea.md）放在 Step 3 末尾执行**，见 Step 3 末尾的「Idea-mine 内容写入」。
 
 ---
 

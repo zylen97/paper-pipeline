@@ -230,6 +230,11 @@ python3 ~/.claude/skills/lit-tag/insert_tags.py \
 
 **主 Agent 校验**：VERIFY 必须为 PASS。FAIL 时展示错误给用户。
 
+**FAIL 恢复路径**（重要）：脚本遇到 `NO_TAG:` 错误时**不覆写原始 direction report**（原文保留完整），并在 stdout 列出 `Skipped (file preserved, re-run after fixing tag files): D{x},D{y}`。用户应：
+1. 根据 stdout 错误定位出错的 `_tags/d{x}_tags.md`（或对应 direction 的编号→标签 映射有遗漏）
+2. 让 subagent 重新补齐缺失标签到 `_tags/d{x}_tags.md`
+3. 重跑 `python3 ~/.claude/skills/lit-tag/insert_tags.py ...`——此时只有失败的方向会被处理（成功的方向已 overwritten 且不会被再次插入重复列，脚本幂等）
+
 ### 2.2 调用标签聚合脚本
 
 ```bash
@@ -255,7 +260,7 @@ python3 ~/.claude/skills/lit-tag/tag_aggregate.py \
 
 校验规则：
 - VERIFY 必须为 PASS。FAIL 时停止，展示具体错误给用户
-- 特别注意：如有 `NO_TAGS` 错误（文献缺标签），说明 subAgent 打标签有遗漏，需重跑对应 agent
+- 特别注意：如有 `NO_TAG:` 错误（文献缺标签），说明 subAgent 打标签有遗漏，需重跑对应 agent 补齐 `_tags/d{x}_tags.md` 后再跑 insert_tags.py（原 direction report 已保留完整）
 - 将 stdout 的统计数据展示给用户
 
 ---

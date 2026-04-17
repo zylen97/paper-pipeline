@@ -463,12 +463,19 @@ set -euo pipefail
 TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
+# 预检：必须配好 origin 远程，否则后续 push 失败但 tag 已建，重跑会 tag 重名
+git remote get-url origin >/dev/null || { echo "✗ no origin remote — abort"; exit 1; }
+
 # 精确 stage 避免误纳 .DS_Store / 临时文件
 git add structure/ drafts/ 2>/dev/null || true
 git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
 git tag -a "$TAG" -m "Scaffolding (structure/ + drafts/) snapshot before Phase 4 cleanup"
-# 用 HEAD 兼容 master/dev/feature 分支
-git push origin HEAD "$TAG"
+# 用 HEAD 兼容 master/dev/feature 分支；push 失败则回滚本地 tag 再退出
+if ! git push origin HEAD "$TAG"; then
+  git tag -d "$TAG" >/dev/null 2>&1 || true
+  echo "✗ push failed — local tag rolled back; rm -rf aborted"
+  exit 1
+fi
 echo "✓ Snapshot tag pushed to origin/$BRANCH: $TAG"
 echo "  Recovery: git checkout $TAG -- structure/ drafts/   (若日后需要)"
 
@@ -490,7 +497,10 @@ find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxd
 
 # 保留 writing_brief 到 submission/ 供 pre-submit 使用
 mkdir -p submission/
-[ -f drafts/writing_brief.md ] && mv drafts/writing_brief.md submission/writing_brief.md
+# 用 if/fi 而非 `[ -f ] && cmd`：在 set -e 下后者当文件不存在时会触发脚本退出
+if [ -f drafts/writing_brief.md ]; then
+  mv drafts/writing_brief.md submission/writing_brief.md
+fi
 
 # 写作中间产物
 rm -rf drafts/

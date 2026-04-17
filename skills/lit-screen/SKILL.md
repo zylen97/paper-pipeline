@@ -77,7 +77,7 @@ XR2026 新锐分区筛选结果：
 根据用户回答确定 **后续输入 RIS**：
 - 应用分区 → 后续以 `_zone2.ris` 为基础
 - 跳过分区 → 后续以原始 RIS 为基础
-- 不跑 LLM → 直接结束，告知最终 RIS 路径
+- 不跑 LLM → **仍需进入 Step 4 归档**（若用户应用了分区，`_zone2.ris` 与原始 `.ris` 共存会导致 /lit-review glob 冲突；只有"跳过分区 + 不跑 LLM"才无冲突可直接结束）
 - 跑 LLM → 进入 Step 3，输入为上面确定的 RIS
 
 ### Step 3: LLM 相关性筛选（用户确认后执行）
@@ -91,8 +91,9 @@ source ~/Library/CloudStorage/Dropbox/Apps/secrets-vault/email-config.sh && echo
 运行脚本：
 
 ```bash
+# <INPUT_RIS> = Step 2 用户决策后确定的输入 RIS（应用分区→*_zone2.ris；跳过分区→原始.ris）
 source ~/Library/CloudStorage/Dropbox/Apps/secrets-vault/email-config.sh && \
-python3 ~/.claude/skills/lit-screen/screen_llm.py "<chosen_ris>" \
+python3 ~/.claude/skills/lit-screen/screen_llm.py "<INPUT_RIS>" \
   --direction "<direction>" \
   --api-key "$CHATANYWHERE_API_KEY" \
   --threads 20
@@ -128,34 +129,38 @@ LLM 相关性筛选结果（方向：{direction}）：
 **归档操作**：先执行以下 bash 赋值**计算 `${RIS_DIR}`**（必做，下文命令全部依赖此变量；不硬编码 `structure/2_literature/`——用户可能把 RIS 放在任意位置）：
 
 ```bash
-# <ris_path> 是 Step 3 产出的最终 RIS 文件完整路径
-RIS_DIR=$(dirname "<ris_path>")
-echo "RIS 所在目录: $RIS_DIR"
+# <FINAL_RIS> = 本次筛选链路最终产出的 RIS（跑了 LLM → *_llm.ris；未跑 → *_zone2.ris；两者皆跳 → 原始.ris）
+# 注意：必须在同一个 bash 块内使用 ${RIS_DIR} 和 ${STEM}，跨 Bash 工具调用变量会丢失
+RIS_DIR=$(dirname "<FINAL_RIS>")
+STEM_ORIG=$(basename "<FINAL_RIS>" | sed -E 's/(_zone2|_llm)?\.ris$//')
+echo "RIS 所在目录: $RIS_DIR, 原始 stem: $STEM_ORIG"
 ```
 
 然后 AskUserQuestion 确认：
 
 ```
-检测到原始 RIS: ${RIS_DIR}/{stem}.ris
+检测到原始 RIS: ${RIS_DIR}/${STEM_ORIG}.ris
 与 /lit-review 的 glob *.ris 冲突，建议归档。选择：
   (1) 归档到 ${RIS_DIR}/_raw/（推荐，保留备份）
   (2) 改为 .ris.bak 后缀
-  (3) 保留原状（我已了解冲突风险，/lit-review 前我会自行处理）
+  (3) 保留原状（⚠️ /lit-review 会把 ${STEM_ORIG}.ris 和 <FINAL_RIS> 都扫进去，配额/去重逻辑会按两批独立文献处理，实际等于双倍打标）
 ```
 
-用户选 (1)：
+用户选 (1)（同一 bash 块内执行，避免 ${RIS_DIR}/${STEM_ORIG} 丢失）：
 ```bash
-mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/{stem}.ris" "${RIS_DIR}/_raw/"
+mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/_raw/"
+# 若有中间产物 _zone2.ris（非最终），也归档：
+[ -f "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && mv "${RIS_DIR}/${STEM_ORIG}_zone2.ris" "${RIS_DIR}/_raw/"
 ```
 
 用户选 (2)：
 ```bash
-mv "${RIS_DIR}/{stem}.ris" "${RIS_DIR}/{stem}.ris.bak"
+mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/${STEM_ORIG}.ris.bak"
 ```
 
-用户选 (3)：不动，只在完成提示中再次提醒用户冲突风险。
+用户选 (3)：不动，在完成提示中复述冲突机制：`/lit-review` 对 `${STEM_ORIG}.ris` 和 `<FINAL_RIS>` 会各自消费一遍配额，并造成重复打标。
 
-（`_zone2.ris` 作为中间产物若不再需要，也一并归档；只保留**最终 RIS**供 /lit-review 消费。）
+（`_zone2.ris` 作为中间产物若不再需要，选 (1) 自动一并归档；只保留**最终 RIS**供 /lit-review 消费。）
 
 汇报完整筛选链路：
 
@@ -167,8 +172,8 @@ xxx 篇
   ↓ LLM 相关性筛选（{direction}）
 xxx 篇 ← 最终结果
 
-输出文件：<final_ris_path>
-原始 RIS 已归档至：${RIS_DIR}/_raw/{stem}.ris（用户选 1）或 ${RIS_DIR}/{stem}.ris.bak（用户选 2）；选 3 则原文件保留
+输出文件：<FINAL_RIS>
+原始 RIS 已归档至：${RIS_DIR}/_raw/${STEM_ORIG}.ris（用户选 1）或 ${RIS_DIR}/${STEM_ORIG}.ris.bak（用户选 2）；选 3 则原文件保留（⚠️ /lit-review 会重复消费）
 可直接用于 /lit-review
 ```
 

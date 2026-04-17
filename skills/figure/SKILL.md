@@ -345,6 +345,8 @@ AskUserQuestion，循环直到确认。
 
 根据确认的美化方案，修改 Python/R 脚本。关键注入模板：
 
+> ⚠️ **占位符替换契约**：下方模板中的 `{FIGURES_DIR}`、`{N}`、`{desc}` 是**写盘前**必须由主 agent Edit 替换为实际字符串的占位符——Python/R 运行时**不会**展开它们。例如 `{FIGURES_DIR}` → `structure/figures_tables/figures/`、`{N}` → `3`、`{desc}` → `network_topology`。忘记替换会生成字面量名为 `{FIGURES_DIR}fig{N}_{desc}.pdf` 的文件。
+
 **Python (matplotlib)**：
 ```python
 import matplotlib.pyplot as plt

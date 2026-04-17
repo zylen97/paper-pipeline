@@ -20,21 +20,40 @@ Step 0 — 项目类型探测 + 确定 `{TABLES_FILE}`：
 | `fundings/`（基金） | `structure/figures_tables/tables.tex` |
 | `$PWD` 不在上述目录 | AskUserQuestion 确认路径，不默认写入 |
 
+**学位论文章号推断**：
+1. 若调用上下文是 `/diss-draft` 串行调用 → 从当前正在处理的 `chapters/ch{XX}_*.md` 提取 `XX`（2 位数字）
+2. 若上下文无法推断 → 读取 `$PWD` 下 `chapters/` 目录最近编辑的 `ch{XX}_*.md`，默认该章号
+3. 都不行 → AskUserQuestion 询问用户："当前表格归属第几章（如 3）？"
+
 - 每次创建/修改表格后，**必须同步更新** `structure/figures_tables/index.md` 的 Tables 表格（不存在则 mkdir + touch）
 - 定稿时（/finalize）将 `tables.tex` 内容贴到 manuscript.tex 末尾
 
-## Step 1 — Caption 宏包预检（写入前必做）
+## Step 1 — 主 tex 文件发现 + Caption/threeparttable 宏包预检（写入前必做）
 
-扫描主 tex 文件的 preamble，检查是否加载了 `caption` 宏包：
+**主 tex 发现**（不写死 `main.tex` / `manuscript.tex`——dissertations 常用 `thesis.tex`、`main_dissertation.tex` 等）：
 
 ```bash
-grep -E '\\usepackage(\[[^\]]*\])?\{caption\}' main.tex  # 或 manuscript.tex
+# 用 Glob *.tex 找项目根目录下含 \documentclass 的单文件
+MAIN_TEX=$(grep -l '\\documentclass' *.tex 2>/dev/null | head -n 5)
 ```
 
-- ✅ 命中 → 继续
-- ❌ 未命中：
-  - 如果 documentclass 是 `elsarticle / sagej / WileyNJDv5 / ctexart` → 通常 cls 自带，可继续
-  - 其他（如 `article / IEEEtran / ASCE` 的某些 cls）→ 🟡 告警："`caption` 宏包未加载，`\captionsetup{}` 会编译失败。建议在 preamble 添加 `\usepackage{caption}`，或改用不含 `\captionsetup` 的简化模板"；让用户选择 (1) 添加宏包 (2) 用简化模板 (3) 继续（自行承担风险）
+- 找到 0 个 → 🔴 报错退出，提示用户主 tex 不在项目根
+- 找到 1 个 → `MAIN_TEX` 即该文件
+- 找到多个 → AskUserQuestion 让用户选择
+
+**宏包预检**（对 `$MAIN_TEX` 的 preamble）：
+
+```bash
+grep -E '\\usepackage(\[[^\]]*\])?\{caption\}' "$MAIN_TEX"
+grep -E '\\usepackage(\[[^\]]*\])?\{threeparttable\}' "$MAIN_TEX"
+```
+
+- `caption` 未命中：
+  - 若 documentclass 是 `elsarticle / sagej / WileyNJDv5 / ctexart` → cls 自带可继续
+  - 其他（如 `article / IEEEtran / ASCE`）→ 🟡 告警 + AskUserQuestion (1) 添加宏包 (2) 用简化模板 (3) 继续（自行承担风险）
+- `threeparttable` 未命中：
+  - 不询问，直接**自动降级为简化模板**（否则标准模板会编译失败）
+  - 在 Step 2 产出表格时在 summary 里告知："已自动降级为简化模板（项目未加载 threeparttable）"
 
 ## Step 2 — Label 冲突检查（写入前必做）
 
