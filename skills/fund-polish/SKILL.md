@@ -186,7 +186,7 @@ prompt：
 **灌入规则**：
 - md 中的 `# 章节标题` 和 frontmatter 注释（`<!-- 目标字数: ... -->` 等）**不灌入**，只灌入正文
 - md 的 `##` 标题映射为 LaTeX `\subsection{}`；`###` 映射为 `\subsubsection{}`
-- 列表、表格、公式按 Pandoc-style 转 LaTeX（或用户已自行写 LaTeX 语法的片段直接保留）
+- 列表、表格、公式、md 内嵌 LaTeX 命令（`\cite{}` / `\ref{}` / `$...$` 公式 / `\begin{table}...\end{table}`）统一用 `pandoc -f markdown+raw_tex -t latex sections/{NN}_{名}.md` 转 LaTeX 片段。`raw_tex` 扩展会原样保留所有 `\...` 命令和 `$...$` 公式，无需用户额外标注
 - 章节间顺序严格按 CLAUDE.md `## 章节规划` 对应 main.tex `\section{}` 顺序
 
 **写入前**：AskUserQuestion 展示灌入预览（每章 diff）供确认。**写入后**：跑 `latexmk -xelatex main.tex` 做编译验证，失败则记录到 build log 并提示用户排查。
