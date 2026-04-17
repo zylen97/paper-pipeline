@@ -303,7 +303,7 @@ END FOR
 1. 读取当前 .tex 文件
 2. 定位到目标 subsection 的位置（在骨架注释之后）
 3. 替换骨架注释为实际内容（保留 `\subsection{}` 标题）
-4. 删除字数/来源注释行（`% 目标字数：` `% 内容来源：` `% Guidelines:`）
+4. 删除骨架注释行（`% 目标字数：` `% 内容来源：` `% Guidelines:` `% 写作要点：` `% 详细大纲见`）——diss-outline Step 2.2 追加的五类注释全部在此清理
 5. 写入文件
 6. Git Checkpoint：
    ```bash

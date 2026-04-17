@@ -432,7 +432,7 @@ git add chapters/ch{N}_material.md && git commit -m "diss-outline: ch{N} materia
 
 **执行逻辑**（幂等，多次运行安全）：
 
-1. 检查 `structure/2_literature/citation_pool/master.bib` 是否存在
+1. 检查 `{CITATION_POOL_PATH}/master.bib` 是否存在（`{CITATION_POOL_PATH}` 沿用 Step 0.4 解析结果——可能是本项目 `structure/2_literature/citation_pool/` 或源项目对应路径，**不硬编码本地路径**，否则走源项目 fallback 时会永远 WARNING）
    - 不存在 → WARNING: "master.bib 缺失，citation keys 可能无法解析。建议先运行 /lit-pool"，跳过本步骤
 2. 读取项目 bib 文件（从 CLAUDE.md 提取路径，通常为 `reference.bib`）
 3. 提取项目 bib 中已有的所有 citation key（`@type{key,` 行）
