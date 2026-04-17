@@ -613,32 +613,32 @@ latexmk manuscript.tex
 
 **elsevier**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib elsarticle.cls elsarticle-harv.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc elsarticle.cls elsarticle-harv.bst structure/ submission/ .claude/
 ```
 
 **asce**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib ascelike.cls ascelike.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc ascelike.cls ascelike.bst structure/ submission/ .claude/
 ```
 
 **emerald**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc structure/ submission/ .claude/
 ```
 
 **sage**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib sagej.cls SageH.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc sagej.cls SageH.bst structure/ submission/ .claude/
 ```
 
 **ieee**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib IEEEtran.cls IEEEtran.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc IEEEtran.cls IEEEtran.bst structure/ submission/ .claude/
 ```
 
 **wiley**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .claude/
 ```
 
 ```bash

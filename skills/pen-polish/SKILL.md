@@ -251,21 +251,19 @@ END FOR
 
 ### 文件 1：`{WORK_DIR}/final.md`
 
-从 `06_polished.md` 提取 ` ```latex``` ` code block，包裹为：
+从 `06_polished.md` 提取 ` ```latex``` ` code block，写入 `final.md`（本身即 markdown 文件，无需外层 fence 包裹）。内容结构：
 
-```markdown
-# {Section Title} — Polished Version
+    # {Section Title} — Polished Version
 
-> Ready to copy · Replaces original text in manuscript.tex
+    > Ready to copy · Replaces original text in manuscript.tex
 
-```latex
-{LaTeX content}
-```
+    ```latex
+    {LaTeX content}
+    ```
 
-**Target location**: manuscript.tex, {section position}
-**Word count**: {original} → {final}
-**Review rounds**: {1 或 2}
-```
+    **Target location**: manuscript.tex, {section position}
+    **Word count**: {original} → {final}
+    **Review rounds**: {1 或 2}
 
 ### 文件 2：`_latest_final.md`（便捷入口）
 

@@ -249,10 +249,10 @@ font = style.font
 font.name = 'Times New Roman'
 font.size = Pt(12)
 
-# 标题
-doc.add_paragraph('Comments to Authors:', style='Normal')
-# 设为加粗
-# ...
+# 标题（加粗）
+p = doc.add_paragraph()
+run = p.add_run('Comments to Authors:')
+run.bold = True
 
 # 概括段
 doc.add_paragraph(overview_paragraph)

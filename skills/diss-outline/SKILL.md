@@ -56,6 +56,8 @@ Section 3: Methodology → 行号范围 [L151-L280]
 2. 源项目路径下的 `structure/2_literature/citation_pool/`（从 CLAUDE.md 的「`源项目路径`」字段读取）
 3. 都不存在 → 提示用户先运行 /lit-pool
 
+解析成功后，将实际路径记录为 `CITATION_POOL_PATH`（供 Step 2.5.1 和 2.5.6 引用）。
+
 检查解析到的 citation_pool 目录是否存在且包含标签文件：
 - **存在** → 标记 `CITATION_POOL_AVAILABLE = true`，记录可用标签文件列表
 - **不存在** → 标记 `CITATION_POOL_AVAILABLE = false`，在对话中提示用户：

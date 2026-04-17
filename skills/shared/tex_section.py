@@ -49,12 +49,13 @@ def build_section_tree(tex_content: str) -> list[dict]:
     """
     LEVEL_MAP = {"section": 1, "subsection": 2, "subsubsection": 3}
 
-    # 匹配 \section{...}, \subsection{...}, \subsubsection{...}
-    # 跳过 \section*{...} 等星号变体（Acknowledgments, Appendix 等非正文 section）
+    # 匹配 \section{...}, \subsection{...}, \subsubsection{...} 及星号变体
+    # 星号变体（如 \subsection*{Literature positioning}）由 pen-outline 7.2c 产出，
+    # pen-draft 调度契约要求纳入定位表（不再跳过）
     # 使用括号计数来正确处理嵌套括号（如 \section{Introduction to \emph{Game Theory}}）
     cmd_pattern = re.compile(
         r"^[^%]*?"  # 忽略注释行
-        r"\\(section|subsection|subsubsection)\{",  # 不匹配 \section*
+        r"\\(section|subsection|subsubsection)\*?\{",
         re.MULTILINE
     )
 
