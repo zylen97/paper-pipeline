@@ -279,6 +279,12 @@ END FOR
 - 字数变化：{original} → {final}
 - 审稿轮数：{1 或 2}
 - Checkpoint 文件清单
-- 💡 自动写入 manuscript.tex：从 `final.md` 提取 LaTeX content，使用 Edit 工具替换 manuscript.tex 中的对应文本（通过 `{STRUCTURAL_CONTEXT}` 中的行号范围定位）
+- ⚠️ **写入前硬门槛**（全局 CLAUDE.md 安全红线："严禁未经确认就修改文件"）：
+  1. 向用户展示 `final.md` 的 LaTeX content 全文（或 diff 相对于原段落）
+  2. `AskUserQuestion`："是否把此润色版本写入 manuscript.tex 对应位置？" 选项：
+     - `(1) 是，全部写入` → 执行写入逻辑
+     - `(2) 取消` → 保留 `final.md` 供用户手动粘贴，不碰 manuscript.tex
+  3. 用户选 (1) 后才用 Edit 工具写入
+- 定位策略：**按 section 标题语义匹配（非行号）**——`old_string` = manuscript.tex 中 `\section{SECTION_NAME}` 至下一个同级标题之间的原段落内容；`new_string` = `final.md` 对应段落。与 pen-draft SKILL.md:415/433/453 的定位策略保持一致，避免多次写入后行号漂移导致的错位。
 - 💡 写入后执行 git checkpoint：`git add manuscript.tex && git commit -m "polish: {SECTION_NAME}"`
 - 💡 所有章节 polish 完成后，运行 `/finalize` 完成 Conclusion → Abstract → Cover Letter

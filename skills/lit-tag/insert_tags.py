@@ -190,8 +190,16 @@ def insert_tags_into_report(report_path: Path, tag_data: dict) -> tuple[str, lis
                 tags = tier_tags.get(row_num, tier_tags.get(row_counter, ""))
 
                 if not tags:
-                    errors.append(f"D{tag_data['direction']} {current_tier}[{row_num}]: no tag found")
-                    tags = "LR"  # default fallback
+                    # Fail-fast: do NOT write the data row at all.
+                    # Previously a silent "LR" fallback would pollute the direction
+                    # report even though exit code was 1 — re-running tag_aggregate
+                    # could then falsely PASS on the polluted file.
+                    errors.append(
+                        f"D{tag_data['direction']} {current_tier}[{row_num}]: "
+                        f"no tag found — row skipped (Fail-Fast)"
+                    )
+                    # skip this data row entirely (don't append to new_lines)
+                    continue
 
                 # Validate tags
                 tag_warnings = validate_tags(tags)

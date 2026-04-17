@@ -77,15 +77,19 @@ description: "投稿前终检：引用完整性、自引率、格式合规、图
 
 统计正文中引用的 unique citation key 总数 `{TOTAL_REFS}`。
 
-从 CLAUDE.md 中提取作者列表（全名，如 "Zilun Wang"）。对 bib 中每个被引用的条目，检查其 author 字段是否包含任一作者的**全名**（"姓, 名" 或 "名 姓" 格式均需匹配）。仅姓氏匹配不算自引——常见姓氏（如 Wang, Zhang, Li, He, Hu）会导致严重误报。
+**作者全名提取 — OR 链**（按顺序尝试，任一命中即停止；全失败则阻断，不静默跳过）：
+1. `CLAUDE.md` 中的作者字段（`## 项目信息` 下的"作者"/"Authors"/"申请人"行）
+2. `submission/titlepage.tex` 的 `\author{...}` / `\address{...}` 字段
+3. `manuscript.tex` 自身的 `\author{...}` 字段（elsarticle 等模板在头部有）
+4. **前三项全失败 → 🔴 阻断**（而非静默跳过）：提示用户在 CLAUDE.md `## 项目信息` 补充作者全名，否则自引率检查形同虚设。
+
+对 bib 中每个被引用的条目，检查其 author 字段是否包含任一作者的**全名**（"姓, 名" 或 "名 姓" 格式均需匹配）。仅姓氏匹配不算自引——常见姓氏（如 Wang, Zhang, Li, He, Hu）会导致严重误报。
 
 自引率 = `{SELF_REFS}` / `{TOTAL_REFS}` × 100%
 
 - ≤ 10% → ✅ 正常
 - 10-15% → 🟡 偏高，建议关注
 - \> 15% → 🔴 过高，编辑可能质疑
-
-> **注意**：自引率计算需要从 CLAUDE.md 中提取作者全名列表。如果 CLAUDE.md 中没有作者信息，跳过此项并提示用户补充。
 
 ---
 
@@ -241,8 +245,8 @@ latexmk {MAIN_TEX} 2>&1 | tail -50
 | method-audit | `structure/3_methodology/benchmark/method_audit_report.md` 存在？ | 🟡 |
 | method-audit 红色项已清 | report 中无未修复的 🔴 | 🟡 |
 | writing brief | `submission/writing_brief.md` 存在？ | 🟢 |
-| finalize: Conclusion | manuscript.tex 的 Conclusion section 有实质内容（非 TODO） | 🔴 |
-| finalize: Abstract | manuscript.tex 的 Abstract 有实质内容（非 TODO） | 🔴 |
+| finalize: Conclusion | manuscript.tex 的 Conclusion section **词数 ≥ 150** 且不含占位符（TODO/XXX/TBD/???/000/\textcolor{red}）| 🔴 |
+| finalize: Abstract | manuscript.tex 的 Abstract **词数 ≥ 120** 且不含占位符 | 🔴 |
 | finalize: Cover Letter | `submission/coverletter.tex` 或 `submission/coverletter.pdf` 存在？ | 🔴 |
 
 ---

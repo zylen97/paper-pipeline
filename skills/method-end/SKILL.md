@@ -379,9 +379,16 @@ END FOR
 
 AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 → 再次展示 → 直到确认。
 
-### 2.8.5 写入成稿 md
+### 2.8.5 写入成稿 md（**双写**：正文要点区 + 头部目标字数）
 
-用户确认后，将字数分配表写入成稿 md 的 `## 正文要点` 区块开头（在第一个 `###` 之前）：
+用户在 2.8.4 确认的总字数 `{N}`（可能已被用户修改，不等于 2.8.1 的初始值）需要**两处同步**：
+
+1. **写入 `## 正文要点` 区块开头**（subsection 级分配表，供 /pen-draft 读取）
+2. **回写 md 头部 `> 目标字数: {N} words`**（section 级目标，供 /pen-outline 步骤 6.1 读取；与 /method-audit 5.8 的 section 级锚定统一口径）
+
+> 防错机制：若只写 `## 正文要点` 不回写头部，后续 /pen-outline 会从头部读到过时的旧值（来自 /method-audit），造成口径错位。B8 修复明确要求二者同步。
+
+具体写入 `## 正文要点` 的格式（在第一个 `###` 之前）：
 
 ```markdown
 ## 正文要点
@@ -464,10 +471,24 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 →
 
 ### 4.2 阶段转换检查
 
-当本次 `/method-end` 处理了**所有**技术型章节（非单章节模式）且全部凝练完成时：
+**按 `{METHOD_TYPE}` 查表确定"所有技术型章节"集合**（而非硬编码 `methodology+results+simulation`）：
+
+| METHOD_TYPE | 技术型章节集合 |
+|:-----------|:---------------|
+| `modeling` | `methodology.md` + `results.md` + `simulation.md` |
+| `survey-sem` | `methodology.md` + `results.md` |
+| `panel-regression` | `methodology.md` + `results.md` |
+
+**前置校验**（防止阶段门过松误触发）：
+1. 遍历该 METHOD_TYPE 下所有成稿 md，若**任一** md 仍含 `% TODO` / `[TODO]` / `[TBD]` / `???` 占位符 → **阻塞**转换，列出待补项并退出。
+2. 遍历成稿 md，确认 `## 正文要点` 区块字数分配表已写入（Step 2.8 的产出标记） → 缺失则阻塞。
+3. 可选：读取 `benchmark/method_audit_report.md`（若存在），grep `🔴 MUST-FIX` 中 `状态: ✅ Fixed` 的计数，若有未修复项 → 警告（不阻塞，用户确认后继续）。
+
+前置校验通过、且本次 `/method-end` 为**多章节模式**（无 `$ARGUMENTS`）时触发：
 
 ```
-🎯 所有技术型章节已凝练定稿。
+🎯 所有技术型章节已凝练定稿（{METHOD_TYPE} 检出集合：{章节列表}）。
+前置校验：✅ 无 TODO 残留 · ✅ 字数表已写入 · [⚠️ audit 未修复项 N 条]
 项目即将从 foundation 阶段进入 drafting 阶段（叙述型章节撰写）。
 
 确认转换？

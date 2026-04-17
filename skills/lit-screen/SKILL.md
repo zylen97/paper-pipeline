@@ -1,7 +1,7 @@
 ---
 description: "WoS 文献批量筛选：XR2026 新锐分区过滤 + LLM 相关性筛选，/lit-plan 和 /lit-review 之间的预处理步骤"
 argument-hint: "<RIS文件路径> <研究方向>"
-allowed-tools: Bash(python3 *) Read
+allowed-tools: Bash(python3 *) Bash(source *) Bash(mv *) Read
 ---
 
 # lit-screen — 文献批量筛选
@@ -121,7 +121,22 @@ LLM 相关性筛选结果（方向：{direction}）：
 
 如果有被移除的论文，列出前 10 篇的标题供用户快速检查。
 
-### Step 4: 总结
+### Step 4: 总结 + 移出原始 RIS（关键步骤）
+
+**⚠️ 下游保护**：`/lit-review` 的 `dispatch_plan.py` 用 `ris_dir.glob("*.ris")` 扫描方向文件，如果原始 `{stem}.ris` 和筛选后的 `{stem}_zone2.ris` / `{stem}_llm.ris` 共存于同一目录，会被视为不同批次并**重复消费**，造成配额超额与重复打标。
+
+**强制操作**：Step 3 产出最终 RIS 后，**必须**把原始 RIS 移出同级目录（二选一）：
+
+```bash
+# 方式 A：归档到 _raw/ 子目录（推荐，保留备份）
+mkdir -p structure/2_literature/_raw && \
+  mv structure/2_literature/{stem}.ris structure/2_literature/_raw/
+
+# 方式 B：改为 .ris.bak 后缀（glob *.ris 不再命中）
+mv structure/2_literature/{stem}.ris structure/2_literature/{stem}.ris.bak
+```
+
+（`_zone2.ris` 作为中间产物若不再需要，也一并归档；只保留**最终 RIS**供 /lit-review 消费。）
 
 汇报完整筛选链路：
 
@@ -134,6 +149,7 @@ xxx 篇
 xxx 篇 ← 最终结果
 
 输出文件：<final_ris_path>
+原始 RIS 已归档至：structure/2_literature/_raw/{stem}.ris
 可直接用于 /lit-review
 ```
 

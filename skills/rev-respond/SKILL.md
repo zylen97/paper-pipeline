@@ -408,17 +408,29 @@ AskUserQuestion：
 
 ## Round 4: 执行
 
-### 4a. 应用稿件修改
+### 4a. 应用稿件修改（**先 dry-run，再批量写**）
 
-从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 3 原稿修改，使用 Edit 工具逐条应用（manuscript.tex 和/或 supplemental-materials.tex）。
+从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 3 原稿修改。
+
+**执行顺序（严格）**：
+
+1. **Dry-run 校验**（所有 Edit 必须先通过此步）：对每条 Edit 的 `old_string`，先用 Read 工具在 manuscript.tex / supplemental-materials.tex 中定位并确认**精确存在且唯一**（或已合理配合 `replace_all`）。任一条无法精准匹配（多匹配、零匹配、含误差字符）→ **立即中止**，不进入步骤 2，并报告失败清单供用户人工修正。
+2. **原子性批量写入**：所有条目 dry-run 通过后，才开始用 Edit 工具逐条写入稿件文件。
+3. **失败恢复**：步骤 2 若任一 Edit 在实际执行时仍失败（极罕见，通常只在并发编辑下发生）→ 保留已写条目，报告失败位置，**不继续 4b**，由用户确认下一步。
 
 **铁律**：仅改确认内容，不做额外修改。
 
-### 4b. 填写回复信
+### 4b. 填写回复信（**支持 0e 覆盖重做**）
 
-从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 2 回复正文，在 `response-letter.tex` 中定位该 Comment 的 `\response{[TO BE FILLED]}`，替换为润色后的回复文本。
+从 `revision-R{ROUND}/drafts/Comment_{Comment_ID}.md`（Round 3 润色后的最终版本）读取 Part 2 回复正文。定位策略两种：
 
-如果该 Comment 的 `\response{[TO BE FILLED]}` 找不到（可能已被提前填写），告知用户并跳过。
+**情况 A — 占位符仍在**（首次填写 或 0e 选"跳过"后重跑）：
+- 在 `response-letter.tex` 中查找该 Comment 的 `\response{[TO BE FILLED]}`，替换为润色后的回复文本。
+
+**情况 B — 占位符已被替换**（0e 选"覆盖重做"或用户提前手填过）：
+- 不存在 `[TO BE FILLED]` 锚点，但存在旧的 `\response{...}` 段。
+- 使用结构锚点定位：`\reviewercomment{Comment \#N-K.}` + 紧随其后的 `\responseheader` → 取到这一行至下一个 `\bigskip` / `\reviewercomment` / `\newpage` / `\end{document}` 之间的整个 `\response{...}` 段，作为 `old_string` 执行 Edit 替换（`new_string` = 新的 `\response{润色后正文}`）。
+- 0e 若选"覆盖重做"，**必须**走情况 B 路径，严禁退化为"找不到就跳过"（这是之前的 bug：覆盖后 response-letter.tex 静默保留旧内容）。
 
 ### 4c. 编译验证
 

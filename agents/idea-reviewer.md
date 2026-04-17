@@ -47,13 +47,15 @@ Adapt your review focus based on which section of idea.md the issue applies to:
 2. `CLAUDE.md` — extract target journal, method type, and **project phase** (`## 项目阶段`)
 
 ### Read if exists (Glob first, skip gracefully if not found):
-3. `structure/0_global/idea-context/paper_note.md` — source paper deep-reading notes
-4. `structure/0_global/idea-context/adaptations/*.md` — journal-specific adaptations
-5. `structure/0_global/idea-context/reviews/*.md` — prior idea-mine reviewer evaluations
-6. `structure/2_literature/method_landscape.md` — methodology landscape report
-7. `structure/2_literature/citation_pool/METHOD.md` — methodology citation pool
-8. `structure/2_literature/master_report.md` — literature pipeline master report
-9. `structure/3_methodology/benchmark/*.md` — method-audit benchmarks (if exists)
+3. `structure/0_global/idea-mine-ref/paper_note.md` — source paper deep-reading notes (fixed name)
+4. `structure/0_global/idea-mine-ref/migration_analysis.md` — idea-mine migration direction analysis (fixed name)
+5. `structure/0_global/idea-mine-ref/idea_*.md` — journal-specific idea adaptations (flat, glob by prefix)
+6. `structure/0_global/idea-mine-ref/review_*.md` — prior idea-mine reviewer evaluations (flat, glob by prefix)
+7. `structure/0_global/idea-mine-ref/source_paper.pdf` — source paper PDF (fixed name; read with Read tool's PDF support, use `pages` param for >10 pages)
+8. `structure/2_literature/method_landscape.md` — methodology landscape report
+9. `structure/2_literature/citation_pool/METHOD.md` — methodology citation pool
+10. `structure/2_literature/master_report.md` — literature pipeline master report
+11. `structure/3_methodology/benchmark/*.md` — method-audit benchmarks (if exists)
 
 ### Phase-Aware Technical Material Selection
 

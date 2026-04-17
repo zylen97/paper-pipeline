@@ -123,62 +123,14 @@ git add "$BASELINE" .revision-baseline && git commit -m "R${ROUND}: Freeze basel
 ## Step 2: 创建目录 + 复制工具 + 配置 Hook
 
 ```bash
-mkdir -p tools revision-R${ROUND}/drafts .claude/hooks
+mkdir -p tools revision-R${ROUND}/drafts
 ```
 
 从 `~/.claude/skills/rev-init/` 读取以下文件并写入项目：
 - `make-diff.sh` → `tools/make-diff.sh`（`chmod +x`）
 - `latexdiff-preamble.tex` → `tools/latexdiff-preamble.tex`
 
-### Hook 配置
-
-#### 编译 Hook（升级为 diff 版本）
-
-用 `~/.claude/skills/rev-init/latex-compile.sh` **覆盖** `.claude/hooks/latex-compile.sh`（`chmod +x`）。
-
-paper-init 创建的原版只做纯编译。rev-init 的升级版增加：
-- 如果修改的是 `manuscript.tex`，额外运行 `tools/make-diff.sh` 生成 track changes PDF
-- 编译 + diff 均在后台运行，不阻塞工作流
-
-#### Unicode Guard（确保存在）
-
-检查 `.claude/hooks/unicode-guard.sh` 是否存在：
-- 存在（paper-init 已创建）→ 跳过
-- 不存在（旧项目）→ 从 `~/.claude/skills/paper-init/unicode-guard.sh.tmpl` 复制（`chmod +x`）
-
-#### settings.local.json Hook 配置
-
-确保 `.claude/settings.local.json` 同时包含两个 hook（保留已有的 permissions）：
-
-```json
-"hooks": {
-  "PreToolUse": [
-    {
-      "matcher": "Edit|Write",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/unicode-guard.sh\""
-        }
-      ]
-    }
-  ],
-  "PostToolUse": [
-    {
-      "matcher": "Edit|Write",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/latex-compile.sh\"",
-          "timeout": 120
-        }
-      ]
-    }
-  ]
-}
-```
-
-> hook command 统一使用 `$CLAUDE_PROJECT_DIR` 绝对路径，与 paper-init 模板一致。
+> **无需配置项目级 hook**。系统级 `~/.claude/hooks/latex-compile.sh` 已内置 rev-aware 逻辑：当编辑的是 `manuscript.tex` 且同目录存在 `tools/make-diff.sh` 时，自动在后台生成 track-changes PDF。rev-init 只需安装上述两个 `tools/` 文件即可获得 diff 能力。
 
 ---
 
@@ -405,7 +357,9 @@ git commit -m "R${ROUND} rev-init: parsed comments + confirmed classification & 
 
 一次性展示所有 general responses → AskUserQuestion 确认。
 
-确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision-R${ROUND}/drafts/Response_*.md`。
+确认后 → 填入 `response-letter.tex` + 保存草稿到 `revision-R${ROUND}/drafts/Comment_R${ROUND}-0_{kind}.md`（`{kind}` = `editor`/`ae`/`general`/`r1`/`r2`/…）。
+
+> 命名对齐：前缀统一为 `Comment_`（与 Cluster-specific proposals/comments 一致），让 `/rev-respond` 的 `drafts/Comment_*.md` glob 自动涵盖 General responses，避免成为孤儿文件。旧的 `Response_*.md` 前缀已弃用。
 
 ---
 
@@ -438,10 +392,10 @@ AskUserQuestion：是否自动追加修改工作流配置到项目 CLAUDE.md？
 
 ## Step 11: 编译 + Git Checkpoint（最终）+ 摘要
 
-1. 编译验证：`latexmk -pvc- -pv- response-letter.tex` + `latexmk manuscript.tex`
-2. Git 提交所有初始化产物：
+1. 编译验证：`latexmk -pdf -interaction=nonstopmode response-letter.tex && latexmk -pdf -interaction=nonstopmode manuscript.tex`（编译失败仅警告，不阻断 commit）
+2. Git 提交所有初始化产物（**使用 `$BASELINE` 变量引用**，避免 legacy ROUND=1 分支下 `manuscript-R0.tex` 不存在导致的 pathspec 错误）：
    ```bash
-   git add revision-R${ROUND}/ response-letter.tex tools/ .claude/hooks/ .claude/settings.local.json .revision-baseline manuscript-R$((ROUND-1)).tex && \
+   git add revision-R${ROUND}/ response-letter.tex tools/ .revision-baseline "$BASELINE" && \
    git commit -m "R${ROUND} rev-init: complete initialization (guide + response skeleton + general responses)"
    ```
 3. 展示摘要：文件树 + 当前轮次 R{ROUND} + Cluster 总览 + 推荐执行顺序 + 下一步指引（`/rev-respond {first anchor ID}`）

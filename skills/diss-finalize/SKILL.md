@@ -202,6 +202,44 @@ Phase 2 — English Abstract（{WORD_COUNT} words）
 
 基于中文关键词 + 源英文论文 Keywords，提议 3-5 个英文关键词。
 
+### 2.4b Language Polisher 润色（英文摘要质量兜底）
+
+英文摘要直接提交给答辩委员会 / 学位办 / 国际评审（若有），必须经 language-polisher 打磨：
+
+```
+subagent_type: general-purpose
+model: opus
+（不传 isolation 参数）
+
+prompt：
+调用 ~/.claude/agents/language-polisher.md
+section="Dissertation English Abstract"
+input={Phase 2.3 用户确认后的英文摘要全文}
+constraint：
+- 总词数 250-350 词
+- 一段连续文本，不分段
+- 术语与源英文论文一致（若 {EN_PAPER_ABSTRACT} 可用）
+- 与中文摘要内容一一对应（语义对齐，非直译）
+- 输出：润色后全文 + 修改要点摘要
+```
+
+### 2.4c Language Auditor 三重系统审查（可选但推荐）
+
+并行跑 3 次 `language-auditor`（scope="grammar"/"coherence"/"register"），汇总 issue 后由主 agent 决定是否修订：
+
+```
+subagent_type: general-purpose
+并行 3 个调用
+每个调用：
+  prompt：
+  调用 ~/.claude/agents/language-auditor.md
+  scope={grammar|coherence|register}
+  input={2.4b polisher 输出}
+  constraint：只报 issue，不改文本
+```
+
+汇总 issue 后展示给用户，用户决定是否接受并进入 2.5 写入。
+
 ### 2.5 用户确认并写入
 
 用户确认 → 写入 `{ABSTRACT_EN_FILE}`。

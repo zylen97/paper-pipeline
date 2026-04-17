@@ -37,6 +37,24 @@ description: "初始化学位论文项目：交互式确认章节骨架（到三
 
 向用户展示提取结果，确认无误。
 
+### Step 1.5: 创建 structure/ 共享目录 + 复制源项目 idea.md
+
+为了与下游 `/lit-plan`、`/lit-review`、`/lit-pool`、`/figure`、`/latex-table` 等通用 skill 的目录契约对齐，学位论文项目在 `chapters/` 之外必须额外包含 `structure/` 共享子目录。
+
+```bash
+mkdir -p structure/0_global
+mkdir -p structure/2_literature
+mkdir -p structure/figures_tables/figures
+```
+
+把源项目的 `structure/0_global/idea.md` 复制到学位论文项目的对应位置：
+
+```bash
+cp "{SOURCE_PROJECT}/structure/0_global/idea.md" structure/0_global/idea.md
+```
+
+这一步让 `/lit-plan` 的 `structure/0_global/idea.md` 路径依赖在学位论文工作流下成立。如源项目无 `idea.md`（极少见），提示用户手动补一份简版。
+
 ### Step 2: 确认论文中文题目
 
 基于源项目内容，提出 2-3 个中文题目建议，用 AskUserQuestion 让用户选择或自定义。同时确认英文题目。
@@ -179,9 +197,8 @@ description: "初始化学位论文项目：交互式确认章节骨架（到三
 - 如果章节数与现有文件不一致，创建/删除文件并更新 main.tex 的 `\include` 列表
 
 **本科模板**（USTSthesis）：
-- chapters/introduction.tex（第一章）
-- chapters/ch2.tex ~ chN-1.tex（中间章节）
-- chapters/conclusion.tex（最后一章）
+- chapters/ch1.tex ~ chN.tex（**与硕士模板统一命名**，避免下游 diss-outline/diss-draft 按 `ch{N}_outline.md`/`ch{N}_material.md` 读取时错位）
+- 旧版本曾使用 `introduction.tex`/`conclusion.tex`，已废弃——若遇到 legacy 项目需先 `git mv` 重命名
 - 更新项目 CLAUDE.md 中定义的 `{MAIN_TEX}` 主文件（通常为 `main.tex`）和相关附录文件。具体文件名从 LaTeX 模板实际结构确认。
 
 每个 .tex 文件写入章节标题骨架：
@@ -217,7 +234,8 @@ git add chapters/ && git commit -m "diss-init: create chapter skeleton with sect
 从源英文论文的 bib 文件迁移参考文献到学位论文的 bib 文件：
 
 1. **复制/合并**：将源项目 bib 文件的所有条目复制到学位论文的 bib 文件
-   - 如学位论文 bib 已有内容 → 合并，检测 key 冲突（冲突时保留学位论文版本并警告）
+   - 如学位论文 bib 已有内容 → 合并，检测 key 冲突（**冲突时以源项目版本为准**并警告——init 阶段是从零迁移，模板自带的示例条目应被清理；与 /diss-outline Step 2.5.6 的合并方向一致）
+   - 若用户希望保留学位论文版本（少见），需在警告后 AskUserQuestion 让用户逐条决策
 2. **key 格式检查**：检查所有 citation key 是否符合全局格式（`auth.lower + year + shorttitle(1,1)`），不符合的列出清单
 3. **来源标注**：在每个迁移条目添加注释 `% migrated from {SOURCE_PROJECT}`
 4. **统计报告**：
@@ -277,7 +295,20 @@ git add *.bib && git commit -m "diss-init: migrate bib from source project"
 | ... | pending | ... | - |
 
 所有章节初始状态为 `pending`。
-- 记录文件名 → 章节号映射表（如 `introduction.tex → ch1`、`conclusion.tex → ch7`），供下游 /diss-outline、/diss-draft 使用。
+
+同时在 CLAUDE.md 末尾初始化 `## 术语表` 空骨架（供 diss-outline Step 3.3 填充，diss-draft 每章撰写前读取）：
+
+```markdown
+## 术语表
+
+> /diss-outline 阶段填充此表；若用户跳过 outline 直接进入 /diss-draft，首章完成后提取关键术语回填。
+
+| 英文术语 | 中文译法 | 首次出现章节 | 备注 |
+|:---------|:---------|:------------|:-----|
+| — | — | — | 待 /diss-outline 填充 |
+```
+
+- 记录文件名 → 章节号映射表（如 `ch1.tex → 第一章`、`ch7.tex → 结论`），供下游 /diss-outline、/diss-draft 使用。
 - 如 `{DEGREE_TYPE}` == 本科，在 CLAUDE.md 中加入：
   ```markdown
   ## 本科附录准备（待完成）
@@ -299,6 +330,9 @@ git push
 ## 产出物清单
 
 - [ ] chapters/ 下所有 .tex 文件（含三级标题骨架 + 字数/来源注释）
+- [ ] `structure/0_global/idea.md` 已从源项目复制（供 /lit-plan 读取）
+- [ ] `structure/2_literature/` 空目录已创建（供 /lit-plan、/lit-review 工作）
+- [ ] `structure/figures_tables/figures/` 空目录已创建（供 /figure、/latex-table 写入）
 - [ ] main.tex 封面信息已填写
 - [ ] main.tex 的 `\include` 列表与章节文件一致
 - [ ] bib 文件已从源项目迁移（含来源标注和统计）

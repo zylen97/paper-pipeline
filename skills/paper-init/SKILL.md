@@ -116,12 +116,14 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ```
 {OUTER_DIR}/
-├── raw literature/           ← 源论文 PDF 复制到这里
+├── raw literature/           ← 源论文 PDF 备份（保留作者原文件名，便于人工查阅）
 └── {ID}_latexfile/
     └── structure/0_global/
         ├── idea.md           ← 从选中的 idea 文件重组写入
-        └── idea-mine-ref/    ← idea-mine 产出复制到这里
-            ├── paper-note.md
+        └── idea-mine-ref/    ← idea-mine 产出复制到这里（扁平结构 + 固定文件名，/idea-refine 和 idea-reviewer agent 按约定读取）
+            ├── source_paper.pdf          ← 源论文 PDF 副本（固定名，供 agent Read 工具读取）
+            ├── paper_note.md             ← 源论文精读报告（固定名，与原作者文件名无关）
+            ├── migration_analysis.md     ← 迁移方向预判（从 _step3_matching.md 提取，固定名）
             ├── idea_12_绿色创新溢出_IJPE.md
             ├── idea_12_绿色创新溢出_JCP.md
             ├── idea_12_绿色创新溢出_...md
@@ -130,18 +132,27 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
             └── review_..._P12.md
 ```
 
+> **文件命名契约**（与 `/idea-mine`、`/idea-refine`、`idea-reviewer` agent 对齐）：
+> - `source_paper.pdf`、`paper_note.md`、`migration_analysis.md` **必须是固定名**（下游 reviewer 硬编码读取）
+> - `idea_*.md` 和 `review_*.md` 保留原名（glob 匹配）
+
 ### 导入操作（在 Step 1 创建目录后、Step 2 之前执行）
 
-1. **复制源论文 PDF**：在 `{BATCH_DIR}/papers/` 中根据 `{BATCH_DIR}/paper-notes/` 的文件列表匹配源论文编号对应的 PDF，复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
-   - 匹配方式：`{BATCH_DIR}/paper-notes/` 中的文件按目录顺序排列，第 `{PAPER_ID}` 个文件对应的作者名即为源论文。在 `{BATCH_DIR}/papers/` 中找到同名（仅扩展名不同 `.pdf` vs `.md`）的 PDF 复制
+1. **复制源论文 PDF**（双份）：在 `{BATCH_DIR}/papers/` 中根据 `{BATCH_DIR}/idea-raw/_step3_matching.md` 的 P{NN} → 原 PDF 文件名映射表找到源论文 PDF。
+   - 1a. 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`（保留原文件名，供人工查阅）
+   - 1b. **再复制一份并重命名**到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/source_paper.pdf`（固定名）
 
-2. **复制 paper note**：将匹配到的 `{BATCH_DIR}/paper-notes/{对应文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
+2. **复制 paper note 并重命名**：将匹配到的 `{BATCH_DIR}/paper-notes/{原文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/paper_note.md`（**重命名为 `paper_note.md`**，不保留原作者文件名）
 
-3. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
+3. **提取 migration_analysis.md**：从 `{BATCH_DIR}/idea-raw/_step3_matching.md` 中提取 P{PAPER_ID} 对应的"迁移方向预判"段落（通常是该 idea 的备选期刊映射 + 迁移假设变化），写入 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/migration_analysis.md`。
+   - 若 `{BATCH_DIR}/idea-raw/migration_analysis.md` 已由 /idea-mine 阶段三预先生成（推荐路径），直接复制即可。
+   - 若未预先生成，现场提取：grep/parse `_step3_matching.md` 的 `## P{PAPER_ID}` 或等价小节，整段写入。
 
-4. **复制所有 review 文件**：`{BATCH_DIR}/idea-review/review_*_P{PAPER_ID}.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
+4. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`（保留原名）
 
-5. **重组写入 idea.md**：读取用户选中的那个 idea 文件（由目标期刊决定，如 `idea_12_绿色创新溢出_IJPE.md`），将其 §1-§5 的内容按 `idea.md.tmpl` 的结构重组写入 `{ID}_latexfile/structure/0_global/idea.md`，映射规则：
+5. **复制所有 review 文件**：`{BATCH_DIR}/idea-review/review_*_P{PAPER_ID}.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`（保留原名）
+
+6. **重组写入 idea.md**：读取用户选中的那个 idea 文件（由目标期刊决定，如 `idea_12_绿色创新溢出_IJPE.md`），将其 §1-§5 的内容按 `idea.md.tmpl` 的结构重组写入 `{ID}_latexfile/structure/0_global/idea.md`，映射规则：
    - idea 文件 §1 灵感来源 → idea.md §1 灵感来源 & 参考论文
    - idea 文件 §2 行业背景/Gap/RQ → idea.md §2（行业背景、文献不足、Gap→Objective→RQ 表格）
    - idea 文件 §3 方法论 → idea.md §3 方法论选择论证（只保留方向和论证，具体公式/推导不放）
@@ -287,12 +298,12 @@ gh repo create paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude/hooks
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude
 ```
 
 ---
@@ -310,10 +321,10 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 | 1 | `CLAUDE.md.tmpl` | `CLAUDE.md` |
 | 2 | `gitignore.tmpl` | `.gitignore` |
 | 3 | `claude-settings.json.tmpl` | `.claude/settings.local.json` |
-| 4 | `unicode-guard.sh.tmpl` | `.claude/hooks/unicode-guard.sh` |
-| 5 | `latex-compile.sh.tmpl` | `.claude/hooks/latex-compile.sh` |
 
-> **注意**：不生成 `.vscode/settings.json`。LaTeX Workshop 配置已在 VS Code 全局 User Settings 中统一管理（onSave 编译、latexmk、outDir、files.exclude 等）。各项目编译差异由 `latexmkrc` 控制。
+> **注意**：
+> - 不生成 `.vscode/settings.json`。LaTeX Workshop 配置已在 VS Code 全局 User Settings 中统一管理（onSave 编译、latexmk、outDir、files.exclude 等）。各项目编译差异由 `latexmkrc` 控制。
+> - 不再生成项目级 hook 脚本。`unicode-guard`（编辑前 Unicode 把关）和 `latex-compile`（编辑后自动编译）已迁移至系统级 `~/.claude/hooks/`，对所有项目全局生效。`claude-settings.json.tmpl` 仅保留 `permissions` 配置。
 
 #### LaTeX 文件（根据 {PUBLISHER} 选择）
 
@@ -614,12 +625,6 @@ fi
 ```latex
 % tables.tex -- {ID} all tables in one file
 % Paste content to the end of manuscript.tex when finalizing
-```
-
-#### 设置 hook 可执行权限
-
-```bash
-chmod +x .claude/hooks/unicode-guard.sh .claude/hooks/latex-compile.sh
 ```
 
 #### Idea-mine 内容写入（条件步骤，仅当选择导入时执行）

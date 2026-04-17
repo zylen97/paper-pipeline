@@ -1,31 +1,7 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(pwd)/.claude/hooks/unicode-guard.sh\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(pwd)/.claude/hooks/latex-compile.sh\""
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
-      "Read(/{PROJECT_PARENT_DIR}/**)",
+      "Read({PROJECT_PARENT_DIR}/**)",
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",

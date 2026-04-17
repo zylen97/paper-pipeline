@@ -99,13 +99,34 @@ node ~/.claude/skills/web-access/scripts/check-deps.mjs
 
 未通过 → 引导用户完成 Chrome CDP 设置。
 
-### 3. 分批并行采集
+### 3. 分批并行采集（优先 harvest.sh，子 Agent 作 fallback）
 
-**节奏控制**：每批最多 **3 本期刊**并行（子 Agent），批间间隔适当，避免触发 ScienceDirect 反爬。
+**架构说明**：本 skill 提供两条采集路径，**默认用 Path A（harvest.sh）**，仅在 Path A 失败时降级到 Path B（CDP 子 Agent）。
+
+**Path A — `harvest.sh` 直调（默认）**：仓库内 `~/.claude/skills/figure-harvest/harvest.sh` 是 **CDP 最小化 + CDN 直下** 的优化实现——CDP 只用于获取当期论文列表（1 次页面访问），图片全部通过 `ars.els-cdn.com/...` CDN 直下。优势：
+- CDP 用量低一个数量级（反爬风险小）
+- CDN 直下比 CDP 滚动加载快 5-10 倍
+- 已在生产稳定运行（harvest_log.json 有几千张图采集记录）
+
+调用方式（每本期刊一次，shell 背景并发控制每批最多 3 本）：
+```bash
+bash ~/.claude/skills/figure-harvest/harvest.sh \
+    {slug} {journal_id} {dir_name} \
+    ~/Library/CloudStorage/Dropbox/02-Research/papers/figure_harvest
+```
+
+批间 sleep 3-5 秒。harvest.sh 内部逻辑：
+1. CDP 访问 `/journal/{slug}/issues` 拿最新卷期
+2. CDP 访问最新卷期拿论文列表（含 PII）
+3. 对每篇论文枚举 `ars.els-cdn.com/content/image/1-s2.0-{PII}-{ga1|gr1..gr30}_lrg.jpg`
+4. curl 批量下载（_lrg 404 时回退到 .jpg）
+5. 更新 `harvest_log.json`
+
+**Path B — CDP 子 Agent（Fallback）**：当 Path A 返回失败（CDN URL 模式被 Elsevier 修改、或 harvest.sh 退出非零），降级到子 Agent 走完整 CDP 流程。**节奏控制**：每批最多 **3 本期刊**并行（子 Agent），批间间隔适当。
 
 对每一批：启动子 Agent 并行处理，每个子 Agent 负责一本期刊的完整采集流程。
 
-**子 Agent Prompt 模板**：
+**子 Agent Prompt 模板（仅 Path B Fallback 使用）**：
 ```
 你是期刊图片采集 agent。必须加载 web-access skill 并遵循指引。
 

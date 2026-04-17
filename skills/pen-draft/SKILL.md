@@ -150,7 +150,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
 
 **2.2a 解析段落列表**：
 
-- `{SPLIT_SEGMENTS}` = tex 中的 `\subsection` 列表（步骤 0.4 已解析）
+- `{SPLIT_SEGMENTS}` = tex 中的 `\subsection{...}` **和 `\subsection*{...}`** 列表（步骤 0.4 已解析；后者用于 LR 章节的"定位表"等不编号子节，/pen-outline 7.2c 会生成 `\subsection*{Literature positioning}`，必须纳入调度）
 - 对每个 subsection：从 `{CHAPTER_MD_PATH}` 按 heading 匹配提取内容。
   - **叙述型章节**：从 `## 大纲` 区块提取（intent + 要点）
   - **技术型章节**：从 `## 正文要点` 区块提取（凝练后的正文要点）
@@ -323,6 +323,14 @@ If the outline specifies `\citet{}` for a point, the author MUST appear as subje
 If the outline specifies `\citep{}`, use parenthetical citation.
 Only use keys that appear in the outline above or in this citation pool.
 Where a citation is clearly needed but no key is available, mark with (ref).
+
+## Tier Priority (HARD CONSTRAINT)
+Each row in the citation pool carries a tier in the first column: **核心 (core) / 重要 (important) / 备选 (backup)**.
+- For EVERY outline point that needs a citation, PREFER 核心 > 重要 > 备选
+- 备选 citations should ONLY be used when:
+  (a) the outline explicitly references that key, OR
+  (b) no 核心 or 重要 entry fits the specific sub-claim
+- If you find yourself citing more 备选 than 核心+重要 combined, stop and reconsider — the pool was curated with tiers for a reason
 
 ## Constraints
 - Word target: {WORD_TARGET}±10% (if unspecified, judge based on outline density and note actual count)

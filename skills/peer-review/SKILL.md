@@ -18,7 +18,29 @@ description: "作为期刊审稿人，阅读待审稿件PDF并按用户审稿风
 
 ### 0.1 定位文件
 
-在当前工作目录中查找：
+**⚠️ 工作目录安全检查（防止污染自己的论文/学位/基金项目）**：
+
+本 skill 会在 `$PWD` 创建 `Zylen comment-*.docx`。若 `$PWD` 位于任一下列自己项目的目录树内，**必须阻断并提示用户切换目录**：
+
+- `.../02-Research/papers/`（含所有 `zy*_latexfile/` 子目录）
+- `.../_GYM group dropbox/_gym paper/`（含 `dj*`/`zz*`/`xq*`/`zl*` 子目录）
+- `.../02-Research/dissertations/`
+- `.../02-Research/fundings/`
+
+推荐独立审稿目录：`~/Library/CloudStorage/Dropbox/02-Research/peer-review-tasks/{journal}_{manuscript_id}/`
+
+检查命令示例：
+```bash
+case "$PWD" in
+  *"02-Research/papers"*|*"_gym paper"*|*"dissertations"*|*"fundings"*)
+    echo "🔴 当前位于自己的论文/学位/基金项目目录内：$PWD"
+    echo "   禁止在此生成审稿意见（会污染项目 git 和研究资产）。"
+    echo "   请 cd 到 ~/.../02-Research/peer-review-tasks/{journal}_{id}/ 后重试。"
+    exit 1 ;;
+esac
+```
+
+通过检查后，在当前工作目录中查找：
 
 1. **待审稿件 PDF**：Glob `*.pdf`。找到唯一 PDF → 确认；找到多个 → 列出让用户选择；找不到 → 停止。
 2. **审稿意见 Word 文档**：Glob `*.docx`。通常目录中不会有现成的 Word 文件，后续步骤会自动新建。如果已有 `Zylen comment-*.docx` → 询问用户是覆盖还是跳过。

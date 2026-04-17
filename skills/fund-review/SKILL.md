@@ -9,9 +9,13 @@ description: "模拟基金评审专家打分：按评审要点逐条审查基金
 
 ## 工作流
 
-### Step 0: 阶段更新
+### Step 0: 前置校验（不在此处改阶段）
 
-开始时更新项目 CLAUDE.md 的 `## 项目阶段` 为 `reviewed`。
+开始时**不**更改 `## 项目阶段`。
+
+理由：评审尚未完成就写 `reviewed` 会在用户 ESC 中断时留下错误状态；阶段转换应在"评审报告已落盘"的终点发生（见 Step 4.6）。
+
+校验当前阶段是否为 `drafting`，非 `drafting` 时提示用户（仍允许继续，如用户坚持对草稿阶段的内容做前瞻评审）。
 
 ### Step 1: 读取申请书全文
 
@@ -95,6 +99,12 @@ mkdir -p reviews/
 - 总体评价与资助建议
 - 最需改进的 3 个方面
 - 具体修改建议（精确到章节/段落）
+
+### Step 4.6: 评审完成后更新阶段
+
+在 Step 4 报告落盘后、Step 5 交互修改前执行：**`drafting → reviewed`**（若当前阶段为 `drafting`）。
+
+> 单一责任方：`drafting → reviewed` 的转换由本 skill（/fund-review）负责；上游 /fund-draft 不要写 `reviewed`。
 
 ### Step 5: 交互式修改（可选）
 

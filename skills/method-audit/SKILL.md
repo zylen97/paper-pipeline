@@ -1182,36 +1182,39 @@ AskUserQuestion 逐章确认。用户可以：
 
 AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 → 再次展示 → 直到确认。
 
-#### 5.8.5 写入各章节 md
+#### 5.8.5 写入各章节 md（**仅技术型章节**）
+
+> **职责边界**：method-audit 5.8 是方法论审计产出，按行业基线为论文各章节确定字数**锚点**。但写入动作应**只限于技术型章节**（Methodology/Results/Simulation）——这些是 method-audit 可信决策的范围。
+>
+> 叙述型章节（Introduction/Literature Review/Discussion）的字数应由 `/pen-outline` 基于要点数和引用密度**自主决定**，method-audit 不越位写入（否则 /pen-outline 开头就被不匹配的字数约束）。
+>
+> 显示在 5.8.4 的字数分配**总表**可以仍列出所有章节（作为全局配比可视化），但 5.8.5 只写技术型 3 节。
 
 用户确认后，遍历以下文件（仅存在的文件），用 Edit 修改头部的 `目标字数` 行：
 
 | Section | 文件路径（Glob 匹配） |
 |:--------|:-------------------|
-| Introduction | `structure/1_introduction/introduction.md` |
-| Literature Review | `structure/2_literature/literature.md` |
 | Methodology | `structure/3_methodology/methodology.md` |
 | Results | `structure/4_results/results.md` |
 | Simulation | `structure/*simulation*/simulation.md`（仅 modeling 类型） |
-| Discussion | `structure/*discussion*/discussion.md` |
+
+**不在本步骤写入**（由 /pen-outline 负责）：Introduction / Literature Review / Discussion。
 
 替换规则：
 - 匹配 `> 目标字数:` 开头的行
-- 替换为 `> 目标字数: {N} words`（保留该行后面的括号说明，如 "（由 /pen-outline 分配各子节字数）"）
-- 如果是叙述型章节：`> 目标字数: {N} words（由 /pen-outline 分配各子节字数）`
-- 如果是技术型章节：`> 目标字数: {N} words`
+- 替换为 `> 目标字数: {N} words`
 
 > 写入的文件将纳入 Checkpoint C3 的 git add 范围。
 
 显示确认：
 ```
-✓ 字数目标已写入 {N} 个章节 md
-  - introduction.md: {N} words
-  - literature.md: {N} words
+✓ 字数目标已写入技术型章节 md
   - methodology.md: {N} words
   - results.md: {N} words
   {仅 modeling:} - simulation.md: {N} words
-  - discussion.md: {N} words
+
+（Introduction / Literature Review / Discussion 的字数由 /pen-outline 基于要点数决定，
+ method-audit 不越位写入；总表配比可作为 /pen-outline 的参考。）
 ```
 
 ---

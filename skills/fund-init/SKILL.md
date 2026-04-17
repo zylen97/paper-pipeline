@@ -65,6 +65,7 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 {项目文件夹}/
 ├── CLAUDE.md                          ← 项目元信息 + 章节规划
 ├── fund-idea.md                       ← 选题方案（从 /fund-mine 复制或新建）
+├── {项目简称}.bib                      ← 参考文献（与 paper-init 约定一致）
 ├── sections/                          ← 章节正文
 │   ├── 01_立项依据.md
 │   ├── 02_研究目标.md
@@ -74,9 +75,13 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 │   ├── 06_可行性分析.md
 │   ├── 07_研究基础.md
 │   └── 08_经费预算.md
-├── references/                        ← 参考文献
-│   └── refs.bib
-├── figures/                           ← 图表
+├── structure/                         ← 与通用 skill（lit-*、figure、latex-table）对齐的共享目录
+│   ├── 0_global/
+│   │   └── idea.md                    ← 从 fund-idea.md 复制，供 /lit-plan 读取
+│   ├── 2_literature/                  ← /lit-plan、/lit-review 工作目录
+│   └── figures_tables/
+│       ├── figures/                   ← /figure 输出
+│       └── tables.tex                 ← /latex-table 输出
 └── attachments/                       ← 附件材料
     ├── CV/                            ← 简历
     └── support/                       ← 支撑材料
@@ -88,6 +93,7 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 {项目文件夹}/
 ├── CLAUDE.md
 ├── fund-idea.md
+├── {项目简称}.bib
 ├── sections/
 │   ├── 01_立项依据.md
 │   ├── 02_研究目标与内容.md
@@ -95,9 +101,13 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 │   ├── 04_创新点与可行性.md
 │   ├── 05_研究基础.md
 │   └── 06_经费预算.md
-├── references/
-│   └── refs.bib
-├── figures/
+├── structure/
+│   ├── 0_global/
+│   │   └── idea.md
+│   ├── 2_literature/
+│   └── figures_tables/
+│       ├── figures/
+│       └── tables.tex
 └── attachments/
     ├── CV/
     └── support/
@@ -109,14 +119,19 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 {项目文件夹}/
 ├── CLAUDE.md
 ├── fund-idea.md
+├── {项目简称}.bib
 ├── sections/
 │   ├── 01_立项依据与研究目标.md
 │   ├── 02_研究内容与方案.md
 │   ├── 03_创新点与可行性.md
 │   └── 04_研究基础与经费.md
-├── references/
-│   └── refs.bib
-├── figures/
+├── structure/
+│   ├── 0_global/
+│   │   └── idea.md
+│   ├── 2_literature/
+│   └── figures_tables/
+│       ├── figures/
+│       └── tables.tex
 └── attachments/
 ```
 
@@ -243,12 +258,19 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 | ... | ... | ... | ... |
 ```
 
-### Step 6: 复制/链接 fund-idea.md
+### Step 6: 复制/链接 fund-idea.md + 同步到 structure/0_global/idea.md
 
 1. 如果 `fund-idea.md` 存在于其他位置，复制到项目根目录
 2. 如果不存在，基于 Step 1-2 收集的信息生成一个精简版
+3. **同步一份到 `structure/0_global/idea.md`**（供下游通用 skill /lit-plan 读取；与 papers 工作流的路径契约对齐）：
 
-完成后更新项目 CLAUDE.md 的 `## 项目阶段` 为 `literature`，然后输出项目结构概览：
+```bash
+cp fund-idea.md structure/0_global/idea.md
+```
+
+> 说明：`fund-idea.md` 是基金项目的领域语义正本，`structure/0_global/idea.md` 是通用 skill 的路径契约副本。两者内容同步，任一修改后需 `cp` 刷新另一份（或未来增加 hook 自动同步）。
+
+完成后输出项目结构概览：
 
 ```
 项目已初始化:

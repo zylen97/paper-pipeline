@@ -99,6 +99,8 @@ Section 3: Methodology → 行号范围 [L151-L280]
 - 各节目标字数（来自 diss-init）
 - 各节内容来源标注（改写/展开/新增/重组）
 
+> **字数权威源声明（B8 要求）**：本 skill 将节级字数目标写入 `ch{N}_outline.md` 的 `**目标字数**: XXX 字` 字段——**此字段是下游 /diss-draft 的唯一权威源**。`.tex` 注释中的 `% 目标字数` 会在 diss-draft 写入正文时被删除，不能作为持久源；CLAUDE.md `## 撰写进度` 表只有章级合计（非节级），也不是节级权威源。若 diss-draft 在 ch*_outline.md 找不到节级字数 → 必须阻断并提示用户先跑 /diss-outline，不可让 sci-writer-zh 自行推断字数。
+
 ### 1.2 逐节生成写作大纲
 
 对当前章节的**每个三级标题**（`\subsection`），生成以下结构化大纲：

@@ -127,11 +127,11 @@ description: "学位论文中文润色：逐章审查 + 调用中文润色 agent
 ### 阶段转换检查
 
 完成章节润色后，检查项目阶段：
-- 读取项目 CLAUDE.md 中所有章节的状态
-- 如果**所有章节至少为 `drafted`** 且**至少一章为 `polished`**，且当前项目阶段仍为 `drafting`：
+- 读取项目 CLAUDE.md `## 撰写进度` 表中所有章节的状态
+- 如果**所有章节状态 ≥ `drafted`**（即 drafted 或 polished，允许 drafting/polishing 章节级交叉），且当前项目阶段仍为 `drafting`：
   → 更新项目阶段为 `polishing`
   → 在 git commit message 中注明阶段转换
-- 否则保持当前阶段不变
+- 否则保持当前阶段不变（单章 polish 不足以触发阶段转换；必须所有章都写完才进入打磨期）
 
 - Git Checkpoint + Push（里程碑：第 N 章润色完成）：
   ```bash
@@ -201,12 +201,19 @@ git push
 
 ## 状态追踪
 
-在项目 CLAUDE.md 中维护润色进度：
+**统一复用**项目 CLAUDE.md 的 `## 撰写进度` 表（diss-init 创建、diss-draft/diss-polish 共同维护）——不再单独维护独立的"润色进度"表。
 
-```
-## 润色进度
-- [x] 第1章 绪论 — polished (2026-xx-xx)
-- [ ] 第2章 文献综述 — pending
-- [ ] 第3章 ...
-- [ ] 跨章一致性检查 — pending
+状态值推进：`pending → outlined → drafted → polished`（与全局 CLAUDE.md 规范对齐）。
+
+diss-polish 只在该表的"状态"列把章节从 `drafted` 改为 `polished`，并补记日期：
+
+```markdown
+## 撰写进度
+
+| 章节 | 状态 | 字数目标 | 实际字数 | 最后更新 |
+|------|------|---------|---------|---------|
+| 第1章 绪论 | polished | 3500 | 3482 | 2026-xx-xx |
+| 第2章 文献综述 | drafted | 8000 | 7956 | 2026-xx-xx |
+| ... | ... | ... | ... | ... |
+| 跨章一致性检查 | pending | — | — | — |
 ```

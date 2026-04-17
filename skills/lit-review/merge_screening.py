@@ -335,7 +335,12 @@ def merge_direction(papers: list[dict], quota: int,
 # ---------------------------------------------------------------------------
 
 def cross_dedup(all_papers: dict[int, list[dict]]) -> tuple[dict[int, list[dict]], int]:
-    """Identify papers appearing in multiple directions. Keep all but count duplicates."""
+    """Identify papers appearing in multiple directions. Keep all but count duplicates.
+
+    Note: direction reports intentionally retain cross-direction duplicates (a single
+    paper may appear under multiple directions with different 入选理由). Downstream
+    consumers that need a flat unique list must use flatten_unique() instead.
+    """
     global_seen = {}  # dedup_key -> set of directions
     for d, papers in all_papers.items():
         for p in papers:
@@ -347,6 +352,45 @@ def cross_dedup(all_papers: dict[int, list[dict]]) -> tuple[dict[int, list[dict]
     dup_count = sum(len(dirs) - 1 for dirs in global_seen.values() if len(dirs) > 1)
     unique_count = len(global_seen)
     return all_papers, dup_count, unique_count
+
+
+# tier priority for unique-picking (core > important > backup)
+_TIER_RANK = {"core": 0, "important": 1, "backup": 2}
+
+
+def flatten_unique(all_papers: dict[int, list[dict]]) -> list[dict]:
+    """Produce a flat list of unique papers across all directions.
+
+    Selection rule: when a paper appears in multiple directions, keep the copy
+    whose tier rank is highest (core < important < backup); tie-break by smallest
+    direction number. Annotate each picked entry with:
+      - `directions`: sorted list of all direction numbers in which it appeared
+      - `primary_direction`: the direction the picked copy came from
+
+    This list is the authoritative de-duplicated set for downstream consumers
+    (lit-tag, lit-pool) that must avoid double-counting.
+    """
+    # key -> (tier_rank, direction, paper_ref) of the best pick so far
+    best: dict[str, tuple[int, int, dict]] = {}
+    # key -> set of directions
+    dirs_of: dict[str, set[int]] = {}
+
+    for d, papers in all_papers.items():
+        for p in papers:
+            key = dedup_key(p)
+            dirs_of.setdefault(key, set()).add(d)
+            rank = _TIER_RANK.get(p.get("tier", "backup"), 99)
+            cur = best.get(key)
+            if cur is None or (rank, d) < (cur[0], cur[1]):
+                best[key] = (rank, d, p)
+
+    unique: list[dict] = []
+    for key, (_, primary_d, p) in best.items():
+        entry = dict(p)
+        entry["directions"] = sorted(dirs_of[key])
+        entry["primary_direction"] = primary_d
+        unique.append(entry)
+    return unique
 
 
 # ---------------------------------------------------------------------------
@@ -517,12 +561,19 @@ def main():
     with open(output_dir / "screening_summary_report.md", "w", encoding="utf-8") as f:
         f.write(summary)
 
-    # 10. Generate merged JSON
+    # 10. Generate merged JSON (now includes a flat `unique_papers` list for
+    #     downstream consumers that must avoid cross-direction double-counting,
+    #     e.g. lit-tag and lit-pool when computing tier totals.)
+    unique_papers = flatten_unique(merged_papers)
     merged_json = {
         "directions": {},
+        "unique_papers": unique_papers,
         "cross_direction_duplicates": dup_count,
         "unique_count": unique_count,
     }
+    assert len(unique_papers) == unique_count, (
+        f"flatten_unique len {len(unique_papers)} != cross_dedup unique_count {unique_count}"
+    )
     for d, papers in merged_papers.items():
         merged_json["directions"][str(d)] = papers
     with open(output_dir / "_screening_merged.json", "w", encoding="utf-8") as f:

@@ -25,7 +25,7 @@ Pipeline 在标准期刊推荐（纯 idea 驱动）之外，额外评估每个 i
 | Building and Environment | 3 | B&E |
 | Engineering, Construction and Architectural Management | 7 | ECAM |
 | International Journal of Project Management | 13 | IJPM |
-| Journal of Building Engineering | 14 | JOBE |
+| Journal of Building Engineering | 14 | JBE |
 | Journal of Construction Engineering and Management | 17 | JCEM |
 | Journal of Management in Engineering | 18 | JME |
 | Safety Science | 23 | SS |
@@ -590,7 +590,7 @@ updated: {YYYY-MM-DD}
 - 在阶段五中供各审稿人参考：审稿人根据自己期刊的画像评判适配版本的期刊适配度
 - 同时用于动态生成主编和审稿人的人设（特殊关注点来自画像中的"期刊审美偏好"）
 
-#### Step 4：写入匹配结果
+#### Step 4：写入匹配结果 + 生成 per-P migration_analysis
 
 将确认后的匹配方案写入 `idea-raw/_step3_matching.md`：
 
@@ -661,6 +661,30 @@ updated: {YYYY-MM-DD}
 | {期刊名} | 缓存命中({updated}) / 新建 / 已过期重建 |
 | ... | ... |
 ```
+
+#### Step 4.5：为每个 P{NN} 拆分生成 migration_analysis_P{NN}.md
+
+**目的**：`_step3_matching.md` 的"## 迁移方向预判"+"## 学科迁移方向"章节包含**所有** P{NN} 的迁移分析；后续 `/paper-init` 只会选一个 P{NN} 导入新项目，需要独立文件供 `idea-mine-ref/migration_analysis.md` 直接复制（避免 paper-init 再次解析）。
+
+**操作**：从 `_step3_matching.md` 中按 `### P{NN}:` 小标题切分，为每个 P{NN} 生成独立文件 `idea-raw/migration_analysis_P{NN}.md`，内容包含：
+
+```markdown
+# P{NN} 迁移方向预判
+
+> 从 _step3_matching.md 按 P{NN} 抽取，供 /paper-init 导入时复制到 `idea-mine-ref/migration_analysis.md`。
+
+## 标准推荐：迁移方向
+
+{从 _step3_matching.md 的"## 迁移方向预判 / ### P{NN}"整段复制}
+
+## 学科推荐：建工/城市可持续迁移方向（如有）
+
+{从 _step3_matching.md 的"## 学科迁移方向 / ### P{NN}"整段复制}
+```
+
+**输出清单**：`idea-raw/migration_analysis_P1.md`, `migration_analysis_P3.md`, ... 每个入选 idea 各一份。
+
+> **下游契约**：`/paper-init` 的导入操作 3 会执行 `cp idea-raw/migration_analysis_P{PAPER_ID}.md → {项目}/structure/0_global/idea-mine-ref/migration_analysis.md`（固定名）。`/idea-refine` 的 idea-reviewer agent 硬编码读取此固定名文件作为"迁移假设变化"上下文。
 
 ---
 

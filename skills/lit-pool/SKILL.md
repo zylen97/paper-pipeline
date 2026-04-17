@@ -151,6 +151,14 @@ subAgent 必须**原样使用** `_pool_prepare.json` 中的 citation key，**严
 
 按**槽位制**启动所有 subAgent（同时不超过 8 个，完成一个补一个）。
 
+### Agent 调用协议（强制）
+
+每个 subAgent 必须使用：
+- **`subagent_type: general-purpose`**（必须——本步骤的 subAgent 需要 Write 工具覆写 `_tmp_pool_agent{N}_raw.md`；Explore agent 无 Write 工具，误选会导致全线失败）
+- `model: opus`
+- 不传 `isolation` 参数（全局红线：禁止 worktree）
+- 所需工具：Read + Write（读模板 + 写结果文件）
+
 ### 每个SubAgent的Prompt模板
 
 ```
@@ -527,7 +535,7 @@ BG / LR / GAP / METHOD / DISC / COMP / others
 2. **解析 `citation_pool/*.md`**（BG/LR/GAP/METHOD/DISC/COMP）：
    - 跳过文件头（`#` 标题行、`>` 注释行）和表格分隔线（`|:---`）
    - 按 markdown 表格行解析，citation key 位于第 4 列：`| 分级 | 作者 | 年份 | citation key | 引用场景 | 期刊 |`
-   - **注意**：COMP.md 为 7 列（多一列"与本研究的关键差异"），citation key 仍在第 4 列，解析不受影响
+   - **注意**：COMP.md 与其他 pool 文件**统一为 6 列**（历史上曾设计 7 列但导致下游解析错位，已简化）；"与本研究的关键差异"合并到第 5 列"引用场景"中，以 "引用场景: ...；关键差异: ..." 形式呈现
    - 文件名即标签名：`BG.md` → BG，`METHOD.md` → METHOD，以此类推
    - METHOD.md 内部可能有 METHOD-基础/METHOD-先例 子标签、GAP.md 可能有 GAP-RQ1/GAP-RQ2 子标签——统一归入对应的 METHOD/GAP 子集合
    - 同一 citation key 出现在多个 pool 文件中时，合并标签列表（放入多个子集合）

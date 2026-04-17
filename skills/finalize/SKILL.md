@@ -453,20 +453,34 @@ AskUserQuestion：
 
 ### 4.3 执行清理
 
-用户确认后，用 Bash 工具逐项删除：
+**⚠️ 清理前 snapshot（强制）**：`rm -rf` 是不可逆操作，必须在执行前打 git tag 并 push，让后续 rev-respond 若需回溯脚手架（原始 pen-outline 句子级要点、pen-draft 工作目录等）能一条命令恢复：
 
 ```bash
+# Step 1: Snapshot tag — 必须先执行
+TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
+git add -A && git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
+git tag -a "$TAG" -m "Scaffolding (structure/ + drafts/) snapshot before Phase 4 cleanup"
+git push origin main "$TAG"
+echo "✓ Snapshot tag pushed: $TAG"
+echo "  Recovery: git checkout $TAG -- structure/ drafts/   (若日后需要)"
+```
+
+用户确认 tag 已 push 后，用 Bash 工具逐项删除：
+
+```bash
+# Step 2: 删除脚手架
 # 叙述型章节目录（discussion 编号因方法类型而异：modeling=6, 其他=5）
 rm -rf structure/1_introduction/
 rm -rf structure/*discussion*/
 
-# 叙述型章节 md
+# 叙述型章节 md 及其伴生 json（B9 修复：citation_paths 全目录清扫）
 rm -f structure/2_literature/literature.md
+find structure/ -name "_citation_paths.json" -delete
 
 # 技术章节——只删 md 和临时文件，保留 benchmark/ 等研究资产
-rm -f structure/3_methodology/*.md structure/3_methodology/_citation_paths.json
-rm -f structure/4_results/*.md structure/4_results/_citation_paths.json
-rm -f structure/5_simulation/*.md structure/5_simulation/_citation_paths.json
+rm -f structure/3_methodology/*.md
+rm -f structure/4_results/*.md
+rm -f structure/5_simulation/*.md
 # 如果技术章节目录删完 md 后只剩空目录（无 benchmark/ 等子目录），则删除空目录
 find structure/ -name .DS_Store -delete 2>/dev/null
 find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null
