@@ -1,5 +1,5 @@
 % !TEX program = xelatex
-% 校级项目申请书正文模板（最简版）
+% 校级项目申请书正文模板（单文件模式，最简版）
 % 需要 XeLaTeX 编译
 
 \documentclass[11pt,a4paper]{ctexart}
@@ -26,17 +26,24 @@
 \usepackage[style=gb7714-2015,sorting=none,backend=biber]{biblatex}
 \addbibresource{{PROJECT_SLUG}.bib}
 
-\title{{\bf 校级科研项目申请书}\\[6pt]\Large {PROJECT_TITLE}}
-\author{{申请人}：{APPLICANT} \\ {所在学院}：{AFFILIATION}}
+\title{\textbf{校级科研项目申请书}\\[6pt]\Large {PROJECT_TITLE}}
+\author{申请人：{APPLICANT} \\ 所在学院：{AFFILIATION}}
 \date{{PROPOSAL_DATE}}
 
 \begin{document}
 \maketitle
 
-\input{chapters/01_立项依据与研究目标}
-\input{chapters/02_研究内容与方案}
-\input{chapters/03_创新点与可行性}
-\input{chapters/04_研究基础与经费}
+\section{立项依据与研究目标}
+% 本节正文待灌入自 sections/01_立项依据与研究目标.md
+
+\section{研究内容与方案}
+% 本节正文待灌入自 sections/02_研究内容与方案.md
+
+\section{创新点与可行性}
+% 本节正文待灌入自 sections/03_创新点与可行性.md
+
+\section{研究基础与经费}
+% 本节正文待灌入自 sections/04_研究基础与经费.md
 
 \printbibliography[title={参考文献}]
 

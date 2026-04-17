@@ -44,10 +44,11 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 1. 基金类型: {预填}
 2. 基金名称（如"2026年度国家自然科学基金青年项目"）: {待填}
 3. 项目题目: {预填}
-4. 经费预算范围（万元）: {待填}
-5. 研究期限（如 2027.01-2029.12）: {待填}
-6. 申请人: {待填}
-7. 依托单位: {待填}
+4. 项目简称（英文 snake_case，LaTeX 文件名用，如 scm_resilience）: {待填}
+5. 经费预算范围（万元）: {待填}
+6. 研究期限（如 2027.01-2029.12）: {待填}
+7. 申请人: {待填}
+8. 依托单位: {待填}
 ```
 
 记录为 `{FUND_INFO}`。
@@ -147,9 +148,9 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 └── attachments/
 ```
 
-### Step 3.5: 创建 LaTeX 骨架
+### Step 3.5: 创建 LaTeX 骨架（单文件模式）
 
-按基金类型复制模板（**变量必须来自 Step 2 的 `{FUND_INFO}` 结果，主 agent 在执行此块前需 export 为 shell 变量**）：
+**单轨设计**：所有章节直接写在 `main.tex` 的 `\section{}` 下（与 paper-init 的 `manuscript.tex` 单文件模式一致）。`sections/*.md` 是写作稿，由 `/fund-polish` 定稿时**灌入** `main.tex` 的对应 `\section{}`。无 `chapters/` 子目录。
 
 ```bash
 # 前置：主 agent 需已 export 以下变量（值来自 Step 2）
@@ -162,21 +163,10 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 TEMPLATE_DIR=~/.claude/skills/fund-init/templates
 
 case "$FUND_TYPE" in
-  nsfc)
-    cp "$TEMPLATE_DIR/nsfc.tex.tmpl" main.tex
-    CHAPTERS=(01_立项依据 02_研究目标 03_研究内容 04_研究方案 05_创新点 06_可行性分析 07_研究基础 08_经费预算)
-    ;;
-  provincial)
-    cp "$TEMPLATE_DIR/provincial.tex.tmpl" main.tex
-    CHAPTERS=(01_立项依据与研究意义 02_研究目标与内容 03_研究方案与技术路线 04_创新点与可行性 05_研究基础与工作条件 06_经费预算)
-    ;;
-  university)
-    cp "$TEMPLATE_DIR/university.tex.tmpl" main.tex
-    CHAPTERS=(01_立项依据与研究目标 02_研究内容与方案 03_创新点与可行性 04_研究基础与经费)
-    ;;
-  *)
-    echo "✗ unknown FUND_TYPE: $FUND_TYPE"; exit 1
-    ;;
+  nsfc)       cp "$TEMPLATE_DIR/nsfc.tex.tmpl" main.tex ;;
+  provincial) cp "$TEMPLATE_DIR/provincial.tex.tmpl" main.tex ;;
+  university) cp "$TEMPLATE_DIR/university.tex.tmpl" main.tex ;;
+  *)          echo "✗ unknown FUND_TYPE: $FUND_TYPE"; exit 1 ;;
 esac
 cp "$TEMPLATE_DIR/latexmkrc.tmpl" latexmkrc
 
@@ -190,29 +180,14 @@ for f in main.tex latexmkrc; do
                 s/\\{PROPOSAL_DATE\\}/$PROPOSAL_DATE/g" "$f"
 done
 
-# 创建 chapters/ 骨架（每个 .tex 是 \input 对象，内容后期从 sections/*.md 灌入）
-mkdir -p chapters
-for chap in "${CHAPTERS[@]}"; do
-  cat > "chapters/${chap}.tex" <<EOF
-% ${chap} — skeleton created by /fund-init
-% 内容来源：sections/${chap}.md（由 /fund-draft 生成后灌入此处）
-%
-% TODO: /fund-draft 生成初稿后，从 sections/${chap}.md 复制内容替换本占位
-
-\section{${chap#*_}}
-
-\noindent (本节初稿待 \verb|/fund-draft| 生成)
-EOF
-done
-
-echo "✓ LaTeX 骨架创建完成 — main.tex + ${#CHAPTERS[@]} 个 chapters/*.tex"
+echo "✓ LaTeX 骨架创建完成 — main.tex（单文件）+ latexmkrc"
 ```
 
 > **Bib 契约**：`{项目简称}.bib` 在项目根目录（与 paper-init 对齐），LaTeX 通过 `\addbibresource{{项目简称}.bib}` 加载。
 >
 > **图路径契约**：main.tex 已含 `\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}`，与 figure skill 的产出目录对齐。
 >
-> **编译验证**：生成后运行 `latexmk -xelatex main.tex` 做空稿验证；失败记录到 build log，不阻断 init。
+> **灌入契约**：`main.tex` 每个 `\section{}` 下有占位注释 `% 本节正文待灌入自 sections/{NN}_{名}.md`，/fund-polish 定稿时按此灌入。
 
 ### Step 4: 生成项目 CLAUDE.md
 

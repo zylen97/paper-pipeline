@@ -90,7 +90,7 @@ Gap 段数量将根据 idea.md 适配。
 
 **Gap 段数量适配**（唯一允许的结构修改）：
 
-当 `{SECTION_TYPE}` == "intro" 时，从 idea.md 读取 Gap 数量（`## 2` 中的 Gap 表格行数）和 RQ 数量。Gap 数量必须等于 RQ 数量（一对一映射）。如果 idea.md 中 Gap 数量 ≠ RQ 数量，显示警告并要求用户先修正 idea.md。
+当 `{SECTION_TYPE}` == "intro" 时，从 idea.md 读取 Gap 数量（`## 2` 中的 Gap 表格行数）和 RQ 数量。**典型情形为 1:1 映射**；若 Gap → RQ 是 N:M 多对多映射，按 RQ 数量展开 Gap heading（每个 RQ 的前置 Gap 可以在正文中引用多 Gap）。
 
 模板中的 `{GAP_SECTIONS}` 占位符（或已有的 `### GapN` headings）按实际 Gap/RQ 数量展开/收缩。每个 Gap heading 标注对应的 RQ 编号（如 `### Gap1（→RQ1）`、`### Gap2（→RQ2）`、`### Gap3（→RQ3）`）。
 
@@ -752,7 +752,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 7. **同步 bib**：写入 md 后，立即将本章节新增的 citation key 同步到项目 bib：
    1. 从刚写入的所有要点中提取所有 `\citep{}`/`\citet{}` 中的 citation key（正则提取，去重）
    2. 检查每个 key 是否已在项目 bib 中
-   3. 不在的 → 从 `master.bib` 中提取对应条目，追加到项目 bib 末尾
+   3. 不在的 → 从 `structure/2_literature/citation_pool/master.bib` 中提取对应条目，追加到项目 bib 末尾
    4. master.bib 中也找不到 → 跳过（该 key 可能是手动添加的老文献，已在项目 bib 中，或标记为 `(ref)` 的待补文献）
    5. 显示同步结果：`📚 Bib 同步：{N} 个 key，新增 {M} 条到项目 bib`（M=0 时不显示）
 

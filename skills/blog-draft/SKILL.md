@@ -402,8 +402,9 @@ sips --cropToHeightWidth 500 900 "$BASE/{slug}-01.png" --out "$BASE/{slug}-01.pn
 > - 文件夹**内部**的 `{slug}.png` / `{slug}.md` 文件名保持英文 slug 不变（仅外层文件夹用中文格式）
 
 ```bash
-# 从刚生成的博客 md 中提取命名字段
-BLOG_MD="src/data/blog/{slug}.md"
+# 从刚生成的博客 md 中提取命名字段（{slug} 是主 agent 替换的占位符，对应当前博客 slug）
+SLUG="{slug}"
+BLOG_MD="src/data/blog/${SLUG}.md"
 CATEGORY=$(grep '^category:' "$BLOG_MD" | sed 's|category: *"||;s|"$||')
 TITLE=$(grep '^title:' "$BLOG_MD" | sed 's|title: *"||;s|"$||')
 DATE=$(grep '^date:' "$BLOG_MD" | sed 's|date: *"||;s|"$||')

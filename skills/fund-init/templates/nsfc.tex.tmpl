@@ -1,10 +1,9 @@
 % !TEX program = xelatex
-% 国家自然科学基金 (NSFC) 申请书正文模板
-% 需要 XeLaTeX 编译（中文支持）
+% 国家自然科学基金 (NSFC) 申请书正文模板（单文件模式）
+% 需要 XeLaTeX 编译
 
 \documentclass[11pt,a4paper]{ctexart}
 
-% ===== 基础宏包 =====
 \usepackage{geometry}
 \geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
 \usepackage{setspace}
@@ -26,47 +25,43 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks,linkcolor=black,citecolor=blue}
 
-% 参考文献（APA / GB/T 7714）
 \usepackage[style=gb7714-2015,sorting=none,backend=biber]{biblatex}
 \addbibresource{{PROJECT_SLUG}.bib}
 
-% 章节样式：NSFC 采用"立项依据 / 研究内容 / 研究方案 / 创新点 / 研究基础"
 \CTEXsetup[format={\Large\bfseries},name={(一)\,,},number={\chinese{section}}]{section}
 \CTEXsetup[format={\large\bfseries},number={\arabic{subsection}}]{subsection}
 
-% ===== 标题块 =====
-\title{{\bf 国家自然科学基金项目申请书}\\[6pt]\Large {PROJECT_TITLE}}
-\author{{申请人}：{APPLICANT} \\ {依托单位}：{AFFILIATION}}
+\title{\textbf{国家自然科学基金项目申请书}\\[6pt]\Large {PROJECT_TITLE}}
+\author{申请人：{APPLICANT} \\ 依托单位：{AFFILIATION}}
 \date{{PROPOSAL_DATE}}
 
 \begin{document}
 \maketitle
 
-% ===== 立项依据 =====
-\input{chapters/01_立项依据}
+\section{立项依据}
+% 本节正文待灌入自 sections/01_立项依据.md
 
-% ===== 研究目标 =====
-\input{chapters/02_研究目标}
+\section{研究目标}
+% 本节正文待灌入自 sections/02_研究目标.md
 
-% ===== 研究内容 =====
-\input{chapters/03_研究内容}
+\section{研究内容}
+% 本节正文待灌入自 sections/03_研究内容.md
 
-% ===== 研究方案 =====
-\input{chapters/04_研究方案}
+\section{研究方案}
+% 本节正文待灌入自 sections/04_研究方案.md
 
-% ===== 创新点 =====
-\input{chapters/05_创新点}
+\section{创新点}
+% 本节正文待灌入自 sections/05_创新点.md
 
-% ===== 可行性分析 =====
-\input{chapters/06_可行性分析}
+\section{可行性分析}
+% 本节正文待灌入自 sections/06_可行性分析.md
 
-% ===== 研究基础 =====
-\input{chapters/07_研究基础}
+\section{研究基础}
+% 本节正文待灌入自 sections/07_研究基础.md
 
-% ===== 经费预算说明 =====
-\input{chapters/08_经费预算}
+\section{经费预算}
+% 本节正文待灌入自 sections/08_经费预算.md（填表格式）
 
-% ===== 参考文献 =====
 \printbibliography[title={参考文献}]
 
 \end{document}

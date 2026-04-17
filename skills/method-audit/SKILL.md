@@ -497,7 +497,8 @@ import fitz  # PyMuPDF
 对标分析产出的 benchmark 报告和横向比对表是后续审计的基础数据，必须在进入审计前备份。
 
 ```bash
-git add structure/3_methodology/benchmark/*/*_benchmark.md \
+git add structure/3_methodology/benchmark/benchmark_papers.ris \
+       structure/3_methodology/benchmark/*/*_benchmark.md \
        structure/3_methodology/benchmark/*/figures/ \
        structure/3_methodology/benchmark/*/tables/ \
        structure/3_methodology/benchmark/_visual_index.md \
@@ -505,7 +506,7 @@ git add structure/3_methodology/benchmark/*/*_benchmark.md \
 git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 ```
 
-> 注：显式添加 benchmark.md、figures/、tables/，**不添加 PDF**（二进制大文件不入 git）。_visual_index.md 和 cross_comparison.md 保留在 benchmark 根目录。
+> 注：显式添加 benchmark.md、figures/、tables/、benchmark_papers.ris（决策表 B 分支复用缓存时从 ris 取 citation key），**不添加 PDF**（二进制大文件不入 git）。_visual_index.md 和 cross_comparison.md 保留在 benchmark 根目录。
 
 ### 2.5.1 生成 method_landscape.md
 

@@ -179,10 +179,22 @@ prompt：
 - [一致/不一致] 具体说明
 ```
 
+### Step 5.5: 灌入 main.tex（单轨模式落地）
+
+所有章节 md 用户审批通过后，把 `sections/*.md` 的正文灌入 `main.tex` 对应 `\section{}` 下方（替换 fund-init Step 3.5 留下的 `% 本节正文待灌入自 sections/{NN}_{名}.md` 占位注释）。
+
+**灌入规则**：
+- md 中的 `# 章节标题` 和 frontmatter 注释（`<!-- 目标字数: ... -->` 等）**不灌入**，只灌入正文
+- md 的 `##` 标题映射为 LaTeX `\subsection{}`；`###` 映射为 `\subsubsection{}`
+- 列表、表格、公式按 Pandoc-style 转 LaTeX（或用户已自行写 LaTeX 语法的片段直接保留）
+- 章节间顺序严格按 CLAUDE.md `## 章节规划` 对应 main.tex `\section{}` 顺序
+
+**写入前**：AskUserQuestion 展示灌入预览（每章 diff）供确认。**写入后**：跑 `latexmk -xelatex main.tex` 做编译验证，失败则记录到 build log 并提示用户排查。
+
 ### Step 6: 收尾
 
 - **不**自动把阶段改为 `submitted`——`polishing → submitted` 不由本 skill 负责，应在用户真实投递时手动更新（或由未来的 `/fund-submit` skill 触发）。
-- 向用户展示润色摘要 + 剩余改进建议，并提示："润色完成，可进入投递；投递后手动将 CLAUDE.md 的 `## 项目阶段` 改为 `submitted`。"
+- 向用户展示润色摘要 + 剩余改进建议，并提示："润色完成，main.tex 已灌入，可进入投递；投递后手动将 CLAUDE.md 的 `## 项目阶段` 改为 `submitted`。"
 
 ## 注意事项
 
