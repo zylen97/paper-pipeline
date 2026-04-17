@@ -18,8 +18,8 @@ description: "逐章撰写学位论文中文正文：基于扩写大纲 + 源英
 - chapters/ 下 .tex 文件已创建，含三级标题骨架和写作指引注释
 - 源英文论文路径已记录在项目 CLAUDE.md 中
 - 中文学术写作 agent 存在：`~/.claude/agents/sci-writer-zh.md`
-- （推荐）`chapters/ch*_outline.md` 已由 `/diss-outline` 生成——如存在，将作为写作主入口；如不存在，从源文件直接提取（向后兼容）
-- （推荐）`chapters/ch*_material.md` 已由 `/diss-outline` 步骤 2.5 生成——如存在，新增/展开节将获得 citation_pool 文献素材；如不存在，仅使用源内容（向后兼容）
+- `chapters/ch*_outline.md` 已由 `/diss-outline` 生成（主入口，必需）
+- `chapters/ch*_material.md` 已由 `/diss-outline` 步骤 2.5 生成（新增/展开节的文献素材来源，可选）
 
 ---
 
@@ -92,18 +92,14 @@ description: "逐章撰写学位论文中文正文：基于扩写大纲 + 源英
   - 参考文献 bib 文件
 ```
 
-#### 0.3 读取章节大纲与素材（如存在）
+#### 0.3 读取章节大纲与素材
 
-检查 `chapters/ch{N}_outline.md` 是否存在（N = 目标章节号）：
-- **存在** → 读取目标章节的 outline 文件，提取：写作要点、参考段落、术语对照、写作注意、图表需求。标记 `OUTLINE_AVAILABLE = true`
-- **不存在** → 标记 `OUTLINE_AVAILABLE = false`，后续 Step 1.1 使用直接提取模式
+读取 `chapters/ch{N}_outline.md`（N = 目标章节号），提取：写作要点、参考段落、术语对照、写作注意、图表需求。**不存在 → 停止并提示"请先跑 `/diss-outline` 生成章节大纲"。**
 
-检查 `chapters/ch{N}_material.md` 是否存在：
-- **存在** → 读取，按 subsection 标题索引素材包（每个 `##` 标题对应一个 subsection 的素材）。标记 `MATERIAL_AVAILABLE = true`
-  - **header 匹配校验**：material.md 的 `##` 标题必须与 outline.md 的 `###` 标题（或 .tex 的 `\subsection`）一致。如有不匹配，在对话中 WARNING 列出差异条目
-  - **citation key 校验与自动导入**：扫描 material.md 中所有 `**citation_key**` 引用，检查是否存在于项目 bib 文件中。不存在的 key → 自动从 `structure/2_literature/citation_pool/master.bib` 导入对应条目到项目 bib（追加，不覆盖已有条目）。master.bib 也不存在 → WARNING 列出缺失 key，提醒用户手动补充
-    > **设计原理**：正常流程中 `/diss-outline` Step 2.5.6 已完成 bib 同步。此处是兜底逻辑，处理跳过 outline 或 outline 阶段未执行 bib 同步的情况
-- **不存在** → 标记 `MATERIAL_AVAILABLE = false`，后续 Step 1.1 不注入素材（向后兼容）
+读取 `chapters/ch{N}_material.md`，按 subsection 标题索引素材包（每个 `##` 标题对应一个 subsection 的素材）：
+- **header 匹配校验**：material.md 的 `##` 标题必须与 outline.md 的 `###` 标题（或 .tex 的 `\subsection`）一致。如有不匹配，在对话中 WARNING 列出差异条目
+- **citation key 校验**：扫描 material.md 中所有 `**citation_key**` 引用，检查是否存在于项目 bib 文件中。不存在 → WARNING 列出缺失 key
+- **不存在** → 跳过素材注入（改写模式只需 outline 即可工作）
 
 #### 0.4 确定目标章节
 
@@ -146,40 +142,29 @@ END FOR
 
 根据当前 subsection 的内容来源标注，组装 sci-writer-zh 的输入：
 
-**有 outline 时（OUTLINE_AVAILABLE = true）**：
+**主入口：`ch*_outline.md`**
 
-以 `ch*_outline.md` 中对应 subsection 的大纲为主入口：
+以 outline 中对应 subsection 的大纲为主入口：
 - 直接使用其**写作要点**作为写作蓝图
 - 直接使用其**参考段落**（已含 manuscript.tex 原文引用和行号）
 - 直接使用其**术语对照**
 - 直接使用其**写作注意**
 - 仅在 outline 信息不足时（如参考段落为空），才回源 manuscript.tex 补充
 
-**素材注入（MATERIAL_AVAILABLE = true 且当前节为新增/展开模式）**：
+**素材注入（当前节为新增/展开模式且 `ch*_material.md` 存在时）**：
 
-从 `ch*_material.md` 读取当前 subsection 对应的素材包（按 `##` 标题匹配）：
+从 material.md 读取当前 subsection 对应的素材包（按 `##` 标题匹配）：
 - 提取「应引用文献」列表（含 citation_key + 核心论点 + 本节用法 + **[分级: 核心/重要/备选] 标签**）
-- **分级标签保留**：material.md 中每篇文献素材的 `[分级: ...]` 标签必须原样保留进入 prompt，不可丢弃——sci-writer-zh 依赖分级做引用优先级决策
+- **分级标签保留**：material.md 中每篇文献素材的 `[分级: ...]` 标签必须原样保留进入 prompt，不可丢弃
 - 提取「源项目可复用素材」（如有）
 - 提取「外部数据需求」或「需要补充的内容」（如有）
-- 注入 sci-writer-zh prompt 的「## 参考文献素材」字段（见 Step 1.2），并按 核心→重要→备选 的顺序排列
+- 注入 sci-writer-zh prompt 的「## 参考文献素材」字段，按 核心→重要→备选 排列
 
-> MATERIAL_AVAILABLE = false 时跳过此步，行为与修改前完全一致。
+**图表就绪检查**：
+- 获取当前节需要的图表列表（来自 outline 图表需求）
+- 未创建 → 提醒用户先用 `/figure` 或 `/latex-table` 创建
 
-**无 outline 时（向后兼容）**：
-
-按写作模式从源文件直接提取：
-- **改写**：从源 manuscript.tex 提取对应 section + 从源 bib 提取引用条目
-- **展开**：从源 manuscript.tex 提取对应 section + .tex 骨架注释中的 Guidelines
-- **新增**：无源内容，从 .tex 骨架注释读取 Guidelines + bib 中相关中文文献
-- **重组**：从源 manuscript.tex 提取多个 section + 标注重组逻辑
-
-**图表就绪检查**（两种模式通用）：
-- 获取当前节需要的图表列表（来自 outline 图表需求 或 .tex 骨架注释）
-- 检查对应图表文件是否已创建
-- 未创建 → 提醒用户先用 `/figure` 或 `/latex-table` 创建（可选择继续，图表引用暂留 placeholder）
-
-**所有模式通用**（无论有无 outline / material，每节都执行）：
+**每节通用注入**：
 - {PRIOR_OUTPUTS}：本章前序已完成内容
 - 项目术语表（从 CLAUDE.md `## 术语表` 读取）
 - 字数目标
@@ -206,8 +191,7 @@ END FOR
 {SOURCE_CONTENT — 改写/展开/重组模式提供；新增模式标注"无源内容"}
 
 ## 写作指引
-{如 OUTLINE_AVAILABLE：注入 ch*_outline.md 中对应 subsection 的完整结构化大纲（写作要点 + 参考段落 + 术语对照 + 写作注意）}
-{如无 outline：从 .tex 骨架注释提取 Guidelines}
+注入 ch*_outline.md 中对应 subsection 的完整结构化大纲（写作要点 + 参考段落 + 术语对照 + 写作注意）
 
 ## 本章前序内容（保持术语和行文一致）
 {PRIOR_OUTPUTS}
@@ -218,7 +202,7 @@ END FOR
 ## 可用引用
 {CITATIONS — 从 bib 文件提取的相关条目}
 
-## 参考文献素材（仅新增/展开模式且 MATERIAL_AVAILABLE 时提供）
+## 参考文献素材（仅新增/展开模式且 material.md 存在时提供）
 以下是本节应引用的文献及其核心论点。请将这些论点有机地编织到正文叙述中，
 不要简单罗列"XX研究了YY"，而要将其作为论证链条的一环。
 
@@ -237,7 +221,7 @@ END FOR
 - "提供证据" → 如"作者名\cite{key}基于YY数据发现……"
 - "对比讨论" → 如"与作者名\cite{key}的研究不同，本文……"
 
-{如 MATERIAL_AVAILABLE = false 或当前节为改写/重组模式，省略"新节素材"但仍注入分级优先级说明}
+{如 material.md 不存在或当前节为改写/重组模式，省略"新节素材"但仍注入分级优先级说明}
 
 ## 中文学术写作要求
 1. 使用正式学术中文，避免口语化和翻译腔
@@ -340,7 +324,7 @@ END FOR
    - 自然过渡到下一章（如有）
    - 字数：200-300 字
    - 不需要引用文献
-   - 过渡到下一章时，参考 ch*_outline.md 中下一章的章节概览（标题和主要内容），不依赖下一章的正文内容；如无 outline，从 .tex 骨架中下一章的 \chapter 和 \section 标题推断
+   - 过渡到下一章时，参考 ch*_outline.md 中下一章的章节概览（标题和主要内容），不依赖下一章的正文内容
    - 如果是最后一章（结论章），不需要过渡句
    ```
 4. 用户确认后写入

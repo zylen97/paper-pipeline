@@ -223,23 +223,6 @@ constraint：
 - 输出：润色后全文 + 修改要点摘要
 ```
 
-### 2.4c Language Auditor 三重系统审查（可选但推荐）
-
-并行跑 3 次 `language-auditor`（scope="grammar"/"coherence"/"register"），汇总 issue 后由主 agent 决定是否修订：
-
-```
-subagent_type: general-purpose
-并行 3 个调用
-每个调用：
-  prompt：
-  调用 ~/.claude/agents/language-auditor.md
-  scope={grammar|coherence|register}
-  input={2.4b polisher 输出}
-  constraint：只报 issue，不改文本
-```
-
-汇总 issue 后展示给用户，用户决定是否接受并进入 2.5 写入。
-
 ### 2.5 用户确认并写入
 
 用户确认 → 写入 `{ABSTRACT_EN_FILE}`。

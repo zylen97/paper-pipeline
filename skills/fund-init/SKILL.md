@@ -147,11 +147,9 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 └── attachments/
 ```
 
-### Step 3.5: 创建 LaTeX 骨架（可选，用户选择启用）
+### Step 3.5: 创建 LaTeX 骨架
 
-AskUserQuestion："是否初始化 LaTeX 骨架（main.tex + chapters/）？基金 md 写作与 LaTeX 编译可并行，正式提交时从 md 灌入 tex。"
-
-若选"是"，按基金类型复制模板（**变量必须来自 Step 2 的 `{FUND_INFO}` 结果，主 agent 在执行此块前需 export 为 shell 变量**）：
+按基金类型复制模板（**变量必须来自 Step 2 的 `{FUND_INFO}` 结果，主 agent 在执行此块前需 export 为 shell 变量**）：
 
 ```bash
 # 前置：主 agent 需已 export 以下变量（值来自 Step 2）

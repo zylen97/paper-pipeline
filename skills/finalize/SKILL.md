@@ -453,60 +453,24 @@ AskUserQuestion：
 
 ### 4.3 执行清理
 
-**⚠️ 清理前 snapshot（强制）**：`rm -rf` 是不可逆操作，必须在执行前打 git tag 并 push。**Snapshot 和 清理必须在同一 bash 调用里执行**——`set -euo pipefail` 不跨 Bash 工具调用，分两块写会让 Step 1 的 exit 1 熔断失效、rm -rf 照常运行。
+清理前做一个 snapshot commit 作为恢复点（`rm -rf` 不可逆，如需恢复用 `git reset --hard HEAD~1`）：
 
 ```bash
-# 单次 Bash 调用 — snapshot + 清理原子闭环
-set -euo pipefail
+git add structure/ drafts/ && git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
 
-# ===== Step 1: Snapshot tag =====
-TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-# 精确 stage 避免误纳 .DS_Store / 临时文件
-git add structure/ drafts/ 2>/dev/null || true
-git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
-git tag -a "$TAG" -m "Scaffolding (structure/ + drafts/) snapshot before Phase 4 cleanup"
-# 用 HEAD 兼容 master/dev/feature 分支；push 失败则回滚本地 tag 再退出
-if ! git push origin HEAD "$TAG"; then
-  git tag -d "$TAG" >/dev/null 2>&1 || true
-  echo "✗ push failed — local tag rolled back; rm -rf aborted"
-  exit 1
-fi
-echo "✓ Snapshot tag pushed to origin/$BRANCH: $TAG"
-echo "  Recovery: git checkout $TAG -- structure/ drafts/   (若日后需要)"
-
-# ===== Step 2: 删除脚手架（set -e 传递：上面任一失败则不进入此段） =====
-# 叙述型章节目录（discussion 编号因方法类型而异：modeling=6, 其他=5）
-rm -rf structure/1_introduction/
-rm -rf structure/*discussion*/
-
-# 叙述型章节 md 及其伴生 json（citation_paths 全目录清扫）
+# 删除脚手架
+rm -rf structure/1_introduction/ structure/*discussion*/
 rm -f structure/2_literature/literature.md
 find structure/ -name "_citation_paths.json" -delete
+rm -f structure/3_methodology/*.md structure/4_results/*.md structure/5_simulation/*.md
 
-# 技术章节——只删 md 和临时文件，保留 benchmark/ 等研究资产
-rm -f structure/3_methodology/*.md
-rm -f structure/4_results/*.md
-rm -f structure/5_simulation/*.md
-find structure/ -name .DS_Store -delete 2>/dev/null || true
-# 非 modeling 项目可能没有 5_simulation/，用 || true 避免 find 报错触发 set -e
-find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null || true
-
-# 保留 writing_brief 到 submission/ 供 pre-submit 使用
+# 保留 writing_brief 到 submission/
 mkdir -p submission/
-# 用 if/fi 而非 `[ -f ] && cmd`：在 set -e 下后者当文件不存在时会触发脚本退出
-if [ -f drafts/writing_brief.md ]; then
-  mv drafts/writing_brief.md submission/writing_brief.md
-fi
+mv drafts/writing_brief.md submission/writing_brief.md
 
-# 写作中间产物
+# 删中间产物
 rm -rf drafts/
-
-echo "✓ Phase 4.3 清理完成"
 ```
-
-> **为什么合并为一个 bash 块**：主 agent 调 Bash 工具是每次开新 shell 进程，`set -euo pipefail` 不跨调用。如果 Step 1（snapshot）和 Step 2（rm -rf）分两次 Bash 调用，Step 1 里的 `git push` 失败时 `exit 1` 只会终止它自己那次调用，主 agent 仍会发起第二次 Bash 调用执行 rm -rf，snapshot 失败但脚手架照删——**"备份先行"契约破产**。合并到同一 bash 块后，push 失败 → set -e 触发退出 → rm -rf 根本不会执行。
 
 ### 4.4 Git Checkpoint & Push
 

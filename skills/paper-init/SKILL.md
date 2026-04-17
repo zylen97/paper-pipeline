@@ -460,75 +460,27 @@ manuscript.tex 模板中 §3/§4 使用通用占位。写入后，根据 `{METHO
 
 #### cls/bst 文件（根据 {PUBLISHER} 复制）
 
-**elsevier**：
 ```bash
-EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "elsarticle.cls" -maxdepth 8 -print -quit 2>/dev/null)
-if [ -n "$EXISTING" ]; then
-  cp "$EXISTING" .
-  cp "$(dirname "$EXISTING")/elsarticle-harv.bst" . 2>/dev/null
-fi
-if [ ! -f elsarticle.cls ]; then
-  TEXLIVE_CLS=$(kpsewhich elsarticle.cls 2>/dev/null)
-  TEXLIVE_BST=$(kpsewhich elsarticle-harv.bst 2>/dev/null)
-  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
-  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
-fi
-```
+# 通用函数：先找 Dropbox 缓存，再查 TeX Live
+copy_cls() {
+  local name=$1
+  local src=$(find ~/Library/CloudStorage/Dropbox -name "$name" -maxdepth 8 -print -quit 2>/dev/null)
+  [ -z "$src" ] && src=$(kpsewhich "$name" 2>/dev/null)
+  if [ -n "$src" ]; then
+    cp "$src" .
+  else
+    echo "⚠️ $name 未找到"
+  fi
+}
 
-**asce**：
-```bash
-EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "ascelike.cls" -maxdepth 8 -print -quit 2>/dev/null)
-if [ -n "$EXISTING" ]; then
-  cp "$EXISTING" .
-  cp "$(dirname "$EXISTING")/ascelike.bst" . 2>/dev/null
-fi
-```
-
-**emerald**：无专用 cls/bst，不复制。
-
-**sage**：
-```bash
-EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "sagej.cls" -maxdepth 8 -print -quit 2>/dev/null)
-if [ -n "$EXISTING" ]; then
-  cp "$EXISTING" .
-  cp "$(dirname "$EXISTING")/SageH.bst" . 2>/dev/null
-fi
-if [ ! -f sagej.cls ]; then
-  TEXLIVE_CLS=$(kpsewhich sagej.cls 2>/dev/null)
-  TEXLIVE_BST=$(kpsewhich SageH.bst 2>/dev/null)
-  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
-  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
-fi
-```
-
-**ieee**：
-```bash
-EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "IEEEtran.cls" -maxdepth 8 -print -quit 2>/dev/null)
-if [ -n "$EXISTING" ]; then
-  cp "$EXISTING" .
-  cp "$(dirname "$EXISTING")/IEEEtran.bst" . 2>/dev/null
-fi
-if [ ! -f IEEEtran.cls ]; then
-  TEXLIVE_CLS=$(kpsewhich IEEEtran.cls 2>/dev/null)
-  TEXLIVE_BST=$(kpsewhich IEEEtran.bst 2>/dev/null)
-  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
-  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
-fi
-```
-
-**wiley**：
-```bash
-EXISTING=$(find ~/Library/CloudStorage/Dropbox -name "WileyNJDv5.cls" -maxdepth 8 -print -quit 2>/dev/null)
-if [ -n "$EXISTING" ]; then
-  cp "$EXISTING" .
-  cp "$(dirname "$EXISTING")/wileyNJD-APA.bst" . 2>/dev/null
-fi
-if [ ! -f WileyNJDv5.cls ]; then
-  TEXLIVE_CLS=$(kpsewhich WileyNJDv5.cls 2>/dev/null)
-  TEXLIVE_BST=$(kpsewhich wileyNJD-APA.bst 2>/dev/null)
-  [ -n "$TEXLIVE_CLS" ] && cp "$TEXLIVE_CLS" .
-  [ -n "$TEXLIVE_BST" ] && cp "$TEXLIVE_BST" .
-fi
+case "$PUBLISHER" in
+  elsevier) copy_cls elsarticle.cls;   copy_cls elsarticle-harv.bst ;;
+  asce)     copy_cls ascelike.cls;     copy_cls ascelike.bst ;;
+  emerald)  : ;;  # 无专用 cls/bst
+  sage)     copy_cls sagej.cls;        copy_cls SageH.bst ;;
+  ieee)     copy_cls IEEEtran.cls;     copy_cls IEEEtran.bst ;;
+  wiley)    copy_cls WileyNJDv5.cls;   copy_cls wileyNJD-APA.bst ;;
+esac
 ```
 
 #### latexmkrc（编译配置）

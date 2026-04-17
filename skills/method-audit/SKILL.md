@@ -153,40 +153,14 @@ results.md:
 
 ### 2.0 对标入口判定
 
-按优先级依次检查（命中即停，不继续后续判断）：
+按以下顺序检查，命中即按对应走法处理：
 
-```
-0. 前置：citation_pool 目录存在性检查（最先执行）
-   IF NOT exist structure/2_literature/citation_pool/:
-     → 🔴 阻断：
-       "未检测到 citation_pool/ 目录。请先完成 /lit-plan → /lit-review → /lit-tag → /lit-pool
-        再运行 /method-audit。降级模式（纯知识审计）仅在 citation_pool/ 存在但 METHOD/COMP 标签为空时触发。"
-     → exit 1，不进入后续判断
-
-1. 检查缓存（最高优先级）：
-   IF structure/3_methodology/benchmark/cross_comparison.md 存在且时间戳 < 7 天:
-     → AskUserQuestion：
-       "检测到已有对标分析（{date}，{N} 篇论文）。
-       (1) 复用现有对标数据（推荐）
-       (2) 重新分析"
-     用户选 (1) → 跳过 2.1-2.4，直接读取 cross_comparison.md，进入 2.6
-       ⚠️ 但须检查视觉素材：如果 benchmark/ 下不存在 per-paper 子目录
-       （即 PDF 仍在根目录、无 figures/tables/ 子目录），
-       则补跑 2.3.2（自动组织）+ 2.3.3（图表提取），再进入 2.6
-     用户选 (2) → 继续检查下一条件
-
-2. 检查引用池：
-   IF citation pool 中无 METHOD/COMP 标签的论文:
-     → AskUserQuestion：
-       "引用池中未找到同方法的对标论文。
-       (1) 手动指定论文（提供 citation key 或标题，我来生成候选列表）
-       (2) 跳过对标，使用 Claude 知识进行审计（降级模式）"
-     用户选 (2) → 跳过整个步骤 2，步骤 3 回退为纯知识审计（不附带行业基线标注）
-     用户选 (1) → 进入 2.1（用户手动提供列表）
-
-3. 正常流程：
-   ELSE → 正常执行 2.1
-```
+| 检查 | 条件 | 走法 |
+|:----|:----|:----|
+| A. 前置 | `structure/2_literature/citation_pool/` 不存在 | 🔴 阻断：提示先跑 `/lit-plan → /lit-review → /lit-tag → /lit-pool`，exit |
+| B. 缓存 | `benchmark/cross_comparison.md` 存在且 < 7 天 | AskUserQuestion：(1) 复用（推荐，若无 per-paper 子目录则**先读 `benchmark_papers.ris` 取 citation key 列表**，再补跑 2.3.2+2.3.3，进 2.6） (2) 重新分析 → 继续 C |
+| C. 引用池 | METHOD/COMP 标签全空 | AskUserQuestion：(1) 手动指定候选 → 进 2.1 (2) 跳过步骤 2，步骤 3 走降级纯知识审计 |
+| D. 正常 | 以上都不命中 | 进入 2.1 |
 
 ### 2.1 筛选对标论文
 
