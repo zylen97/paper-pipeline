@@ -77,23 +77,24 @@ def screen_one(index: int, title: str, abstract: str, direction: str, api_key: s
 
 
 def _parse_answer(answer: str) -> tuple[bool, str]:
-    """解析 LLM 返回的 '标注. 理由' 格式。"""
+    """解析 LLM 返回的 '标注. 理由' 格式。宁留勿删：格式异常默认保留。"""
     answer = answer.strip()
-    # 匹配 "1. 理由" 或 "0. 理由"（开头可能有空格）
+    # Primary: "0. 理由" 或 "1. 理由"（六非博标准格式）
     match = re.match(r"^\s*([01])\s*[.。:：]\s*(.*)$", answer, re.DOTALL)
     if match:
-        label = match.group(1)
-        reason = match.group(2).strip()
-        return label == "1", reason
-    # 回退：检查开头字符
+        return match.group(1) == "1", match.group(2).strip()
+    # Secondary: 首字符判断
     if answer.startswith("1"):
         return True, answer
-    elif answer.startswith("0"):
+    if answer.startswith("0"):
         return False, answer
-    # 最终回退：包含关键词
-    if "直接相关" in answer or "标注为 1" in answer or "标注为1" in answer:
+    # Tertiary: 先查排除词（"不相关"含"相关"，必须优先）
+    if re.search(r"不相关|无关|标注[为:：]?\s*0", answer):
+        return False, answer
+    if re.search(r"标注[为:：]?\s*1|直接相关|方法相关|主题相关|高度相似|匹配", answer):
         return True, answer
-    return False, answer
+    # Ultimate fallback: 宁留勿删
+    return True, f"[parse_fallback_retain] {answer}"
 
 
 def screen(ris_path: str, direction: str, api_key: str, threads: int = 20, output_path: str | None = None):

@@ -122,52 +122,57 @@ LLM 相关性筛选结果（方向：{direction}）：
 
 如果有被移除的论文，列出前 10 篇的标题供用户快速检查。
 
-### Step 4: 总结 + 归档原始 RIS（建议操作，需用户确认）
+### Step 4: 收尾 — 用最终结果覆盖原始 RIS，清理中间产物
 
-**⚠️ 下游保护**：`/lit-review` 的 `dispatch_plan.py` 用 `ris_dir.glob("*.ris")` 扫描方向文件，如果原始 `{stem}.ris` 和筛选后的 `{stem}_zone2.ris` / `{stem}_llm.ris` 共存于同一目录，会被视为不同批次并**重复消费**，造成配额超额与重复打标。
+**⚠️ 下游保护**：`/lit-review` 的 `dispatch_plan.py` 用 `ris_dir.glob("*.ris")` 扫描方向文件，如果原始 `{stem}.ris`、筛选产物 `{stem}_zone2.ris` / `{stem}_zone2_llm.ris` 共存于同一目录，会被视为不同批次**重复消费**，造成配额超额与重复打标。收尾必须把它们合并为单一的 `{stem}.ris`。
 
-**归档操作**：先执行以下 bash 赋值**计算 `${RIS_DIR}`**（必做，下文命令全部依赖此变量；不硬编码 `structure/2_literature/`——用户可能把 RIS 放在任意位置）：
+**前提约定**：用户**自行在项目外层**（例如 `../raw_literature/`）维护原始 RIS 备份；skill **不在项目目录内做备份**，收尾直接删除中间产物与被覆盖的原始文件。
+
+**确定 FINAL_RIS**:
+- 跑了 LLM → `{stem}_zone2_llm.ris`
+- 仅跑 zone → `{stem}_zone2.ris`
+- 两轮都跳 → 原始 `.ris` 就是 FINAL，**无需收尾**，直接结束
+
+**在同一 bash 块内赋值**（跨 Bash 工具调用变量会丢失）：
 
 ```bash
-# <FINAL_RIS> = 本次筛选链路最终产出的 RIS（跑了 LLM → *_llm.ris；未跑 → *_zone2.ris；两者皆跳 → 原始.ris）
-# 注意：必须在同一个 bash 块内使用 ${RIS_DIR} 和 ${STEM}，跨 Bash 工具调用变量会丢失
+# <FINAL_RIS> = 本次筛选链路最终产出的 RIS（见上方"确定 FINAL_RIS"）
 RIS_DIR=$(dirname "<FINAL_RIS>")
-STEM_ORIG=$(basename "<FINAL_RIS>" | sed -E 's/(_zone2|_llm)?\.ris$//')
+STEM_ORIG=$(basename "<FINAL_RIS>" | sed -E 's/(_zone[0-9]+)?(_llm)?\.ris$//')
 echo "RIS 所在目录: $RIS_DIR, 原始 stem: $STEM_ORIG"
 ```
 
 然后 AskUserQuestion 确认：
 
 ```
-检测到原始 RIS: ${RIS_DIR}/${STEM_ORIG}.ris
-与 /lit-review 的 glob *.ris 冲突，建议归档。选择：
-  (1) 归档到 ${RIS_DIR}/_raw/（推荐，保留备份）
-  (2) 改为 .ris.bak 后缀
-  (3) 保留原状（⚠️ /lit-review 会把 ${STEM_ORIG}.ris 和 <FINAL_RIS> 都扫进去，配额/去重逻辑会按两批独立文献处理，实际等于双倍打标）
+筛选完成。路径: ${RIS_DIR}/${STEM_ORIG}
+
+执行收尾清理：
+  · <FINAL_RIS> → ${STEM_ORIG}.ris（覆盖原始文件）
+  · 删除中间产物 ${STEM_ORIG}_zone[0-9]+.ris（若存在）
+  · 删除 ${STEM_ORIG}_screening.csv（若存在）
+
+前提：原始 RIS 备份已由用户在项目外层维护（skill 不在项目内备份）。
+
+  (1) 确认执行
+  (2) 取消（⚠️ /lit-review 会把原始 .ris 和 <FINAL_RIS> 都扫进去，等于双倍打标）
 ```
 
-用户选 (1)（同一 bash 块内执行，避免 ${RIS_DIR}/${STEM_ORIG} 丢失）：
+用户选 (1)（同一 bash 块内执行，避免 `${RIS_DIR}` / `${STEM_ORIG}` 丢失）：
 ```bash
-# 防自杀：仅当原始 .ris 与 FINAL_RIS 不同路径时才归档（避免把最终产出 mv 走）
-if [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ]; then
-  mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/_raw/"
+# 1. 若原始 .ris 存在且不等于 FINAL_RIS，先删除（给 FINAL 让位）
+if [ -f "${RIS_DIR}/${STEM_ORIG}.ris" ] && [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ]; then
+  rm "${RIS_DIR}/${STEM_ORIG}.ris"
 fi
-# 若有中间产物 _zone2.ris（非最终），也归档
-if [ -f "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ]; then
-  mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}_zone2.ris" "${RIS_DIR}/_raw/"
-fi
+# 2. 把 FINAL 重命名为原名（若 FINAL 本身就叫 ${STEM_ORIG}.ris，mv 会 no-op 或报错，用 || true 屏蔽）
+[ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ] && \
+  mv "<FINAL_RIS>" "${RIS_DIR}/${STEM_ORIG}.ris"
+# 3. 清理中间产物（所有 _zone[0-9]+.ris + screening.csv，-f 保证不报错）
+rm -f "${RIS_DIR}/${STEM_ORIG}"_zone*.ris \
+      "${RIS_DIR}/${STEM_ORIG}_screening.csv"
 ```
 
-用户选 (2)：
-```bash
-if [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ]; then
-  mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/${STEM_ORIG}.ris.bak"
-fi
-```
-
-用户选 (3)：不动，在完成提示中复述冲突机制：`/lit-review` 对 `${STEM_ORIG}.ris` 和 `<FINAL_RIS>` 会各自消费一遍配额，并造成重复打标。
-
-（`_zone2.ris` 作为中间产物若不再需要，选 (1) 自动一并归档；只保留**最终 RIS**供 /lit-review 消费。）
+用户选 (2)：不动；在完成提示中复述冲突机制（`/lit-review` 会把原始 `.ris` 和 `<FINAL_RIS>` 各自消费一遍）。
 
 汇报完整筛选链路：
 
@@ -179,8 +184,8 @@ xxx 篇
   ↓ LLM 相关性筛选（{direction}）
 xxx 篇 ← 最终结果
 
-输出文件：<FINAL_RIS>
-原始 RIS 已归档至：${RIS_DIR}/_raw/${STEM_ORIG}.ris（用户选 1）或 ${RIS_DIR}/${STEM_ORIG}.ris.bak（用户选 2）；选 3 则原文件保留（⚠️ /lit-review 会重复消费）
+产出: ${RIS_DIR}/${STEM_ORIG}.ris（已覆盖原始，清理完中间产物）
+外部备份: 用户自行维护（skill 不在项目内留备份）
 可直接用于 /lit-review
 ```
 
