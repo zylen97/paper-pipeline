@@ -1,6 +1,6 @@
 # Claude Academic OS
 
-A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 37 skills, 7 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge dissemination.
+A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 39 skills, 8 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge dissemination.
 
 ## System Architecture
 
@@ -118,7 +118,7 @@ For research grant proposals — synthesize 2-3 existing projects into a persuas
 
 ## Layer 5: Quality Assurance
 
-Seven specialized agents that skills dispatch as sub-agents. They are not invoked directly — skills orchestrate them.
+Eight specialized agents that skills dispatch as sub-agents. They are not invoked directly — skills orchestrate them.
 
 | Agent | Role | Used by |
 |:------|:-----|:--------|
@@ -186,7 +186,7 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── language-auditor.md   # English auditor (systematic checklist, read-only)
 │   ├── language-polisher-zh.md # Chinese polisher
 │   └── journal-scout.md      # Journal guidelines
-├── skills/                   # 37 slash-command skills
+├── skills/                   # 39 slash-command skills
 │   ├── idea-scout/           # Literature radar management
 │   ├── paper-init/           # Project scaffolding (6 publishers, 4 method types)
 │   ├── lit-*/                # Literature pipeline (4 skills)
