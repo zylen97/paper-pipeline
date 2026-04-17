@@ -29,7 +29,7 @@ Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶�
   - `{DEGREE_TYPE}`（本科 / 硕士 / 博士）
   - `{MAIN_TEX}`（主文件路径，如 `main.tex` 或 `main-thesis.tex`）
   - `{BIB_FILE}`（bib 文件路径）
-  - `{SOURCE_PROJECT}`（源英文小论文项目路径）
+  - `{SOURCE_PROJECT}`（源英文小论文项目路径，从 CLAUDE.md「`源项目路径`」字段读取）
   - `{SCHOOL}`（学校名称）
   - `{TITLE_ZH}`（中文题目）
   - `{TITLE_EN}`（英文题目）
@@ -57,7 +57,7 @@ Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶�
 在正式开始前，检查章节完成状态：
 
 1. **骨架残留扫描**：扫描所有 `chapters/*.tex`，检查是否存在残留的骨架注释（`% 目标字数：`、`% 内容来源：`、`% Guidelines:`），存在则列出文件和行号
-2. **进度状态检查**：读取 CLAUDE.md 撰写进度，任何状态非 `drafted` 或 `polished` 的章节触发警告（包括 `pending`、`outlined`、`skipped`）。这可以捕获已生成大纲但从未撰写正文的章节。
+2. **进度状态检查**：读取 CLAUDE.md 撰写进度，任何状态非 `drafted` 或 `polished` 的章节触发警告（`pending` / `outlined`——全局状态机只有这四值）。这可以捕获已生成大纲但从未撰写正文的章节。对于在 .tex 中出现 `% TODO: 本节正文稍后补写` 的节（diss-draft 选 [4] 跳过留痕），即使该章其他节已 `drafted`，也要在清单中列出具体 TODO 位置。
 3. **判定**：
    - 发现未完成章节 → 展示清单 + 警告，用户选择：
      - [1] 继续 finalize（跳过门禁，最终报告中标注"部分章节未完成"）
@@ -397,7 +397,7 @@ Phase 5.1 — 图表编号检查
 - 是否使用了 GB/T 7714 兼容的 bst/biblatex 样式
 - 编译 log 中是否有 `Citation undefined` 或 `Empty bibliography` 警告
 - 正文中 `\cite` 命令格式是否统一（`\cite{key}` vs `\citep{key}` vs `\parencite{key}`）
-- **Citation key 格式合规（全局约定）**：扫描 `{BIB_FILE}` 所有条目 key，正则 `^[a-z]+\d{4}[a-z]$`（首作者姓氏小写 + 年份 + 标题首词首字母小写；冲突追加 b/c 后缀）。不符合者列为 `[FAIL] bib key "Xxx2024" 不符合约定格式（应为 {author.lower}+{year}+{shorttitle(1,1)}）`。
+- **Citation key 格式合规（全局约定）**：扫描 `{BIB_FILE}` 所有条目 key，正则 `^[a-z]+\d{4}[a-z][a-z]?$`（首作者姓氏小写 + 年份 + 标题首词首字母小写；冲突追加 b/c 后缀，故允许尾部 1-2 个小写字母）。不符合者列为 `[FAIL] bib key "Xxx2024" 不符合约定格式（应为 {author.lower}+{year}+{shorttitle(1,1)}，冲突加 b/c 后缀）`。
 
 ### 5.3 页眉页脚检查
 

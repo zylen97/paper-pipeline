@@ -289,6 +289,7 @@ git add *.bib && git commit -m "diss-init: migrate bib from source project"
 
 同时更新：
 - 中文题目、英文题目
+- **`源项目路径`**（绝对路径，指向 Zylen paper 或 _gym paper 下的英文论文项目；下游 /diss-outline、/diss-draft、/diss-finalize 统一从此字段读取，这是全工作流唯一权威字段名）
 - 项目阶段更新为 `literature`（diss-init 完成即转入文献补充阶段）
 
 在 CLAUDE.md 中生成 `## 撰写进度` 表：

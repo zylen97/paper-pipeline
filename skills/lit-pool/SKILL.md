@@ -373,9 +373,11 @@ python3 ~/.claude/skills/lit-pool/generate_master_report.py \
 
 ---
 
-## 步骤 7.5：生成方法论综述报告 method_landscape.md
+## 步骤 7.5：生成方法论综述报告 method_landscape.md（**文献视角初版**）
 
 **设计原理**：从 `citation_pool/METHOD.md` 的结构化引用数据中，综合文献方向报告和 idea.md 的方法设计，生成一份面向技术章节开发的方法论地图。该报告是 `/idea-refine` 和技术章节开发的关键输入。
+
+> **生命周期**：本步骤产出的是**文献视角初版**。后续 `/method-audit` 步骤 2.5.1 会**覆盖**此文件为 benchmark 对标视角（二者共用路径 `structure/2_literature/method_landscape.md`，不并存）。lit-pool → method-audit 之间运行 `/idea-refine` 时读到的是此文献视角初版，method-audit 完成后下游（method-end / finalize）读到的是 benchmark 视角终版。
 
 ### 7.5.1 主 Agent 综合写作（不开 subAgent）
 

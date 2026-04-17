@@ -508,9 +508,9 @@ git commit -m "Checkpoint: method-audit benchmark complete ({M} papers)"
 
 > 注：显式添加 benchmark.md、figures/、tables/、benchmark_papers.ris（决策表 B 分支复用缓存时从 ris 取 citation key），**不添加 PDF**（二进制大文件不入 git）。_visual_index.md 和 cross_comparison.md 保留在 benchmark 根目录。
 
-### 2.5.1 生成 method_landscape.md
+### 2.5.1 生成 method_landscape.md（**覆盖 lit-pool 初版**）
 
-从 `cross_comparison.md` 和各 `{key}_benchmark.md` 中汇总，生成 `structure/2_literature/method_landscape.md`：
+从 `cross_comparison.md` 和各 `{key}_benchmark.md` 中汇总，**覆盖写入** `structure/2_literature/method_landscape.md`（lit-pool 步骤 7.5 产出的文献视角初版在此被替换为 benchmark 对标视角，路径共用、不并存）：
 
 - **方法论创新汇总**：从各 benchmark 报告的 B3（模型创新）条目提取，表格形式
 - **模型设计技巧矩阵**：论文 × 技巧，从 cross_comparison.md 表1 提取

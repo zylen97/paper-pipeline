@@ -53,7 +53,7 @@ Section 3: Methodology → 行号范围 [L151-L280]
 
 **citation_pool 路径解析**（按优先级）：
 1. 本项目 CLAUDE.md 中定义的 citation_pool 路径（如已通过 /lit-pool 生成）
-2. 源项目路径下的 `structure/2_literature/citation_pool/`（从 CLAUDE.md 的「源项目」字段读取源项目路径）
+2. 源项目路径下的 `structure/2_literature/citation_pool/`（从 CLAUDE.md 的「`源项目路径`」字段读取）
 3. 都不存在 → 提示用户先运行 /lit-pool
 
 检查解析到的 citation_pool 目录是否存在且包含标签文件：
@@ -536,7 +536,9 @@ git add {项目bib路径} && git commit -m "diss-outline: sync master.bib → re
 
 ### 阶段转换：`literature → drafting`
 
-如果当前项目阶段为 `literature`，更新为 `drafting`（开始生成大纲即进入 drafting 阶段）。
+**转换时机**：Step 4 末尾、本 skill 所有章节 outline 均已用户确认且 CLAUDE.md 进度落地**之后**才执行（不是 Step 0 入场）。此举确保 /lit-plan / /lit-review / /lit-pool 在 literature 阶段下运行完毕，/diss-outline 是 literature → drafting 的唯一触发方。
+
+如果当前项目阶段为 `literature`，更新为 `drafting`。
 
 ### Git Checkpoint + Push（里程碑：大纲定稿）
 

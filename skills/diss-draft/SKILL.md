@@ -59,7 +59,7 @@ description: "逐章撰写学位论文中文正文：基于扩写大纲 + 源英
 ```
 读取项目 CLAUDE.md → 获取：
   - 章节结构与字数分配表（含每节的内容来源标注）
-  - 源英文论文项目路径
+  - 源项目路径（CLAUDE.md「`源项目路径`」字段，即源英文论文项目的绝对路径）
   - 撰写进度（哪些章节已完成）
   - 术语表（如有）
   - 学位类型（硕士/本科）
@@ -294,7 +294,7 @@ END FOR
 
 - 选 [2]：根据用户反馈修改（主 agent 直接修改或重新调用 sci-writer-zh）
 - 选 [3]：重新调用 sci-writer-zh，将用户反馈作为额外指令
-- 选 [4]：标记为 `skipped`，继续下一节
+- 选 [4]：在 .tex 对应 `\subsection{}` 下插入一行 `% TODO: 本节正文稍后补写` 注释，章节级状态保持为 `outlined`（不引入 `skipped` 状态——全局状态机只有 `pending → outlined → drafted → polished`），继续下一节。diss-finalize Phase 0.4 会对 `outlined` 章节报警，此时再决定补写或删节。
 
 #### Step 1.4 — 写入 .tex 文件
 

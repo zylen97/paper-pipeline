@@ -113,13 +113,12 @@ description: "基金项目 idea 挖掘：基于已有科研项目 + 已读论文
 
 用户确认方向后，**锚定**落盘路径为 `/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts/fund-idea_{YYYYMMDD}_{slug}.md`（`_drafts/` 若不存在则 `mkdir -p`；`{slug}` 为基金简称或题目关键词 snake_case）。这样 `/fund-init` 能通过固定路径 glob 找到最新的 fund-idea 文件。
 
-执行：
+执行（主 agent 必须先把 `{slug}` 替换为实际字面量，否则文件名会出现字面量 `{slug}` 或空串；然后用 Write 工具写入 `$OUT` 指向的路径，shell 本身不写文件）：
 ```bash
+SLUG="{slug}"   # 主 agent 替换为实际字符串（snake_case 基金简称）
 mkdir -p /Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts
-OUT="/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts/fund-idea_$(date +%Y%m%d)_{slug}.md"
-# 写入 fund-idea.md 到 $OUT
-echo "✓ fund-idea 已写入: $OUT"
-echo "  下一步: /fund-init（会自动从 _drafts/ glob 最新 fund-idea）"
+OUT="/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts/fund-idea_$(date +%Y%m%d)_${SLUG}.md"
+echo "OUT=$OUT"   # 由主 agent 读取后用 Write 工具写入 fund-idea 内容
 ```
 
 fund-idea.md 内容格式：
