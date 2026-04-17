@@ -99,24 +99,39 @@ sips -s format jpeg -s formatOptions 60 "{input}.png" --out "/tmp/wechat-upload/
 
 ### 3.2 归档素材
 
-压缩上传完成后，将本篇图片归档到 wechat-assets 项目：
+压缩上传完成后，将本篇图片归档到 wechat-assets 项目。
+
+> **归档文件夹命名格式**：`{date}_{category}_{title}`（日期在前，方便按时间排序）
+> - `date`：frontmatter 的 `date`（YYYY-MM-DD）
+> - `category`：frontmatter 的 `category`（夕阳随笔 / 词间散记 / 求索手记）
+> - `title`：frontmatter 的 `title`（中文原标题，保留冒号/问号等符号）
+> - 示例：`2026-04-11_词间散记_任我行：在枷锁中选择你的自由`
+> - 文件夹**内部**的 PNG/md 文件名保持英文 slug 不变（仅外层文件夹用中文格式）
 
 ```bash
-ASSETS="/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/blog/{slug}"
+BLOG_MD="src/data/blog/{slug}.md"
+CATEGORY=$(grep '^category:' "$BLOG_MD" | sed 's|category: *"||;s|"$||')
+TITLE=$(grep '^title:' "$BLOG_MD" | sed 's|title: *"||;s|"$||')
+DATE=$(grep '^date:' "$BLOG_MD" | sed 's|date: *"||;s|"$||')
+FOLDER="${DATE}_${CATEGORY}_${TITLE}"
+
+ASSETS="/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/blog/$FOLDER"
 mkdir -p "$ASSETS"
 # 根据博客 md 中实际引用的图片路径 cp，不要用 {slug}* glob（实际文件名可能不匹配）
 # 例如：从 md 中提取 ![](/academic-site/blog/fc-01-midnight-lights.png) → cp public/blog/fc-01-midnight-lights.png
 # 封面图从 frontmatter cover 字段提取路径
-for img in $(grep -o '/academic-site/blog/[^)]*' "src/data/blog/{slug}.md" | sed 's|/academic-site/blog/||"); do
+for img in $(grep -o '/academic-site/blog/[^)]*' "$BLOG_MD" | sed 's|/academic-site/blog/||'); do
   cp "public/blog/$img" "$ASSETS/" 2>/dev/null
 done
 # 封面图
-cover=$(grep '^cover:' "src/data/blog/{slug}.md" | sed 's|cover: "/academic-site/blog/||;s|"||g')
+cover=$(grep '^cover:' "$BLOG_MD" | sed 's|cover: "/academic-site/blog/||;s|"||g')
 [ -n "$cover" ] && cp "public/blog/$cover" "$ASSETS/" 2>/dev/null
+# 博客正文 md
+cp "$BLOG_MD" "$ASSETS/" 2>/dev/null
 ```
 
 > **素材归档目录**：`/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/`
-> - `blog/{slug}/` — 每篇文章的原始 PNG（封面 + 插图）
+> - `blog/{date}_{category}_{title}/` — 每篇文章的原始 PNG（封面 + 插图）+ 博客 md
 > - `avatars/` — 公众号头像备选图
 
 ### 3.3 上传封面（永久素材）

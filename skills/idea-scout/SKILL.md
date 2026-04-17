@@ -97,16 +97,7 @@ python3 ~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/pipeline/scanners/op
 
 scanner 自动处理：OpenAlex API 拉取 → 摘要重建 → ChatAnywhere 并发翻译（50线程）→ 输出 JSON。
 
-### 3. 保存数据
-
-将论文数据保存为 JSON：
-
-```bash
-# 保存到 Dropbox（归档）
-cp data/latest.json ~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{YYYY-MM-DD}_data.json
-```
-
-### 4. 推送到 GitHub → App 自动更新
+### 3. 推送到 GitHub → App 自动更新
 
 Flutter App 已预构建并部署在 gh-pages 分支，交互式扫描只需更新数据文件，不需要重建 App。
 
@@ -132,11 +123,11 @@ rm -rf /tmp/idea_scout_all_data
 
 **推送完成后，App 会在 1-2 分钟内自动加载最新数据。**
 
-### 5. 更新扫描记录
+### 4. 更新扫描记录
 
 将本次扫描结果写入 `~/.claude/skills/idea-scout/scout_log.json`。
 
-### 6. 完成提示
+### 5. 完成提示
 
 ```
 ✅ 扫描完成
@@ -147,8 +138,6 @@ rm -rf /tmp/idea_scout_all_data
 
 📱 App 已更新: https://zylen97.github.io/idea-scout/
   打开 App → 浏览/筛选 → 勾选感兴趣的 → Export
-
-📂 数据归档: ~/...idea_scout/scout_{date}_data.json
 
 💡 后续:
   1. 在 App 中筛选，Export 选中论文的 JSON
@@ -185,7 +174,7 @@ curl -s "https://api.openalex.org/works?filter=primary_location.source.id:{id1}|
 
 ### 3. 翻译 + 推送
 
-同 Route A 步骤 3-6。
+同 Route A 步骤 3-5。
 
 ---
 
@@ -212,8 +201,7 @@ git push → GitHub Pages                     勾选论文 → Export
 - 数据文件: FT50 `data/latest.json` + `papers.json`，CE/PM `data/cepm_*.json`，CNKI `data/cnki_latest.json`
 
 ### 数据存储
-- **实时数据**: `~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.json` → 推送到 GitHub → App 加载
-- **归档数据**: `~/Library/CloudStorage/Dropbox/02-Research/papers/idea_scout/scout_{date}_data.json`
+- **实时数据**: `~/Library/CloudStorage/Dropbox/04-Coding/idea_scout/data/latest.json` → 推送到 GitHub → App 加载（历史数据通过 `04-Coding/idea_scout` 的 git history 追溯，无需单独归档）
 - **用户选择**: App 中勾选 → Export JSON → 保存为 `idea_scout/selected.json`
 - **扫描记录**: `~/.claude/skills/idea-scout/scout_log.json`
 
