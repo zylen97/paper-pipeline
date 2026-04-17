@@ -14,13 +14,25 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 
 ### Step 1: 读取选题方案
 
-1. 检查当前目录或用户指定路径下是否存在 `fund-idea.md`
-2. 如果存在，读取并提取：基金类型、拟题目、源项目列表、创新点、研究内容
-3. 如果不存在，使用 AskUserQuestion 逐项询问：
+**来源优先级（降级链）**：
+1. 当前目录下 `fund-idea.md`（用户本地已有）
+2. 用户显式指定的路径（如 `$ARGUMENTS` 传入）
+3. `/fund-mine` 产出的 `_drafts/fund-idea_*.md`：
+   ```bash
+   DRAFTS_DIR="/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts"
+   LATEST=$(ls -t "$DRAFTS_DIR"/fund-idea_*.md 2>/dev/null | head -1)
+   if [ -n "$LATEST" ]; then
+     echo "发现 fund-mine 最新产出: $LATEST"
+     # AskUserQuestion 确认是否使用此文件（默认"是"）
+   fi
+   ```
+4. 以上均无 → 使用 AskUserQuestion 逐项询问：
    - 基金类型（国自然/省基金/校级/其他）
    - 项目题目
    - 研究方向简述
    - 关联的源项目（可选）
+
+命中 1/2/3 时，读取并提取：基金类型、拟题目、源项目列表、创新点、研究内容。
 
 ### Step 2: 项目基本信息确认
 
@@ -139,33 +151,63 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 
 AskUserQuestion："是否初始化 LaTeX 骨架（main.tex + chapters/）？基金 md 写作与 LaTeX 编译可并行，正式提交时从 md 灌入 tex。"
 
-若选"是"，按基金类型复制模板：
+若选"是"，按基金类型复制模板（**变量必须来自 Step 2 的 `{FUND_INFO}` 结果，主 agent 在执行此块前需 export 为 shell 变量**）：
 
 ```bash
+# 前置：主 agent 需已 export 以下变量（值来自 Step 2）
+: "${FUND_TYPE:?missing}"      # nsfc | provincial | university
+: "${PROJECT_SLUG:?missing}"   # 英文简称，snake_case
+: "${PROJECT_TITLE:?missing}"  # 中文题目
+: "${APPLICANT:?missing}"      # 申请人姓名
+: "${AFFILIATION:?missing}"    # 依托单位
+
 TEMPLATE_DIR=~/.claude/skills/fund-init/templates
 
 case "$FUND_TYPE" in
-  nsfc)       cp $TEMPLATE_DIR/nsfc.tex.tmpl       main.tex ;;
-  provincial) cp $TEMPLATE_DIR/provincial.tex.tmpl main.tex ;;
-  university) cp $TEMPLATE_DIR/university.tex.tmpl main.tex ;;
+  nsfc)
+    cp "$TEMPLATE_DIR/nsfc.tex.tmpl" main.tex
+    CHAPTERS=(01_立项依据 02_研究目标 03_研究内容 04_研究方案 05_创新点 06_可行性分析 07_研究基础 08_经费预算)
+    ;;
+  provincial)
+    cp "$TEMPLATE_DIR/provincial.tex.tmpl" main.tex
+    CHAPTERS=(01_立项依据与研究意义 02_研究目标与内容 03_研究方案与技术路线 04_创新点 05_研究基础与工作条件)
+    ;;
+  university)
+    cp "$TEMPLATE_DIR/university.tex.tmpl" main.tex
+    CHAPTERS=(01_选题与研究意义 02_研究内容与方案 03_创新点 04_研究基础)
+    ;;
+  *)
+    echo "✗ unknown FUND_TYPE: $FUND_TYPE"; exit 1
+    ;;
 esac
-cp $TEMPLATE_DIR/latexmkrc.tmpl latexmkrc
+cp "$TEMPLATE_DIR/latexmkrc.tmpl" latexmkrc
 
-# 替换占位符
-sed -i '' "s/{PROJECT_SLUG}/$PROJECT_SLUG/g"   main.tex
-sed -i '' "s/{PROJECT_TITLE}/$PROJECT_TITLE/g" main.tex
-sed -i '' "s/{APPLICANT}/$APPLICANT/g"         main.tex
-sed -i '' "s/{AFFILIATION}/$AFFILIATION/g"     main.tex
-sed -i '' "s/{PROPOSAL_DATE}/$(date +%Y-%m-%d)/g" main.tex
-
-# 创建 chapters/ 骨架（每个 .tex 是 input 对象，内容后期从 sections/*.md 灌入）
-mkdir -p chapters
-for f in nsfc:{01_立项依据,02_研究目标,03_研究内容,04_研究方案,05_创新点,06_可行性分析,07_研究基础,08_经费预算} \
-         provincial:{01_立项依据与研究意义,02_研究目标与内容,03_研究方案与技术路线,04_创新点,05_研究基础与工作条件} \
-         university:{01_选题与研究意义,02_研究内容与方案,03_创新点,04_研究基础}; do
-  # 根据 FUND_TYPE 筛选匹配前缀的，创建空 .tex 占位（仅 placeholder comment）
-  ...
+# 替换占位符（perl 写法跨平台，避免 macOS/Linux sed -i 差异）
+PROPOSAL_DATE=$(date +%Y-%m-%d)
+for f in main.tex latexmkrc; do
+  perl -pi -e "s/\\{PROJECT_SLUG\\}/$PROJECT_SLUG/g;   \
+                s/\\{PROJECT_TITLE\\}/$PROJECT_TITLE/g; \
+                s/\\{APPLICANT\\}/$APPLICANT/g;         \
+                s/\\{AFFILIATION\\}/$AFFILIATION/g;     \
+                s/\\{PROPOSAL_DATE\\}/$PROPOSAL_DATE/g" "$f"
 done
+
+# 创建 chapters/ 骨架（每个 .tex 是 \input 对象，内容后期从 sections/*.md 灌入）
+mkdir -p chapters
+for chap in "${CHAPTERS[@]}"; do
+  cat > "chapters/${chap}.tex" <<EOF
+% ${chap} — skeleton created by /fund-init
+% 内容来源：sections/${chap}.md（由 /fund-draft 生成后灌入此处）
+%
+% TODO: /fund-draft 生成初稿后，从 sections/${chap}.md 复制内容替换本占位
+
+\section{${chap#*_}}
+
+\noindent (本节初稿待 \verb|/fund-draft| 生成)
+EOF
+done
+
+echo "✓ LaTeX 骨架创建完成 — main.tex + ${#CHAPTERS[@]} 个 chapters/*.tex"
 ```
 
 > **Bib 契约**：`{项目简称}.bib` 在项目根目录（与 paper-init 对齐），LaTeX 通过 `\addbibresource{{项目简称}.bib}` 加载。

@@ -194,8 +194,10 @@ def insert_tags_into_report(report_path: Path, tag_data: dict) -> tuple[str, lis
                     # Previously a silent "LR" fallback would pollute the direction
                     # report even though exit code was 1 — re-running tag_aggregate
                     # could then falsely PASS on the polluted file.
+                    # Prefix "NO_TAG:" is machine-readable; main() greps it to
+                    # identify files that must not be overwritten.
                     errors.append(
-                        f"D{tag_data['direction']} {current_tier}[{row_num}]: "
+                        f"NO_TAG: D{tag_data['direction']} {current_tier}[{row_num}]: "
                         f"no tag found — row skipped (Fail-Fast)"
                     )
                     # skip this data row entirely (don't append to new_lines)
@@ -248,6 +250,7 @@ def main():
 
     all_errors = []
     processed = 0
+    skipped_dirs = []  # directions whose file was NOT written due to missing tags
 
     for tag_file in tag_files:
         tag_data = parse_tag_file(tag_file)
@@ -273,8 +276,11 @@ def main():
         # do NOT overwrite the source — preserve original intact so the user
         # can re-run after fixing the tag file. Without this guard, the report
         # would be written with data rows silently deleted, violating atomicity.
-        file_critical = [e for e in errors if "no tag found" in e]
+        # Use the "NO_TAG:" prefix (not arbitrary substring) to stay decoupled
+        # from error-message wording changes.
+        file_critical = [e for e in errors if e.startswith("NO_TAG:")]
         if file_critical:
+            skipped_dirs.append(d)
             print(f"  ✗ D{d}: {len(file_critical)} missing tags — file NOT written (preserved original)")
             for e in file_critical[:3]:
                 print(f"    → {e}")
@@ -293,10 +299,13 @@ def main():
 
     if all_errors:
         # Only FAIL for critical errors (no tags at all)
-        critical = [e for e in all_errors if "no tag found" in e or "no direction report" in e]
+        critical = [e for e in all_errors if e.startswith("NO_TAG:") or "no direction report" in e]
         if critical:
             print(f"\n=== VERIFY: FAIL ===")
             print(f"Critical errors: {len(critical)}")
+            if skipped_dirs:
+                print(f"Skipped (file preserved, re-run after fixing tag files): "
+                      f"D{','.join(map(str, sorted(skipped_dirs)))}")
             sys.exit(1)
         else:
             print(f"\n=== VERIFY: PASS (with {len(all_errors)} warnings) ===")

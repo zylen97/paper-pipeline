@@ -625,7 +625,7 @@ fi
 
 #### Idea-mine 内容写入（条件步骤，仅当选择导入时执行）
 
-此步骤对应「Idea-mine 导入」章节的操作 5。在 Step 3 所有模板文件创建完成后执行：
+此步骤对应本文件上方「Idea-mine 导入 → 导入操作」6 步中的**操作 6（重组写入 idea.md）**。在 Step 3 所有模板文件创建完成后执行：
 
 读取用户选中的 idea 文件（目标期刊对应的版本，如 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/idea_{PAPER_ID}_{IDEA_SHORT}_{TARGET_JOURNAL}.md`），按以下映射关系重组内容，**覆盖写入**已由模板生成的 `structure/0_global/idea.md`：
 

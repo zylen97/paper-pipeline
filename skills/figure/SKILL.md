@@ -115,7 +115,7 @@ morandi <- c("#576fa0", "#e3b87f", "#b57979", "#9f9f9f",
 
 ### 0.4 确定图编号
 
-- 扫描 `structure/figures_tables/figures/` 中已有的 `fig{N}_*` 文件
+- 扫描 `{FIGURES_DIR}` 中已有的 `fig{N}_*` 文件
 - 下一个可用编号 = max(N) + 1
 - 用户指定的编号优先
 - 文件命名规范：`fig{N}_{description}.{tex|py|R}`（description 为 snake_case 英文，≤30 字符）
@@ -238,12 +238,12 @@ AskUserQuestion（如 `$ARGUMENTS` 未提供足够信息）：
 - 线宽：`thick`（0.8pt 默认）、强调可用 `very thick`
 - 文本：`\small` 或正常大小，`align=center`
 
-写入 `structure/figures_tables/figures/fig{N}_{description}.tex`。
+写入 `{FIGURES_DIR}fig{N}_{description}.tex`。
 
 ### 2A.4 编译验证
 
 ```bash
-cd {project_root}/structure/figures_tables/figures && latexmk -pdf fig{N}_{description}.tex 2>&1 | tail -20
+cd {project_root}/{FIGURES_DIR} && latexmk -pdf fig{N}_{description}.tex 2>&1 | tail -20
 ```
 
 - 编译成功 → 继续
@@ -257,8 +257,8 @@ cd {project_root}/structure/figures_tables/figures && latexmk -pdf fig{N}_{descr
 ```
 ✅ TikZ 图生成成功
 
-📄 源文件: structure/figures_tables/figures/fig{N}_{description}.tex
-📊 PDF: structure/figures_tables/figures/fig{N}_{description}.pdf
+📄 源文件: {FIGURES_DIR}fig{N}_{description}.tex
+📊 PDF: {FIGURES_DIR}fig{N}_{description}.pdf
 
 [展示 PDF 预览]
 
@@ -357,7 +357,7 @@ plt.rcParams.update({
     "ytick.labelsize": 9, "legend.fontsize": 9, "figure.dpi": 300,
 })
 # 输出
-plt.savefig("structure/figures_tables/figures/fig{N}_{desc}.pdf", bbox_inches="tight", dpi=300)
+plt.savefig("{FIGURES_DIR}fig{N}_{desc}.pdf", bbox_inches="tight", dpi=300)
 ```
 
 **R (ggplot2)**：
@@ -371,15 +371,15 @@ theme_morandi <- theme_minimal(base_family = "Times New Roman") +
         axis.text = element_text(size = 9),
         legend.text = element_text(size = 9),
         panel.grid.minor = element_blank())
-ggsave("structure/figures_tables/figures/fig{N}_{desc}.pdf", width = 7, height = 5, dpi = 300)
+ggsave("{FIGURES_DIR}fig{N}_{desc}.pdf", width = 7, height = 5, dpi = 300)
 ```
 
 ### 2B.6 运行脚本 + 验证
 
 ```bash
-cd {project_root} && python3 structure/figures_tables/figures/fig{N}_{desc}.py 2>&1 | tail -20
+cd {project_root} && python3 {FIGURES_DIR}fig{N}_{desc}.py 2>&1 | tail -20
 # 或
-cd {project_root} && Rscript structure/figures_tables/figures/fig{N}_{desc}.R 2>&1 | tail -20
+cd {project_root} && Rscript {FIGURES_DIR}fig{N}_{desc}.R 2>&1 | tail -20
 ```
 
 - 输出 PDF 存在 → 用 Read 工具展示给用户
@@ -440,7 +440,7 @@ AskUserQuestion，循环直到确认。
 - 合理的 figsize（单栏 7"×5" / 双栏 14"×5"）
 - 完整的坐标轴标签和图例
 
-写入 `structure/figures_tables/figures/fig{N}_{description}.{py|R}`。
+写入 `{FIGURES_DIR}fig{N}_{description}.{py|R}`。
 
 ### 2C.4 运行 + 验证
 
@@ -453,7 +453,7 @@ AskUserQuestion，循环直到确认。
 ### 2D.1 扫描所有图源文件
 
 ```bash
-python3 ~/.claude/skills/shared/figure_audit.py inventory --figures-dir structure/figures_tables/figures/
+python3 ~/.claude/skills/shared/figure_audit.py inventory --figures-dir {FIGURES_DIR}
 ```
 
 脚本提取每个图的：颜色定义、字体设置、输出格式、DPI、尺寸。
@@ -513,8 +513,8 @@ AskUserQuestion：
 {Route D: 📋 完成了跨图一致性检查}
 
 📂 文件:
-- 源文件: structure/figures_tables/figures/fig{N}_{description}.{tex|py|R}
-- 输出: structure/figures_tables/figures/fig{N}_{description}.pdf
+- 源文件: {FIGURES_DIR}fig{N}_{description}.{tex|py|R}
+- 输出: {FIGURES_DIR}fig{N}_{description}.pdf
 
 📋 index.md 已更新（编号 Fig. {N}）
 
@@ -543,7 +543,7 @@ AskUserQuestion：
 
 ### 文件规范
 - TikZ: standalone 文档，单独编译为 PDF
-- Python/R: 独立脚本，输出 PDF 到 `structure/figures_tables/figures/`
+- Python/R: 独立脚本，输出 PDF 到 `{FIGURES_DIR}`
 - 命名: `fig{N}_{snake_case_description}.{tex|py|R}`
 - **每次创建/修改图后，必须同步更新 `structure/figures_tables/index.md` 的 Figures 表格**
 
@@ -560,6 +560,6 @@ AskUserQuestion：
 
 ### 跨 Skill 关系
 - `/pre-submit` 会检查图表规范（分辨率、格式、引用完整性）
-- `/paper-init` 创建 `structure/figures_tables/figures/` 目录和 `index.md` 注册表
+- `/paper-init` 创建 `structure/figures_tables/figures/` 目录和 `index.md` 注册表（项目初始默认结构；`/figure` 通过 Step 0.1 类型探测决定最终 `{FIGURES_DIR}` 值）
 - `/figure audit` 是 `/pre-submit` 图表检查的前置增强版
 - 图表注册表 `structure/figures_tables/index.md` 是图表元数据的唯一索引

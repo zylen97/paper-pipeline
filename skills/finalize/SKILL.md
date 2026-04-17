@@ -453,35 +453,31 @@ AskUserQuestion：
 
 ### 4.3 执行清理
 
-**⚠️ 清理前 snapshot（强制）**：`rm -rf` 是不可逆操作，必须在执行前打 git tag 并 push，让后续 rev-respond 若需回溯脚手架（原始 pen-outline 句子级要点、pen-draft 工作目录等）能一条命令恢复：
+**⚠️ 清理前 snapshot（强制）**：`rm -rf` 是不可逆操作，必须在执行前打 git tag 并 push。**Snapshot 和 清理必须在同一 bash 调用里执行**——`set -euo pipefail` 不跨 Bash 工具调用，分两块写会让 Step 1 的 exit 1 熔断失效、rm -rf 照常运行。
 
 ```bash
-# Step 1: Snapshot tag — 必须先执行（失败立即熔断，绝不继续到 Step 2 删除）
+# 单次 Bash 调用 — snapshot + 清理原子闭环
 set -euo pipefail
 
+# ===== Step 1: Snapshot tag =====
 TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-git add -A && git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
+# 精确 stage 避免误纳 .DS_Store / 临时文件
+git add structure/ drafts/ 2>/dev/null || true
+git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
 git tag -a "$TAG" -m "Scaffolding (structure/ + drafts/) snapshot before Phase 4 cleanup"
-# 用 HEAD 而非硬编码 main，兼容 master/dev/feature 分支
-git push origin HEAD "$TAG" || {
-    echo "✗ Snapshot push failed — 终止 Phase 4，保留脚手架不删"
-    exit 1
-}
+# 用 HEAD 兼容 master/dev/feature 分支
+git push origin HEAD "$TAG"
 echo "✓ Snapshot tag pushed to origin/$BRANCH: $TAG"
 echo "  Recovery: git checkout $TAG -- structure/ drafts/   (若日后需要)"
-```
 
-用户确认 tag 已 push 后，用 Bash 工具逐项删除：
-
-```bash
-# Step 2: 删除脚手架
+# ===== Step 2: 删除脚手架（set -e 传递：上面任一失败则不进入此段） =====
 # 叙述型章节目录（discussion 编号因方法类型而异：modeling=6, 其他=5）
 rm -rf structure/1_introduction/
 rm -rf structure/*discussion*/
 
-# 叙述型章节 md 及其伴生 json（B9 修复：citation_paths 全目录清扫）
+# 叙述型章节 md 及其伴生 json（citation_paths 全目录清扫）
 rm -f structure/2_literature/literature.md
 find structure/ -name "_citation_paths.json" -delete
 
@@ -489,7 +485,6 @@ find structure/ -name "_citation_paths.json" -delete
 rm -f structure/3_methodology/*.md
 rm -f structure/4_results/*.md
 rm -f structure/5_simulation/*.md
-# 如果技术章节目录删完 md 后只剩空目录（无 benchmark/ 等子目录），则删除空目录
 find structure/ -name .DS_Store -delete 2>/dev/null
 find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null
 
@@ -499,7 +494,11 @@ mkdir -p submission/
 
 # 写作中间产物
 rm -rf drafts/
+
+echo "✓ Phase 4.3 清理完成"
 ```
+
+> **为什么合并为一个 bash 块**：主 agent 调 Bash 工具是每次开新 shell 进程，`set -euo pipefail` 不跨调用。如果 Step 1（snapshot）和 Step 2（rm -rf）分两次 Bash 调用，Step 1 里的 `git push` 失败时 `exit 1` 只会终止它自己那次调用，主 agent 仍会发起第二次 Bash 调用执行 rm -rf，snapshot 失败但脚手架照删——**"备份先行"契约破产**。合并到同一 bash 块后，push 失败 → set -e 触发退出 → rm -rf 根本不会执行。
 
 ### 4.4 Git Checkpoint & Push
 

@@ -109,7 +109,27 @@ ARTICLE_COUNT=$(tail -n +2 /tmp/harvest_${JID}.txt | wc -l | tr -d ' ')
 echo "[$JID] 卷期: $VOL_LABEL, 论文数: $ARTICLE_COUNT"
 
 if [ "$ARTICLE_COUNT" = "0" ]; then
-  echo "[$JID] 未找到论文，跳过"
+  echo "[$JID] 未找到论文，记 empty 跳过"
+  # 空卷期仍写 log，避免下次重跑
+  LOG_FILE="$(dirname "$(realpath "$0")")/harvest_log.json"
+  python3 - "$LOG_FILE" "$JID" "${VOL_LABEL:-empty}" "$(date +%Y-%m-%d)" "0" "0" <<'PY'
+import json, sys
+from pathlib import Path
+log_file, jid, vol, today, n_art, n_fig = sys.argv[1:]
+path = Path(log_file)
+entry = {"volume_label": vol, "harvest_date": today, "article_count": int(n_art), "figure_count": int(n_fig)}
+data = {}
+if path.exists():
+    try: data = json.loads(path.read_text())
+    except Exception: data = {}
+arr = data.setdefault(jid, [])
+existing = next((e for e in arr if e.get("volume_label") == vol), None)
+if existing:
+    existing.update(entry)  # 刷新同一卷期记录
+else:
+    arr.append(entry)
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+PY
   exit 0
 fi
 
@@ -194,7 +214,15 @@ if path.exists():
         data = json.loads(path.read_text())
     except Exception:
         data = {}
-data.setdefault(jid, []).append(entry)
+arr = data.setdefault(jid, [])
+# 去重：同一卷期重跑时更新而非 append，防止 log 堆积脏数据
+existing = next((e for e in arr if e.get("volume_label") == vol), None)
+if existing:
+    existing.update(entry)
+    action = "refreshed"
+else:
+    arr.append(entry)
+    action = "appended"
 path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-print(f"✓ harvest_log.json updated: {jid} → {vol}")
+print(f"✓ harvest_log.json {action}: {jid} → {vol}")
 PY

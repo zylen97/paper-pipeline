@@ -429,8 +429,10 @@ AskUserQuestion：
 
 **情况 B — 占位符已被替换**（0e 选"覆盖重做"或用户提前手填过）：
 - 不存在 `[TO BE FILLED]` 锚点，但存在旧的 `\response{...}` 段。
-- 使用结构锚点定位：`\reviewercomment{Comment \#N-K.}` + 紧随其后的 `\responseheader` → 取到这一行至下一个分隔锚点（`\bigskip` / `\reviewercomment` / `\newpage` / `\end{document}`）之间的**整块内容**（含中间所有 `\response{...}`、`\manuscriptquote{...}` 以及它们之间的 `\bigskip` 间隔符），作为 `old_string` 执行 Edit 替换。`new_string` = 新的整块（可保留多段 `\response{}` + `\manuscriptquote{}` 交替结构，与情况 A 产出保持一致）。
-- **多匹配消歧**：同一 Comment 下若有多段 `\response{}` 与 `\manuscriptquote{}` 交替（Part A 的产出就是这种多段结构，见 168-183 行示例），**不要**只替换第一个 `\response{}`——必须把 reviewercomment 与下一个分隔锚点之间的**整块**作为替换单元，避免漏掉后续段落。
+- 使用结构锚点定位整块：`old_string` **必须从 `\reviewercomment{Comment \#N-K.}` 整行开始**（该字符串全局唯一，保证 Edit 不会多匹配），**到下一个 Comment 分隔锚点（`\reviewercomment{Comment \#...}` / `\newpage` / `\end{document}`）之前**为止，作为 `old_string` 执行 Edit 替换。`new_string` = 新的整块（可保留多段 `\response{}` + `\manuscriptquote{}` 交替结构，与情况 A 产出保持一致）。
+- ⚠️ **`\bigskip` 不是分隔锚点**——它是 Part A 模板在同一 Comment 内多段 response/manuscriptquote 之间的段内间隔符（见 168-183 行示例）。若把 `\bigskip` 当作终止会在第一个段内间隔就截断，漏掉本 Comment 后续的 response。分隔锚点只有"下一个 Comment 开头 / `\newpage` / `\end{document}`"三种。
+- **多匹配消歧**：`old_string` 以 `\reviewercomment{Comment \#N-K.}` 起头能确保全局唯一（Comment ID 不重复）；同一 Comment 下若有多段 `\response{}` 与 `\manuscriptquote{}` 交替，**不要**只替换第一个——必须把整块作为替换单元。
+- **dry-run 前置**：整块 old_string 很长，空格/换行若有细微差异会 Edit 失败。4a 的 dry-run 规则同样适用 4b：先 Read 目标行区间验证 old_string 能精确匹配，再调 Edit。
 - 0e 若选"覆盖重做"，**必须**走情况 B 路径，严禁退化为"找不到就跳过"（这是之前的 bug：覆盖后 response-letter.tex 静默保留旧内容）。
 
 ### 4c. 编译验证

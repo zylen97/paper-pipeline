@@ -125,7 +125,15 @@ LLM 相关性筛选结果（方向：{direction}）：
 
 **⚠️ 下游保护**：`/lit-review` 的 `dispatch_plan.py` 用 `ris_dir.glob("*.ris")` 扫描方向文件，如果原始 `{stem}.ris` 和筛选后的 `{stem}_zone2.ris` / `{stem}_llm.ris` 共存于同一目录，会被视为不同批次并**重复消费**，造成配额超额与重复打标。
 
-**归档操作**：先用 `dirname <ris_path>` 计算实际所在目录 `${RIS_DIR}`（不硬编码 `structure/2_literature/`——用户可能把 RIS 放在任意位置），再 AskUserQuestion 确认：
+**归档操作**：先执行以下 bash 赋值**计算 `${RIS_DIR}`**（必做，下文命令全部依赖此变量；不硬编码 `structure/2_literature/`——用户可能把 RIS 放在任意位置）：
+
+```bash
+# <ris_path> 是 Step 3 产出的最终 RIS 文件完整路径
+RIS_DIR=$(dirname "<ris_path>")
+echo "RIS 所在目录: $RIS_DIR"
+```
+
+然后 AskUserQuestion 确认：
 
 ```
 检测到原始 RIS: ${RIS_DIR}/{stem}.ris
@@ -160,7 +168,7 @@ xxx 篇
 xxx 篇 ← 最终结果
 
 输出文件：<final_ris_path>
-原始 RIS 已归档至：structure/2_literature/_raw/{stem}.ris
+原始 RIS 已归档至：${RIS_DIR}/_raw/{stem}.ris（用户选 1）或 ${RIS_DIR}/{stem}.ris.bak（用户选 2）；选 3 则原文件保留
 可直接用于 /lit-review
 ```
 

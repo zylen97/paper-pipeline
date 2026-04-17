@@ -47,32 +47,50 @@ esac
 
 ### 0.2 读取 PDF（三阶段策略）
 
-**阶段 A：首次探测（Read pages: "1-5"）**——仅读前 5 页，定位 header/footer/首页元数据，提取：
-- **目标期刊**（COENG=JCEM, PMJ=PMJ, MEENG=JME, JPMA=IJPM 等）
+**阶段 0：获取总页数（Bash，必做）**——Read 工具不返回页数元数据，也不支持负索引（`pages: "-1"` 非法）。必须先用系统命令拿到总页数：
+
+```bash
+# macOS 有 mdls（Spotlight 元数据），Linux 用 pdfinfo
+if command -v mdls >/dev/null 2>&1; then
+  TOTAL_PAGES=$(mdls -name kMDItemNumberOfPages -raw "{PDF_PATH}")
+elif command -v pdfinfo >/dev/null 2>&1; then
+  TOTAL_PAGES=$(pdfinfo "{PDF_PATH}" | awk '/^Pages:/ {print $2}')
+else
+  # 兜底：python3 + pypdf
+  TOTAL_PAGES=$(python3 -c "from pypdf import PdfReader; print(len(PdfReader('{PDF_PATH}').pages))")
+fi
+echo "Total pages: $TOTAL_PAGES"
+```
+
+**阶段 A：首页元数据探测（Read pages: "1-5"）**——仅读前 5 页，提取：
+- **目标期刊**（COENG=JCEM, PMJ=PMJ, MEENG=JME, JPMA=IJPM 等，从 header/footer/首页元数据识别）
 - **稿件编号**（如 COENG-19268）
 - **论文标题**
-- **总页数**（从 PDF 元数据或首页 footer 获取；若无法判定，读 pages: "-1"（末页）确认）
-- **章节定位表**（结构性扫描）：用 Read 查找 `## Introduction / Literature / Methodology / Results / Discussion / References / Appendix` 等常见 section heading，记录每个 section 的**起始页码**（用于阶段 C 精读定位）
+- **研究主题与方法**（概要）
+- **初步 section 定位**：前 5 页通常只能看到 Abstract + Introduction 开头；**不强求一次把 Methodology/Results/References 的起始页都拿到**——它们的定位在阶段 C 滚动发现中完成。
 
-**阶段 B：上限检查**
-- 若 `总页数 > 60` → 🟡 提示用户"稿件超长（{N} 页）。建议仅审核正文（~前 40 页），Appendix 单独评估"，AskUserQuestion 选择范围
-- 若 `总页数 > 100` → 🔴 拒绝，提示"稿件过长（>100 页），超出单次审稿能力；建议拆分为分章审查"
+**阶段 B：上限检查**（基于阶段 0 拿到的 `TOTAL_PAGES`）
+- `TOTAL_PAGES > 60` → 🟡 AskUserQuestion"稿件超长（{TOTAL_PAGES} 页）。建议仅审核正文（~前 40 页），Appendix 单独评估"
+- `TOTAL_PAGES > 100` → 🔴 拒绝，提示"稿件过长（>100 页），超出单次审稿能力；建议拆分分章审查"
 
-**阶段 C：结构化累积读取**
-- 根据阶段 A 的章节定位表，按 section 为单位分段读取（每段不超过 20 页，遵守 Read 工具硬约束）
-- 每读一段立即抽取结构化笔记（保存在内存对象 `{REVIEW_NOTES}` 中），不保留原始 PDF 文本：
+**阶段 C：滚动读取 + 结构化累积**
+- 从第 6 页开始，按 20 页一段滚动读取（`pages: "6-25"`、`pages: "26-45"` ...，遵守 Read 工具 20 页/次的硬约束）
+- 每段读完**立刻**抽取结构化笔记到 `{REVIEW_NOTES}`（内存对象），不保留原始 PDF 文本；段内遇到新的 section heading 则在 sections 数组追加条目、记起始页：
   ```
   {REVIEW_NOTES} = {
+    "meta": {"journal": "...", "manuscript_id": "...", "title": "...", "total_pages": N},
     "sections": [
       {"name": "Introduction", "pages": "1-3", "key_points": [...], "issues": [...]},
       {"name": "Literature", "pages": "4-8", ...},
       ...
     ],
     "figures": [{"id": "Fig. 1", "page": 5, "caption": "..."}],
-    "tables":  [{"id": "Table 1", "page": 7, "caption": "..."}]
+    "tables":  [{"id": "Table 1", "page": 7, "caption": "..."}],
+    "references_start_page": N
   }
   ```
 - **避免重复读取**：已读段落的原文不再二次拉取；需要回溯时引用 `{REVIEW_NOTES}` 中的 key_points
+- **References 页起始后停止正文精读**（通常最后 3-5 页是参考文献），节省 context
 
 **输出（阶段 A 完成即展示）**：
 - **研究主题与方法**（从首 5 页归纳）
