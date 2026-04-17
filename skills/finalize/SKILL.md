@@ -463,9 +463,6 @@ set -euo pipefail
 TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# 预检：必须配好 origin 远程，否则后续 push 失败但 tag 已建，重跑会 tag 重名
-git remote get-url origin >/dev/null || { echo "✗ no origin remote — abort"; exit 1; }
-
 # 精确 stage 避免误纳 .DS_Store / 临时文件
 git add structure/ drafts/ 2>/dev/null || true
 git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
@@ -492,8 +489,9 @@ find structure/ -name "_citation_paths.json" -delete
 rm -f structure/3_methodology/*.md
 rm -f structure/4_results/*.md
 rm -f structure/5_simulation/*.md
-find structure/ -name .DS_Store -delete 2>/dev/null
-find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null
+find structure/ -name .DS_Store -delete 2>/dev/null || true
+# 非 modeling 项目可能没有 5_simulation/，用 || true 避免 find 报错触发 set -e
+find structure/3_methodology/ structure/4_results/ structure/5_simulation/ -maxdepth 0 -empty -delete 2>/dev/null || true
 
 # 保留 writing_brief 到 submission/ 供 pre-submit 使用
 mkdir -p submission/

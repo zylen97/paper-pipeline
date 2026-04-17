@@ -148,14 +148,21 @@ echo "RIS 所在目录: $RIS_DIR, 原始 stem: $STEM_ORIG"
 
 用户选 (1)（同一 bash 块内执行，避免 ${RIS_DIR}/${STEM_ORIG} 丢失）：
 ```bash
-mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/_raw/"
-# 若有中间产物 _zone2.ris（非最终），也归档：
-[ -f "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && mv "${RIS_DIR}/${STEM_ORIG}_zone2.ris" "${RIS_DIR}/_raw/"
+# 防自杀：仅当原始 .ris 与 FINAL_RIS 不同路径时才归档（避免把最终产出 mv 走）
+if [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ]; then
+  mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/_raw/"
+fi
+# 若有中间产物 _zone2.ris（非最终），也归档
+if [ -f "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ] && [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}_zone2.ris" ]; then
+  mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/${STEM_ORIG}_zone2.ris" "${RIS_DIR}/_raw/"
+fi
 ```
 
 用户选 (2)：
 ```bash
-mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/${STEM_ORIG}.ris.bak"
+if [ "<FINAL_RIS>" != "${RIS_DIR}/${STEM_ORIG}.ris" ]; then
+  mv "${RIS_DIR}/${STEM_ORIG}.ris" "${RIS_DIR}/${STEM_ORIG}.ris.bak"
+fi
 ```
 
 用户选 (3)：不动，在完成提示中复述冲突机制：`/lit-review` 对 `${STEM_ORIG}.ris` 和 `<FINAL_RIS>` 会各自消费一遍配额，并造成重复打标。

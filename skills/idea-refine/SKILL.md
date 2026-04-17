@@ -330,42 +330,17 @@ git commit -m "Checkpoint: idea-refine round {M} complete (v{FINAL_VERSION})"
 {State C 时：}
 💡 idea.md 和 manuscript.tex 已同步更新。下一步可考虑 /pre-submit 投稿终检。
 
-{State B / C 且 `gap_or_rq_touched == true` 时显示（仅当本轮 diff 命中 Gap/RQ 段落才触发，见下方自动触发规则）：}
-⚠️ 文献管线同步警告：本轮修改触及 Gap/RQ 定义，以下下游产物**已被自动标记为 stale**：
+{State B / C 且涉及 Gap/RQ 变更时（额外提示）：}
+⚠️ 文献管线同步警告：本轮如修改了 Gap/RQ 定义，以下下游产物**可能已经过时**，建议复查：
   - `structure/2_literature/literature_search_plan.md`（检索式基于旧 Gap）
   - `structure/2_literature/direction*_report.md`（文献筛选基于旧 RQ）
   - `structure/2_literature/citation_pool/`（引用池按旧 RQ 归类）
   - `structure/2_literature/master_report.md`（汇总依据旧 Gap）
 
 建议：
-  (a) Gap/RQ 微调（方向不变）→ 无需重跑文献管线，但下一轮 /pen-outline 时复查这些文件的对齐性
+  (a) Gap/RQ 微调（方向不变）→ 无需重跑文献管线，但下一轮 /pen-outline 时复查对齐性
   (b) Gap/RQ 显著变更（方向漂移）→ 重跑 /lit-plan → /lit-review → /lit-tag → /lit-pool
 ```
-
-### Gap/RQ 变更自动触发规则（Step 2.2 末尾执行）
-
-主 agent 在对 `idea.md` 做 Edit 后，按以下机械规则设置 `gap_or_rq_touched` 布尔：
-
-```
-gap_or_rq_touched = ANY(
-  Edit 的 old_string 或 new_string 中任一命中以下锚点：
-    - "## 2" 或 "## 2 "（Gap 段落）
-    - "研究问题" / "Research Question" / "RQ1" / "RQ2" / "RQ3"
-    - "研究缺口" / "Research Gap" / "Gap1" / "Gap2"
-    - idea.md 中 Gap / Objective / RQ 表格的行内容
-)
-```
-
-若 `gap_or_rq_touched == true`：
-1. 对上述 4 个下游文件（literature_search_plan.md / direction*_report.md / citation_pool/*.md / master_report.md）**自动 Edit** 头部（或第 1 行后）追加：
-   ```
-   <!-- stale: idea v{NEW_VERSION} (Gap/RQ changed by /idea-refine on {DATE}) — pipeline rerun recommended -->
-   ```
-   已存在 `<!-- stale:` 注释则用 replace 更新版本号，而不是堆叠多条。
-2. 向用户展示上方"文献管线同步警告"。
-3. 若用户已运行过 `/lit-pool` 后 stale 标签仍存在 → 下次 `/pen-outline` 启动时应读到 stale 头并二次提醒。
-
-若 `gap_or_rq_touched == false`：**不展示警告**，不加 stale 注释——避免每次 `idea.md` 小修都出现误报噪音。
 
 ---
 

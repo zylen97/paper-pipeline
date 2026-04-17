@@ -33,27 +33,24 @@ Step 0 — 项目类型探测 + 确定 `{TABLES_FILE}`：
 **主 tex 发现**（不写死 `main.tex` / `manuscript.tex`——dissertations 常用 `thesis.tex`、`main_dissertation.tex` 等）：
 
 ```bash
-# 用 Glob *.tex 找项目根目录下含 \documentclass 的单文件
-MAIN_TEX=$(grep -l '\\documentclass' *.tex 2>/dev/null | head -n 5)
+# 找项目根目录下含 \documentclass 的单文件（行首匹配，避开 % 注释行；dissertations 常用 thesis.tex）
+MAIN_TEX=$(grep -lE '^\s*\\documentclass' *.tex 2>/dev/null | head -n 5)
 ```
 
 - 找到 0 个 → 🔴 报错退出，提示用户主 tex 不在项目根
 - 找到 1 个 → `MAIN_TEX` 即该文件
 - 找到多个 → AskUserQuestion 让用户选择
 
-**宏包预检**（对 `$MAIN_TEX` 的 preamble）：
+**Caption 宏包预检**（对 `$MAIN_TEX` 的 preamble）：
 
 ```bash
 grep -E '\\usepackage(\[[^\]]*\])?\{caption\}' "$MAIN_TEX"
-grep -E '\\usepackage(\[[^\]]*\])?\{threeparttable\}' "$MAIN_TEX"
 ```
 
-- `caption` 未命中：
+- ✅ 命中 → 继续
+- ❌ 未命中：
   - 若 documentclass 是 `elsarticle / sagej / WileyNJDv5 / ctexart` → cls 自带可继续
   - 其他（如 `article / IEEEtran / ASCE`）→ 🟡 告警 + AskUserQuestion (1) 添加宏包 (2) 用简化模板 (3) 继续（自行承担风险）
-- `threeparttable` 未命中：
-  - 不询问，直接**自动降级为简化模板**（否则标准模板会编译失败）
-  - 在 Step 2 产出表格时在 summary 里告知："已自动降级为简化模板（项目未加载 threeparttable）"
 
 ## Step 2 — Label 冲突检查（写入前必做）
 

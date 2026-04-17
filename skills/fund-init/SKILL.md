@@ -174,7 +174,7 @@ case "$FUND_TYPE" in
     ;;
   university)
     cp "$TEMPLATE_DIR/university.tex.tmpl" main.tex
-    CHAPTERS=(01_选题与研究意义 02_研究内容与方案 03_创新点 04_研究基础)
+    CHAPTERS=(01_立项依据与研究目标 02_研究内容与方案 03_创新点与可行性 04_研究基础与经费)
     ;;
   *)
     echo "✗ unknown FUND_TYPE: $FUND_TYPE"; exit 1

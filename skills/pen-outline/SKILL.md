@@ -711,12 +711,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
    b. 在 `## 大纲` 中为每个方向创建 `###` heading（如不存在）
 
    c. **计算 manuscript.tex 更新计划（不立即写入）**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。**定位表插入为 `\subsection*{Literature positioning}`**（带 `*` 的不编号 subsection）——这样 pen-draft Form 2 解析 tex 的 `\subsection` / `\subsection*` 列表时能识别到定位表子节并纳入调度；否则（旧实现"定位表不插入 tex"）会让定位表在 draft 阶段被完全忽略、内容流失。幂等检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection{title}` 或精确匹配的 `\subsection*{Literature positioning}` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
-   
-   > **方向重命名同步**：如果本次 session 中用户在步骤 1.2 循环中对某个方向做了**重命名**（初始标题 → 最终标题），幂等检查只按"最终标题"比对，会把旧的 `\subsection{旧标题}` 留在 tex 里 + 插入新的 `\subsection{新标题}` → manuscript 出现两份。修法：
-   > 1. 步骤 1.2 确认循环中记录 `{LR_DIRECTIONS_ORIGINAL}`（首次提议的标题列表）和 `{LR_DIRECTIONS_FINAL}`（最终确认的标题列表）
-   > 2. 本步骤在计算 diff 时，对 `ORIGINAL` 中存在但 `FINAL` 中被改名的项做 `Edit` 替换（旧 `\subsection{旧}` → 新 `\subsection{新}`），而不是插入新节
-   > 3. 在步骤 7 原子写入前，把"将被重命名的 subsection 清单"展示给用户确认（避免误伤同名的无关 subsection）
-   
+
    > **⚠️ 原子性约束**：此步骤只做"计算 diff"，**不得立即 Edit tex**。所有写入（md + tex）必须在步骤 7 末尾 `AskUserQuestion` 用户确认之后**作为一个原子批次**执行；用户拒绝时 tex 和 md 均保持不变。禁止"tex 先写、md 后写"——否则用户拒绝时 tex 已被污染。
 
    > **下游契约更新**：pen-draft 的 `{SPLIT_SEGMENTS}` 解析器必须同时匹配 `\subsection{...}` 和 `\subsection*{...}`，否则定位表不会被调度为子节。

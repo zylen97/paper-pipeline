@@ -144,9 +144,9 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 2. **复制 paper note 并重命名**：将匹配到的 `{BATCH_DIR}/paper-notes/{原文件名}.md` 复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/paper_note.md`（**重命名为 `paper_note.md`**，不保留原作者文件名）
 
-3. **提取 migration_analysis.md**：从 `{BATCH_DIR}/idea-raw/_step3_matching.md` 中提取 `### P{PAPER_ID}:` 小节的内容（实际段落结构：**标准推荐迁移方向 + 学科迁移方向**；期刊映射在 `_step3_matching.md` 顶部表格，不在 P{NN} 分段内，不包含在本文件），写入 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/migration_analysis.md`。
-   - 若 `{BATCH_DIR}/idea-raw/migration_analysis.md` 已由 /idea-mine 阶段三预先生成（推荐路径），直接复制即可。
-   - 若未预先生成，现场提取：grep/parse `_step3_matching.md` 的 `## P{PAPER_ID}` 或等价小节，整段写入。
+3. **获取 migration_analysis.md**：写入 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/migration_analysis.md`。
+   - **主路径（推荐）**：若 `{BATCH_DIR}/idea-raw/migration_analysis_P{PAPER_ID}.md` 由 /idea-mine 阶段三预先生成，直接 `cp` 过来。
+   - **Fallback**：若未预先生成，从 `{BATCH_DIR}/idea-raw/_step3_matching.md` 中现场提取 `### P{PAPER_ID}:` 小节（实际段落结构：**标准推荐迁移方向 + 学科迁移方向**；期刊映射在 `_step3_matching.md` 顶部表格，不在 P{NN} 分段内）。
 
 4. **复制所有 idea 文件**：`{BATCH_DIR}/ideas/idea_{PAPER_ID}_{IDEA_SHORT}_*.md`（glob 匹配所有期刊版本），全部复制到 `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`（保留原名）
 

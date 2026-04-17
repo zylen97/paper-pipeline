@@ -17,25 +17,6 @@ PROXY="http://localhost:3456"
 TODAY=$(date +%Y-%m-%d)
 LOG_FILE="$(dirname "$(realpath "$0")")/harvest_log.json"
 
-# ERR trap: 任何异常退出都写一条 failed 日志，防止下次重跑白跑（CDP 失败/JSON 解析失败等）
-_write_failed_log() {
-  local reason="$1"
-  python3 - "$LOG_FILE" "$JID" "$TODAY" "$reason" 2>/dev/null <<'PY' || true
-import json, sys
-from pathlib import Path
-log_file, jid, today, reason = sys.argv[1:]
-path = Path(log_file)
-data = {}
-if path.exists():
-    try: data = json.loads(path.read_text())
-    except Exception: data = {}
-arr = data.setdefault(jid, [])
-arr.append({"volume_label": f"FAILED_{today}", "harvest_date": today, "status": "failed", "reason": reason})
-path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-PY
-}
-trap '_write_failed_log "script aborted at line $LINENO"' ERR
-
 echo "=== [$JID] 开始采集: $SLUG ==="
 
 # ─── 1. CDP: 获取最新卷期论文列表 ───────────────────────
@@ -45,8 +26,6 @@ RESULT=$(curl -s "$PROXY/new?url=https://www.sciencedirect.com/journal/${SLUG}/i
 TID=$(echo "$RESULT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('targetId',''))" 2>/dev/null)
 if [ -z "$TID" ]; then
   echo "ERROR: 无法打开期刊页面"
-  _write_failed_log "cdp_open_failed"
-  trap - ERR  # 已手写 log，禁用 trap 避免重复
   exit 1
 fi
 sleep 4
@@ -136,30 +115,24 @@ if [ "$ARTICLE_COUNT" = "0" ]; then
   echo "[$JID] 未找到论文，记 empty 跳过"
   # 空卷期仍写 log，避免下次重跑
   python3 - "$LOG_FILE" "$JID" "${VOL_LABEL:-empty}" "$TODAY" "0" "0" <<'PY'
-import json, re, sys
+import json, sys
 from pathlib import Path
 log_file, jid, vol, today, n_art, n_fig = sys.argv[1:]
 path = Path(log_file)
-# 匹配键用 vol_num（忽略 date_str 降级导致的去重失效）；空卷无 vol_num 时用 empty_{date}
-m = re.search(r'Vol(\d+)', vol)
-vol_key = f"vol_{m.group(1)}" if m else f"empty_{today}"
-entry = {"volume_label": vol, "volume_key": vol_key, "harvest_date": today,
+entry = {"volume_label": vol, "harvest_date": today,
          "article_count": int(n_art), "figure_count": int(n_fig)}
 data = {}
 if path.exists():
     try: data = json.loads(path.read_text())
     except Exception: data = {}
 arr = data.setdefault(jid, [])
-# 优先按 volume_key 匹配；兼容旧记录（无 key 则 fallback 到 volume_label）
-existing = next((e for e in arr if e.get("volume_key") == vol_key
-                                 or (not e.get("volume_key") and e.get("volume_label") == vol)), None)
+existing = next((e for e in arr if e.get("volume_label") == vol), None)
 if existing:
     existing.update(entry)
 else:
     arr.append(entry)
 path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
 PY
-  trap - ERR
   exit 0
 fi
 
@@ -224,19 +197,14 @@ echo "=== [$JID] 采集完成: $VOL_LABEL ==="
 echo "RESULT:$JID|$VOL_LABEL|$ARTICLE_COUNT|$TOTAL_FIGS|$OUTDIR"
 
 # ─── 3. 更新 harvest_log.json（增量采集标记） ──────────────────────
-trap - ERR  # 正常完成，关闭 failed trap
 python3 - "$LOG_FILE" "$JID" "$VOL_LABEL" "$TODAY" "$ARTICLE_COUNT" "$TOTAL_FIGS" <<'PY'
-import json, re, sys
+import json, sys
 from pathlib import Path
 
 log_file, jid, vol, today, n_art, n_fig = sys.argv[1:]
 path = Path(log_file)
-# 匹配键用 vol_num（从 VOL_LABEL 提取），忽略 date_str 降级导致的伪重复
-m = re.search(r'Vol(\d+)', vol)
-vol_key = f"vol_{m.group(1)}" if m else f"unknown_{today}"
 entry = {
     "volume_label": vol,
-    "volume_key": vol_key,
     "harvest_date": today,
     "article_count": int(n_art),
     "figure_count": int(n_fig),
@@ -248,9 +216,8 @@ if path.exists():
     except Exception:
         data = {}
 arr = data.setdefault(jid, [])
-# 去重优先按 volume_key（稳定），兼容旧记录则 fallback 到 volume_label
-existing = next((e for e in arr if e.get("volume_key") == vol_key
-                                 or (not e.get("volume_key") and e.get("volume_label") == vol)), None)
+# 同卷期重跑时 update 而非 append，防止 log 堆积脏数据
+existing = next((e for e in arr if e.get("volume_label") == vol), None)
 if existing:
     existing.update(entry)
     action = "refreshed"

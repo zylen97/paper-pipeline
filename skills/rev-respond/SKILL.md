@@ -429,14 +429,13 @@ AskUserQuestion：
 
 **情况 B — 占位符已被替换**（0e 选"覆盖重做"或用户提前手填过）：
 - 不存在 `[TO BE FILLED]` 锚点，但存在旧的 `\response{...}` 段。
-- 使用结构锚点定位整块：`old_string` **必须从 `\reviewercomment{Comment \#N-K.}` 整行开始**（该字符串在同一 response-letter.tex 内全局唯一，由 `/rev-init` 骨架契约保证 N-K 编号不重复），**到下一个分隔锚点之前**为止。分隔锚点四类：
+- 使用结构锚点定位整块：`old_string` **必须从 `\reviewercomment{Comment \#N-K.}` 整行开始**（该字符串全局唯一，保证 Edit 不会多匹配），**到下一个分隔锚点之前**为止。分隔锚点三类：
   1. 下一个 `\reviewercomment{Comment \#...}` 行
   2. `\newpage`
   3. `\end{document}`
-  4. **其他顶层 LaTeX 命令**（如 `\bibliography{...}`、`\section*{...}`、收尾宏）——若出现在当前 Comment 之后、`\end{document}` 之前，也作为终止点，避免把它们一并吞掉
   `new_string` = 新的整块（可保留多段 `\response{}` + `\manuscriptquote{}` 交替结构，与情况 A 产出保持一致），**必须原样保留开头的 `\reviewercomment{Comment \#N-K.}` 行**——否则整条 comment header 消失。
 - ⚠️ **`\bigskip` 不是分隔锚点**——它是 Part A 模板在同一 Comment 内多段 response/manuscriptquote 之间的段内间隔符（见 168-183 行示例）。若把 `\bigskip` 当作终止会在第一个段内间隔就截断，漏掉本 Comment 后续的 response。
-- **多匹配消歧**：Comment ID 唯一性是 `/rev-init` 的输出契约；若同一 tex 内出现重复 `\reviewercomment{Comment \#N-K.}`（不应发生），先跑 `grep -c` 校验，再决定是否需要更长的锚定字符串。同一 Comment 下若有多段 `\response{}` 与 `\manuscriptquote{}` 交替，**不要**只替换第一个——必须把整块作为替换单元。
+- **多匹配消歧**：`old_string` 以 `\reviewercomment{Comment \#N-K.}` 起头能确保全局唯一（Comment ID 不重复）；同一 Comment 下若有多段 `\response{}` 与 `\manuscriptquote{}` 交替，**不要**只替换第一个——必须把整块作为替换单元。
 - **dry-run 前置**：整块 old_string 很长，空格/换行若有细微差异会 Edit 失败。4a 的 dry-run 规则同样适用 4b：先 Read 目标行区间验证 old_string 能精确匹配，再调 Edit。
 - 0e 若选"覆盖重做"，**必须**走情况 B 路径，严禁退化为"找不到就跳过"（这是之前的 bug：覆盖后 response-letter.tex 静默保留旧内容）。
 
