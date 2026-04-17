@@ -39,7 +39,12 @@ Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶�
 ### 0.2 读取全文内容
 
 - 编译一次 `{MAIN_TEX}`，确认当前可编译通过
-- 读取所有 `chapters/*.tex` → `{FULL_CONTENT}`（按章节顺序拼接）
+- **摘要生成素材**（避免一次读取 35-50k 字正文撑爆 LLM context）：**不直接拼接 `chapters/*.tex` 正文**。按优先级组合以下轻量素材替代 `{FULL_CONTENT}`：
+  1. 各章 `chapters/ch*_outline.md`（diss-outline 阶段的章节要点，若存在）
+  2. 各章"本章小结"节的正文（diss-draft Step 2 产出，每章 200-300 字）
+  3. `structure/0_global/idea.md` §RQ/Gap/贡献
+  
+  将以上素材拼接为 `{FULL_CONTENT_DIGEST}`（总字数通常 ≤ 5,000 字），替代原 `{FULL_CONTENT}`。Phase 1.2 基于此 digest 生成摘要。若某章既无 outline.md 也无小结节，标注"需手动补摘要要点"让用户补充。
 - 读取源英文论文的 Abstract → `{EN_PAPER_ABSTRACT}`（如源项目存在）
 - 读取源英文论文的 `idea.md` → `{IDEA_CONTEXT}`（RQ、Gap、贡献点）
 
@@ -81,7 +86,7 @@ Phase 1-2 为写作阶段，Phase 3-4 为模板阶段，Phase 5-6 为检查阶�
 
 ### 1.2 生成中文摘要要点
 
-基于 `{FULL_CONTENT}` 和 `{IDEA_CONTEXT}`，按以下结构提议中文摘要要点：
+基于 `{FULL_CONTENT_DIGEST}`（Step 0.2 拼接的轻量素材）和 `{IDEA_CONTEXT}`，按以下结构提议中文摘要要点：
 
 ```
 Block A: 研究背景（1-2句）

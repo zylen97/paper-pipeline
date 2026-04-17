@@ -244,7 +244,7 @@ latexmk -n {MAIN_TEX} 2>&1 | tail -50
 |--------|---------|---------|
 | method-audit | `structure/3_methodology/benchmark/method_audit_report.md` 存在？ | 🟡 |
 | method-audit 红色项已清 | report 中无未修复的 🔴 | 🟡 |
-| writing brief | `submission/writing_brief.md` 存在？ | 🟢 |
+| writing brief | `submission/writing_brief.md` 存在？若否则 fallback 查 `drafts/writing_brief.md`（finalize Phase 4 才把它从 drafts/ 挪到 submission/，未跑 finalize 时 drafts/ 版即合格） | 🟢 |
 | finalize: Conclusion | manuscript.tex 的 Conclusion section **词数 ≥ 150** 且不含占位符（TODO/XXX/TBD/???/000/\textcolor{red}）| 🔴 |
 | finalize: Abstract | manuscript.tex 的 Abstract **词数 ≥ 120** 且不含占位符 | 🔴 |
 | finalize: Cover Letter | `submission/coverletter.tex` 存在？ | 🔴 |

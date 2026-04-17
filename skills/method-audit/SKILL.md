@@ -59,7 +59,7 @@ description: "方法论优化：对标行业实践 → 审计方法问题 → �
 **跨文件一致性检查**：扫描所有 `_dev.md`，检查以下元素是否一致：
 - 符号名称和定义（methodology_dev.md 定义 → results_dev.md 和 simulation_dev.md 引用）
 - 假设编号（methodology_dev.md 定义 → results_dev.md 引用）
-- 命题编号（results_dev.md 定义 → simulation_dev.md 和 discussion.md 引用）
+- 命题编号（results_dev.md 定义 → simulation_dev.md 引用；discussion.md 在后续 pen-outline 阶段才填充，不在本 skill 一致性检查范围）
 - 不一致项标记为 🔴 MUST-FIX
 
 ### 0.4 识别具体方法
