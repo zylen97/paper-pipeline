@@ -300,6 +300,7 @@ def main():
 
             # 校验
             file_errors = []
+            placeholder_authors = {"unknown", "unk", "n/a", "na", "tbd", "anon", "anonymous", ""}
             for tier, tier_entries in groups.items():
                 for i, p in enumerate(tier_entries):
                     if not p.get("title"):
@@ -308,6 +309,13 @@ def main():
                         file_errors.append(f"{tier}[{i}]: missing/invalid year")
                     if not p.get("tier"):
                         file_errors.append(f"{tier}[{i}]: missing 级别 field")
+                    # Placeholder-author guard: catches subagents that wrote "Unknown"
+                    # instead of parsing RIS AU field (yields unknown{year}x citation keys downstream)
+                    author = str(p.get("author", "")).strip().lower()
+                    if author in placeholder_authors:
+                        title_preview = str(p.get("title", "?"))[:50]
+                        print(f"  ⚠ {stem}: placeholder author '{p.get('author')}' at {tier}[{i}] — "
+                              f"agent likely skipped AU field: {title_preview}", file=sys.stderr)
 
             # 生成标准输出
             total_items = meta.get("total_items", 30)

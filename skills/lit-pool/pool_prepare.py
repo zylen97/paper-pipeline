@@ -298,8 +298,26 @@ def deduplicate(all_papers: list[dict]) -> list[dict]:
 
     # 生成 citation key
     raw_keys = {}
+    placeholder_authors = {"unknown", "unk", "n/a", "na", "tbd", "anon", "anonymous", ""}
+    placeholder_count = 0
     for dk, p in seen.items():
+        author = str(p.get("author", "")).strip()
+        if author.lower() in placeholder_authors:
+            placeholder_count += 1
+            print(
+                f"  ⚠ placeholder author '{author}' → key will be 'unknown...' "
+                f"[{p.get('year','?')}] {str(p.get('title',''))[:60]}",
+                file=sys.stderr,
+            )
         raw_keys[dk] = generate_citation_key(p["author"], p["year"], p["title"])
+
+    if placeholder_count > 0:
+        print(
+            f"\n  ⚠ {placeholder_count} paper(s) have placeholder author → unknown* citation keys.\n"
+            f"    Root cause: subagent failed to parse AU field from RIS. Fix upstream in batch raw files,\n"
+            f"    then re-run format_batches.py + merge_screening.py + pool_prepare.py.",
+            file=sys.stderr,
+        )
 
     resolved_keys = resolve_key_conflicts(raw_keys)
 

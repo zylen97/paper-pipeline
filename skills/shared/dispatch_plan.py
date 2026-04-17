@@ -608,6 +608,8 @@ def main():
     print(f"Agent limit: {args.limit}")
     print(f"Total agents: {len(agents)}")
     print(f"Max concurrent: {MAX_CONCURRENT}")
+    if args.mode == "report":
+        print(f"(report mode: --limit {args.limit} is ignored; each direction = 1 agent by design)")
     print()
 
     # 输入摘要

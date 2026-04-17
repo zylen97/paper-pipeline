@@ -112,8 +112,9 @@ def parse_quotas(plan_path: str) -> dict[int, int]:
     try:
         with open(plan_path, encoding="utf-8") as f:
             content = f.read()
-        # Match rows like: | 1 | 方向名 | 标签 | P1 | 49篇 |
-        for m in re.finditer(r"\|\s*D?(\d+)\s*\|[^|]+\|[^|]+\|[^|]+\|\s*(\d+)篇\s*\|", content):
+        # Match rows like: | 1 | 方向名 | 标签 | P1 | 49篇 | or | 1 | ... | 49 篇 |
+        # \s* before 篇 tolerates CJK typography spacing convention
+        for m in re.finditer(r"\|\s*D?(\d+)\s*\|[^|]+\|[^|]+\|[^|]+\|\s*(\d+)\s*篇\s*\|", content):
             d = int(m.group(1))
             q = int(m.group(2))
             quotas[d] = q

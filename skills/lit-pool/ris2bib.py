@@ -442,9 +442,23 @@ def main():
     print(f"Unmatched: {unmatched_count}")
     if unmatched_list:
         print()
-        print("Unmatched papers (stub entries created):")
+        print("Unmatched papers (STUB entries written — require manual completion):")
         for item in unmatched_list:
             print(item)
+        # Cross-validation guidance: stubs mean the cleaned RIS no longer contains
+        # these papers (common causes: title truncation in clean_ris.py matching,
+        # RIS file deleted or moved, or paper is from source bib without --extra-bib).
+        stub_rate = unmatched_count / len(papers) * 100
+        print()
+        print(f"⚠ Stub rate: {stub_rate:.1f}% ({unmatched_count}/{len(papers)}). Downstream risk:")
+        print("  - \\citep{key} will display as 'Unknown (year)' or missing journal")
+        print("  - LaTeX compile succeeds but bib quality is degraded")
+        print()
+        print("Remediation:")
+        print("  1. grep the paper title in original RIS files (before clean_ris.py)")
+        print("  2. If found: title was truncated during matching → improve clean_ris.py fuzzy match")
+        print("  3. If not found: paper was lost earlier in pipeline → check direction reports / batch files")
+        print("  4. Manually fill the TODO stub entries in master.bib, or remove unused citation keys")
     print()
 
     if errors:
