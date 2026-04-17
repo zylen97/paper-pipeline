@@ -135,10 +135,10 @@ texcount -1 -sum -merge {MAIN_TEX} 2>/dev/null || echo "texcount not available"
 
 每处命中 → 🔴（投稿前必须清除）
 
-### 2.4 LaTeX 编译检查
+### 2.4 LaTeX 编译检查（dry-run，不产出文件）
 
 ```bash
-latexmk {MAIN_TEX} 2>&1 | tail -50
+latexmk -n {MAIN_TEX} 2>&1 | tail -50
 ```
 
 检查输出中的：
@@ -247,7 +247,7 @@ latexmk {MAIN_TEX} 2>&1 | tail -50
 | writing brief | `submission/writing_brief.md` 存在？ | 🟢 |
 | finalize: Conclusion | manuscript.tex 的 Conclusion section **词数 ≥ 150** 且不含占位符（TODO/XXX/TBD/???/000/\textcolor{red}）| 🔴 |
 | finalize: Abstract | manuscript.tex 的 Abstract **词数 ≥ 120** 且不含占位符 | 🔴 |
-| finalize: Cover Letter | `submission/coverletter.tex` 或 `submission/coverletter.pdf` 存在？ | 🔴 |
+| finalize: Cover Letter | `submission/coverletter.tex` 存在？ | 🔴 |
 
 ---
 

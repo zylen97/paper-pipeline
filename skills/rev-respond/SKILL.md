@@ -525,11 +525,9 @@ git commit -m "C{N} {Comment_ID}: {brief description}"
 
 4. **批量回填 `\lineref{}` 行号**：
 
-   行号回填方式（按可行性降序选择）：
-   a. 从 .tex 源码中搜索对应文本，用 \lineref 引用最近的 label 或手动标注 .tex 行号作为近似
-   b. 留空 `\lineref{Lines ???--???}` 并提示用户："请在 PDF 中查找对应段落行号后手动填入"
+   行号回填方式：留空 `\lineref{Lines ???--???}` 并提示用户："请在 PDF 中查找对应段落行号后手动填入"
 
-   - 在 `response-letter.tex` 中将所有 `\lineref{Lines [TBD]}` 替换为真实行号或 `???--???` 占位
+   - 在 `response-letter.tex` 中将所有 `\lineref{Lines [TBD]}` 替换为 `???--???` 占位
    - 同步更新 `revision-R{ROUND}/drafts/Comment_*.md` 中的 `[TBD]`
    - 重新编译 `response-letter.tex` 确认无误
 

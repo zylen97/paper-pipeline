@@ -244,15 +244,7 @@ chapters/
 ...
 ```
 
-### 2.2 Git Checkpoint（结构大纲）
-
-```bash
-git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outline: ch{N} structural outline confirmed"
-```
-
-> **注意**：material.md 在步骤 2.5 才生成，不在此处 add。素材文件的 git checkpoint 在步骤 2.5.5。
-
-### 2.3 同步更新 ch*.tex 注释
+### 2.2 同步更新 ch*.tex 注释
 
 在对应 .tex 文件的每个 `\subsection` 下方，追加或更新简要注释：
 
@@ -264,6 +256,14 @@ git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outl
 % 写作要点：(1) xxx (2) xxx (3) xxx
 % 详细大纲见 ch1_outline.md
 ```
+
+### 2.3 Git Checkpoint（结构大纲 + .tex 注释）
+
+```bash
+git add chapters/ch{N}_outline.md chapters/ch{N}.tex && git commit -m "diss-outline: ch{N} structural outline confirmed"
+```
+
+> **注意**：material.md 在步骤 2.5 才生成，不在此处 add。素材文件的 git checkpoint 在步骤 2.5.5。
 
 ## 步骤 2.5：素材准备（每章自动执行）
 

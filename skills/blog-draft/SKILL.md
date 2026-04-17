@@ -281,8 +281,16 @@ description: "从 Obsidian 价值观笔记生成深度长文博客 + NB2 配图�
 - 不要写成 AI 味的"总分总"八股文
 - 不要每段结尾都总结一遍
 - 不要堆砌名人名言，引用要精准且有机融入
+- **不引用未核实的具体歌词/诗句/名人语录**：sub-agent（尤其是 Step 2.75 思想锻造的纵深者 Agent）的输出里如果出现具体歌词或名人原话，**必须核实**——让作者本人确认 / web-search 查原文 / 从 Obsidian `Eason.md` 等原始素材中检索。不能直接照抄 sub-agent 生成的具体引用。幻觉的代价是作者公开出糗。**宁缺勿错**——没有合适的真实歌词就不引用，让正文自己说话
 - 不要泛泛而谈，要有具体的、个人化的洞察
 - **不暴露作者个人感情/恋爱经历**：工作经历、科研经历、性格自剖等个人锚点可以用，但涉及亲密关系的场景必须用第二人称假设场景（"你"视角）或泛化处理，不能写成作者自己的恋爱/婚姻/感情经历。即使文章主题是亲密关系，也不能暗示"我经历过这些"
+- **不暴露作者工作强度/频次的具体量化细节**：读者里有熟人（学生、同事、同行），会识别"卷度"。作者不希望被贴上"很卷"的标签。具体包括：
+  - ❌ 具体时间戳：凌晨 1 点 / 深夜 2 点 / 周末还在改 / 每天 12 小时
+  - ❌ 具体数量：几十个 skill / 18 个项目 / 10 篇论文 / N 门课
+  - ❌ 具体工具链清单：`/lit-plan` `/pen-outline` `/method-end` 这种暴露工作流细节的 skill 名列举
+  - ❌ 具体学术指标：一篇 SSCI / 某影响因子期刊 / 某专项基金
+  - ✅ 替代表达：一个深夜 / 前阵子 / 这段时间 / 一些 skill / 陆续搭了一些 / 一份成果 / 一篇论文（单数指代）
+  - **判断标准**：如果熟人读到这句话能还原出作者的工作强度画像，就要改。抽象化程度要让"任何认真工作的人"都可能这样说，而不是"卷王才会这样说"
 
 ---
 
@@ -384,18 +392,32 @@ sips --cropToHeightWidth 500 900 "$BASE/{slug}-01.png" --out "$BASE/{slug}-01.pn
 
 ### 4.5 归档素材
 
-图片生成完成后，归档到 wechat-assets 项目（Dropbox 同步，永久保存）：
+图片生成完成后，归档到 wechat-assets 项目（Dropbox 同步，永久保存）。
+
+> **归档文件夹命名格式**：`{date}_{category}_{title}`（日期在前，方便按时间排序）
+> - `date`：frontmatter 的 `date`（YYYY-MM-DD）
+> - `category`：frontmatter 的 `category`（夕阳随笔 / 词间散记 / 求索手记）
+> - `title`：frontmatter 的 `title`（中文原标题，保留冒号/问号等符号）
+> - 示例：`2026-04-11_词间散记_任我行：在枷锁中选择你的自由`
+> - 文件夹**内部**的 `{slug}.png` / `{slug}.md` 文件名保持英文 slug 不变（仅外层文件夹用中文格式）
 
 ```bash
-ASSETS="/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/blog/{slug}"
+# 从刚生成的博客 md 中提取命名字段
+BLOG_MD="src/data/blog/{slug}.md"
+CATEGORY=$(grep '^category:' "$BLOG_MD" | sed 's|category: *"||;s|"$||')
+TITLE=$(grep '^title:' "$BLOG_MD" | sed 's|title: *"||;s|"$||')
+DATE=$(grep '^date:' "$BLOG_MD" | sed 's|date: *"||;s|"$||')
+FOLDER="${DATE}_${CATEGORY}_${TITLE}"
+
+ASSETS="/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/blog/$FOLDER"
 mkdir -p "$ASSETS"
-cp "$BASE"/{slug}*.png "$ASSETS/"
-cp "src/data/blog/{slug}.md" "$ASSETS/"
+cp "$BASE"/"${SLUG}"*.png "$ASSETS/"
+cp "$BLOG_MD" "$ASSETS/"
 ```
 
 > **素材归档规范**：
-> - 博客图片存两份：`public/blog/`（网站部署用）+ `wechat-assets/blog/{slug}/`（素材归档）
-> - 博客文本存两份：`src/data/blog/{slug}.md`（网站部署用）+ `wechat-assets/blog/{slug}/{slug}.md`（素材归档）
+> - 博客图片存两份：`public/blog/`（网站部署用）+ `wechat-assets/blog/{date}_{category}_{title}/`（素材归档）
+> - 博客文本存两份：`src/data/blog/{slug}.md`（网站部署用）+ `wechat-assets/blog/{date}_{category}_{title}/{slug}.md`（素材归档）
 > - 公众号头像等非博客素材存 `wechat-assets/avatars/`
 > - 素材归档目录：`/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/wechat-assets/`
 

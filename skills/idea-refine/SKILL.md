@@ -262,7 +262,7 @@ AskUserQuestion：确认修改方案，或调整某条的具体内容。
 - **只改方案中列出的内容**，不改变文档整体结构
 - 记录本轮是否修改了 manuscript.tex（用于步骤 3 的 git add）
 
-保存修改后快照（仅 idea.md）→ `structure/0_global/idea-refine/idea_v{NEW}_after_r{M}.md`
+保存修改后快照（仅 idea.md）→ `structure/0_global/idea-refine/idea_v{FINAL_VERSION}_after_r{M}.md`
 
 ### 边界处理：文件被外部修改
 

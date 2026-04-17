@@ -111,7 +111,6 @@ model/method/formul  → structure/3_methodology/methodology.md
 equilibrium/result/analysis → structure/4_results/results.md
 simulation/numerical → Glob("structure/*simulation*/simulation.md") 动态匹配
 discussion           → Glob("structure/*discussion*/discussion.md") 动态匹配
-conclusion           → 无对应 md，停止并提示用户
 ```
 
 记录 `{CHAPTER_MD_PATH}`
@@ -157,6 +156,7 @@ python3 ~/.claude/skills/shared/tex_section.py citation-paths --chapter-md {CHAP
   - **叙述型章节**：从 `## 大纲` 区块提取（intent + 要点）
   - **技术型章节**：从 `## 正文要点` 区块提取（凝练后的正文要点）
   - 匹配规则：忽略编号前缀（如 "### 2.1 "），对标题部分做模糊匹配（忽略大小写）。匹配失败 → 使用章节 md 全文并警告
+  - **例外**：若 subsection 标题为 `Literature positioning`（/pen-outline 7.2c 产出的定位表不编号子节），从 md 的 `## 大纲` 末尾定位表区块提取内容，不走 heading 匹配
 - 从 md 的字数分配表匹配每个 subsection 的目标字数 → `{WORD_TARGETS}`
 
 **2.2b 判定写作模式**：

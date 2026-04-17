@@ -330,7 +330,7 @@ git add -A && git commit -m "diss-finalize: add acknowledgement template"
 
 ### 4.2 生成声明页内容
 
-在适当位置（`front/declaration.tex` 或 `{MAIN_TEX}` 的前言区域）生成标准声明页：
+在适当位置（`front/declaration.tex` 或 `{MAIN_TEX}` 的前言区域）生成标准声明页。**写入前必须将 `{SCHOOL}` 替换为 Step 0.1 读到的学校名称**：
 
 ```latex
 \chapter*{独创性声明}

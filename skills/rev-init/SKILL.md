@@ -87,7 +87,7 @@ git add CLAUDE.md && git commit -m "R${ROUND} pre-init: snapshot before archivin
 
 **如果 `response-letter.tex` 已存在**：
 - `ROUND >= 2` → 归档：`mv response-letter.tex response-letter-R$((ROUND-1)).tex`
-- `ROUND == 1` 且已有实质内容 → AskUserQuestion：覆盖 / 保留
+- `ROUND == 1` 且已有实质内容 → 归档为 `response-letter.tex.bak` 后重建（保留备份，避免"保留不覆盖"分支下 Step 8 仍重写骨架的歧义）
 
 **遗留兼容**：如果存在 `manuscript-original.tex`（旧格式）且 `ROUND == 1`：
 - 不重复冻结，直接复用为 R0 基准

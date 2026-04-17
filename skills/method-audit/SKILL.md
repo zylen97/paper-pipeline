@@ -1266,19 +1266,16 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 →
 ```bash
 git add structure/3_methodology/methodology_dev.md \
        structure/4_results/results_dev.md \
-       structure/5_simulation/simulation_dev.md \
+       structure/*simulation*/simulation_dev.md \
        structure/3_methodology/methodology.md \
        structure/4_results/results.md \
-       structure/5_simulation/simulation.md \
-       structure/1_introduction/introduction.md \
-       structure/2_literature/literature.md \
-       structure/*discussion*/discussion.md \
+       structure/*simulation*/simulation.md \
        structure/3_methodology/benchmark/method_audit_report.md \
        data/robustness/
 git commit -m "Checkpoint: method-audit fixes applied"
 ```
 
-> 仅 git add 实际存在且被修改的文件（非 modeling 类型项目无 simulation 相关文件）。如果某些文件未被修改（如 simulation_dev.md 未涉及）或不存在，不加入 commit。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，也应纳入。叙述型章节 md（introduction.md、literature.md、discussion.md）在步骤 5.8 字数确认后可能被修改，也应纳入。
+> 仅 git add 实际存在且被修改的文件（非 modeling 类型项目无 simulation 相关文件，glob 自动跳过）。成稿 md 文件（methodology.md 等）在步骤 5.7 结构确认后可能被修改，纳入。**叙述型章节（introduction/literature/discussion）不在本 skill 修改范围**，不纳入此 checkpoint。
 
 ---
 
