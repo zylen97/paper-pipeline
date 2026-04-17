@@ -36,7 +36,7 @@ prompt:
   你是资深基金评审专家（见过数百份申请书），以严厉但建设性的方式审查下列基金申请书。
 
   基金类型: {FUND_TYPE}          # nsfc / provincial / university
-  申请书路径: {FUND_PATH}         # manuscript.tex 或 .md
+  申请书正文源: sections/*.md（drafting/reviewed 阶段权威源；main.tex 仅为骨架占位，fund-polish Step 5.5 灌入后才含正文）
   Writing Brief: {BRIEF_PATH}     # 若存在则注入
   评审维度: （见下方对应表格）
 
