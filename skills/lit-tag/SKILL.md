@@ -53,6 +53,12 @@ description: "对已筛选文献打功能标签（按RQ分类），生成带标�
 
 ## 步骤 0：前置检查与上下文加载
 
+> **唯一消费源契约（lit-review → lit-tag）**：
+> - `direction*_report.md` 是 **lit-tag 的唯一标签插入对象**（本脚本 `insert_tags.py` 的 target）。
+> - `_screening_merged.json.unique_papers` 是 **lit-pool 跨方向汇总的唯一消费源**（tier 优先级 core > important > backup 已在 `merge_screening.py:flatten_unique` 解决）。
+> - `dispatch_plan.py` / `tag_aggregate.py` 消费 direction reports（按方向内语义），**不读 `_screening_merged.json`** —— 这是有意设计，避免跨方向去重干扰单方向的 tier/入选理由展示。
+> - 下游如需"真实唯一文献集合"，必须消费 `unique_papers`，不得重新从 direction reports 做 key 合并（否则重复计数，Pool 达标率虚高）。
+
 ### 0.1 扫描 direction reports + 生成调度计划（Python 脚本）
 
 **本步骤由 Python 脚本自动完成**，替代主 Agent 手动读报告数文献。

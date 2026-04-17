@@ -203,24 +203,29 @@ cp "{SOURCE_PROJECT}/structure/0_global/idea.md" structure/0_global/idea.md
 
 每个 .tex 文件写入章节标题骨架：
 
-> 注意：`\chapter{}` 参数只写标题文字（如 `\chapter{绪论}`），章节编号由 cls 自动生成，不要写成 `\chapter{第一章 绪论}`（会导致双重编号）。
+> ⚠️ **编号规则（双重编号陷阱）**：所有层级的编号都由 cls 自动生成，标题参数**只写纯文字**，**不要**手动加编号前缀。错误示范会导致编译后出现 `1.1 1.1 二级标题` 这类双重编号。
+>
+> - ✅ `\chapter{绪论}`（不是 `\chapter{第一章 绪论}`）
+> - ✅ `\section{研究背景}`（不是 `\section{1.1 研究背景}`）
+> - ✅ `\subsection{研究问题}`（不是 `\subsection{1.1.1 研究问题}`）
+> - ✅ `\section{本章小结}`（不是 `\section{1.5 本章小结}`）
 
 ```latex
-\chapter{第X章标题}
+\chapter{章标题}
 
-\section{X.1 二级标题}
+\section{二级标题}
 
-\subsection{X.1.1 三级标题}
+\subsection{三级标题}
 
 % 目标字数：XXX字
 % 内容来源：改写/展开/新增（源 section: X.X）
 % Guidelines: [1-2句写作指引]
 
-\subsection{X.1.2 三级标题}
+\subsection{另一个三级标题}
 
 ...
 
-\section{X.X 本章小结}
+\section{本章小结}
 ```
 
 ### Git Checkpoint

@@ -58,10 +58,16 @@ morandi <- c("#576fa0", "#e3b87f", "#b57979", "#9f9f9f",
 
 ## 步骤 0：上下文加载 + 路由判断
 
-### 0.1 读取项目配置
+### 0.1 读取项目配置 + 项目类型探测（决定 `{FIGURES_DIR}`）
 
 - 读取 `CLAUDE.md` → 提取 `{PUBLISHER}`、`{TARGET_JOURNAL}`、`{METHOD_TYPE}`、`{PAPER_TITLE}`
-- 扫描 `structure/figures_tables/figures/` 目录 → 列出已有图文件 → `{FIGURE_INVENTORY}`
+- **项目类型探测**（决定图目录 `{FIGURES_DIR}`）：
+  - IF `$PWD` 包含 `dissertations/` → `{FIGURES_DIR}=structure/figures_tables/figures/`（学位论文也用同一结构，但主 tex 位置不同，见下）
+  - IF `structure/figures_tables/figures/` 存在 → `{FIGURES_DIR}=structure/figures_tables/figures/`（`/finalize` 前的小论文）
+  - IF `figures/` 在项目根目录存在 且 `structure/` 不存在 → `{FIGURES_DIR}=figures/`（`/finalize` 后的小论文，脚手架已清理）
+  - 其他（新项目）→ 默认 `{FIGURES_DIR}=structure/figures_tables/figures/`
+- **LaTeX 路径契约**：建议主 tex 文件 preamble 添加 `\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}`（paper-init 的 manuscript.tex.tmpl 应含此行），这样 `\includegraphics{fig1_foo.pdf}` 使用纯文件名即可，不受 `/finalize` 前后目录迁移影响。
+- 扫描 `{FIGURES_DIR}` 目录 → 列出已有图文件 → `{FIGURE_INVENTORY}`
 - 读取主 tex 文件 → 找所有 `\includegraphics` 和 `\input{fig*}` → 了解图在论文中的位置
 
 ### 0.2 解析 `$ARGUMENTS`
@@ -512,13 +518,15 @@ AskUserQuestion：
 
 📋 index.md 已更新（编号 Fig. {N}）
 
-🔗 在 manuscript.tex 中引用:
+🔗 在 manuscript.tex 中引用（使用纯文件名，依赖 preamble `\graphicspath{}` 兜底）:
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\textwidth]{structure/figures_tables/figures/fig{N}_{description}.pdf}
+\includegraphics[width=\textwidth]{fig{N}_{description}.pdf}
 \caption{TODO}
 \label{fig:TODO}
 \end{figure}
+
+> **注**：如果 preamble 未设置 `\graphicspath{}`，请临时改成绝对路径 `{FIGURES_DIR}fig{N}_{description}.pdf`，并建议把 `\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}` 加到主 tex 的 preamble，以免 `/finalize` 清理脚手架后所有图链断裂。
 
 💡 提示:
 - 运行 /figure audit 检查所有图的一致性

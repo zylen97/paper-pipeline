@@ -131,7 +131,10 @@ description: "学位论文中文润色：逐章审查 + 调用中文润色 agent
 - 如果**所有章节状态 ≥ `drafted`**（即 drafted 或 polished，允许 drafting/polishing 章节级交叉），且当前项目阶段仍为 `drafting`：
   → 更新项目阶段为 `polishing`
   → 在 git commit message 中注明阶段转换
-- 否则保持当前阶段不变（单章 polish 不足以触发阶段转换；必须所有章都写完才进入打磨期）
+- 否则保持当前阶段不变。阶段门槛消歧：
+  - `drafting → polishing`：**所有章节初稿（drafted）完成**即触发（不要求任何章节已 polished）
+  - Phase 2 跨章一致性检查：**所有章节已 polished** 才触发
+  - 单章 polish 不触发阶段转换——"阶段" = 全书状态，"Phase 2" = 全部 polished 后的跨章整合
 
 - Git Checkpoint + Push（里程碑：第 N 章润色完成）：
   ```bash

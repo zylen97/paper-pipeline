@@ -414,6 +414,7 @@ Phase 5.1 — 图表编号检查
 - 是否使用了 GB/T 7714 兼容的 bst/biblatex 样式
 - 编译 log 中是否有 `Citation undefined` 或 `Empty bibliography` 警告
 - 正文中 `\cite` 命令格式是否统一（`\cite{key}` vs `\citep{key}` vs `\parencite{key}`）
+- **Citation key 格式合规（全局约定）**：扫描 `{BIB_FILE}` 所有条目 key，正则 `^[a-z]+\d{4}[a-z]$`（首作者姓氏小写 + 年份 + 标题首词首字母小写；冲突追加 b/c 后缀）。不符合者列为 `[FAIL] bib key "Xxx2024" 不符合约定格式（应为 {author.lower}+{year}+{shorttitle(1,1)}）`。
 
 ### 5.3 页眉页脚检查
 
@@ -565,9 +566,18 @@ git add -A && git commit -m "diss-finalize: final compilation verified"
 
 在项目 CLAUDE.md 中查找 `## 项目阶段` 部分，根据条件判定目标阶段：
 
-- **Phase 5 格式终检无 FAIL 项即可转换（WARN 项由用户自行决定是否处理，不阻塞转换）且用户明确确认准备提交** → 更新为 `submitted`，更新时间为 `{TODAY}`
-- **否则** → 保持 `polishing`，更新时间为 `{TODAY}`，并附注说明：
+**阶段转换硬门槛**（以下条件**全部**满足才可转 `submitted`，WARN 项可忽略但下列硬门槛不可豁免）：
+
+1. Phase 5 格式终检：无 FAIL 项（含 5.2 citation key 格式 FAIL）
+2. Phase 6 编译验证：`Error = 0`，且编译 log 中 **Citation undefined = 0 / Reference undefined = 0 / Missing character = 0**
+3. 前置阶段门槛：当前 `## 项目阶段` 必须为 `polishing`；若仍是 `init/literature/drafting` → 拒绝转换，提示"请先完成 `/diss-polish` 闭环"
+4. 用户明确确认提交（AskUserQuestion: "确认转入 submitted？")
+
+- **全部满足** → 更新为 `submitted`，更新时间为 `{TODAY}`
+- **否则** → 保持当前阶段不变，更新时间为 `{TODAY}`，并附注说明：
   - 如有 FAIL 项未修复 → 列出待修复项
+  - 如 Citation/Reference undefined > 0 → 列出未定义的 key 清单（前 10 条）
+  - 如前置阶段不符 → 指引先走 /diss-polish
   - 如用户未确认提交 → 提示"全部检查通过后，再次运行 `/diss-finalize check` 并确认提交即可转为 submitted"
 
 ### 7.1.5 Git Push（里程碑：定稿完成）

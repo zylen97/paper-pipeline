@@ -456,12 +456,20 @@ AskUserQuestion：
 **⚠️ 清理前 snapshot（强制）**：`rm -rf` 是不可逆操作，必须在执行前打 git tag 并 push，让后续 rev-respond 若需回溯脚手架（原始 pen-outline 句子级要点、pen-draft 工作目录等）能一条命令恢复：
 
 ```bash
-# Step 1: Snapshot tag — 必须先执行
+# Step 1: Snapshot tag — 必须先执行（失败立即熔断，绝不继续到 Step 2 删除）
+set -euo pipefail
+
 TAG="finalize-snapshot-$(date +%Y%m%d-%H%M%S)"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
 git add -A && git commit -m "Snapshot before finalize Phase 4 cleanup" --allow-empty
 git tag -a "$TAG" -m "Scaffolding (structure/ + drafts/) snapshot before Phase 4 cleanup"
-git push origin main "$TAG"
-echo "✓ Snapshot tag pushed: $TAG"
+# 用 HEAD 而非硬编码 main，兼容 master/dev/feature 分支
+git push origin HEAD "$TAG" || {
+    echo "✗ Snapshot push failed — 终止 Phase 4，保留脚手架不删"
+    exit 1
+}
+echo "✓ Snapshot tag pushed to origin/$BRANCH: $TAG"
 echo "  Recovery: git checkout $TAG -- structure/ drafts/   (若日后需要)"
 ```
 

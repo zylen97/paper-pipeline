@@ -269,6 +269,17 @@ def main():
         new_content, errors = insert_tags_into_report(report_path, tag_data)
         all_errors.extend(errors)
 
+        # Atomicity guard: if this file has critical errors (missing tags),
+        # do NOT overwrite the source — preserve original intact so the user
+        # can re-run after fixing the tag file. Without this guard, the report
+        # would be written with data rows silently deleted, violating atomicity.
+        file_critical = [e for e in errors if "no tag found" in e]
+        if file_critical:
+            print(f"  ✗ D{d}: {len(file_critical)} missing tags — file NOT written (preserved original)")
+            for e in file_critical[:3]:
+                print(f"    → {e}")
+            continue
+
         # Write back
         report_path.write_text(new_content, encoding="utf-8")
         processed += 1

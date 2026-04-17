@@ -91,6 +91,10 @@ batch{NNN}_{topic}/
 
 ## 前置检查
 
+> **输入模式契约**：本 skill **只接受本地 PDF 文件**作为输入，不直接处理 `selected.json` 或 URL 列表。如果来源是 Idea Scout App 的勾选结果（`selected.json`），需**用户自行下载对应 PDF 到 `papers/` 目录后**再运行；本 skill 不提供自动下载桥接（避免触发 Elsevier/SpringerNature 反爬）。
+>
+> 未来若需打通 Idea Scout → idea-mine 自动下载链路，应在独立的 skill（如 `/scout-fetch`）中实现，不在此处耦合。
+
 1. 检查 `papers/` 子目录是否存在，不存在则停止并提示用户：`请先创建 papers/ 目录并放入论文PDF`
 2. 扫描 `papers/` 子目录中的 **PDF 文件**（`papers/**/*.pdf`）
 3. 统计 PDF 数量并列出文件清单

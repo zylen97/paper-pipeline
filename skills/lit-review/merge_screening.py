@@ -571,9 +571,13 @@ def main():
         "cross_direction_duplicates": dup_count,
         "unique_count": unique_count,
     }
-    assert len(unique_papers) == unique_count, (
-        f"flatten_unique len {len(unique_papers)} != cross_dedup unique_count {unique_count}"
-    )
+    if len(unique_papers) != unique_count:
+        print(
+            f"VERIFY: FAIL flatten_unique len={len(unique_papers)} != "
+            f"cross_dedup unique_count={unique_count} (key collision or dedup bug)",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     for d, papers in merged_papers.items():
         merged_json["directions"][str(d)] = papers
     with open(output_dir / "_screening_merged.json", "w", encoding="utf-8") as f:

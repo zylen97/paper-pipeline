@@ -121,20 +121,31 @@ LLM 相关性筛选结果（方向：{direction}）：
 
 如果有被移除的论文，列出前 10 篇的标题供用户快速检查。
 
-### Step 4: 总结 + 移出原始 RIS（关键步骤）
+### Step 4: 总结 + 归档原始 RIS（建议操作，需用户确认）
 
 **⚠️ 下游保护**：`/lit-review` 的 `dispatch_plan.py` 用 `ris_dir.glob("*.ris")` 扫描方向文件，如果原始 `{stem}.ris` 和筛选后的 `{stem}_zone2.ris` / `{stem}_llm.ris` 共存于同一目录，会被视为不同批次并**重复消费**，造成配额超额与重复打标。
 
-**强制操作**：Step 3 产出最终 RIS 后，**必须**把原始 RIS 移出同级目录（二选一）：
+**归档操作**：先用 `dirname <ris_path>` 计算实际所在目录 `${RIS_DIR}`（不硬编码 `structure/2_literature/`——用户可能把 RIS 放在任意位置），再 AskUserQuestion 确认：
 
-```bash
-# 方式 A：归档到 _raw/ 子目录（推荐，保留备份）
-mkdir -p structure/2_literature/_raw && \
-  mv structure/2_literature/{stem}.ris structure/2_literature/_raw/
-
-# 方式 B：改为 .ris.bak 后缀（glob *.ris 不再命中）
-mv structure/2_literature/{stem}.ris structure/2_literature/{stem}.ris.bak
 ```
+检测到原始 RIS: ${RIS_DIR}/{stem}.ris
+与 /lit-review 的 glob *.ris 冲突，建议归档。选择：
+  (1) 归档到 ${RIS_DIR}/_raw/（推荐，保留备份）
+  (2) 改为 .ris.bak 后缀
+  (3) 保留原状（我已了解冲突风险，/lit-review 前我会自行处理）
+```
+
+用户选 (1)：
+```bash
+mkdir -p "${RIS_DIR}/_raw" && mv "${RIS_DIR}/{stem}.ris" "${RIS_DIR}/_raw/"
+```
+
+用户选 (2)：
+```bash
+mv "${RIS_DIR}/{stem}.ris" "${RIS_DIR}/{stem}.ris.bak"
+```
+
+用户选 (3)：不动，只在完成提示中再次提醒用户冲突风险。
 
 （`_zone2.ris` 作为中间产物若不再需要，也一并归档；只保留**最终 RIS**供 /lit-review 消费。）
 

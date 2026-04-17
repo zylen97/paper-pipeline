@@ -111,7 +111,18 @@ description: "基金项目 idea 挖掘：基于已有科研项目 + 已读论文
 
 ### Step 5: 定稿输出 fund-idea.md
 
-用户确认方向后，在当前工作目录生成 `fund-idea.md`：
+用户确认方向后，**锚定**落盘路径为 `/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts/fund-idea_{YYYYMMDD}_{slug}.md`（`_drafts/` 若不存在则 `mkdir -p`；`{slug}` 为基金简称或题目关键词 snake_case）。这样 `/fund-init` 能通过固定路径 glob 找到最新的 fund-idea 文件。
+
+执行：
+```bash
+mkdir -p /Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts
+OUT="/Users/zylen/Library/CloudStorage/Dropbox/02-Research/fundings/_drafts/fund-idea_$(date +%Y%m%d)_{slug}.md"
+# 写入 fund-idea.md 到 $OUT
+echo "✓ fund-idea 已写入: $OUT"
+echo "  下一步: /fund-init（会自动从 _drafts/ glob 最新 fund-idea）"
+```
+
+fund-idea.md 内容格式：
 
 ```markdown
 # 基金选题方案

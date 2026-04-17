@@ -1,8 +1,10 @@
 ---
-description: "从章节大纲自动读取素材，生成论文初稿（Pipeline：journal-scout → 并行 sci-writer）"
+description: "从章节大纲自动读取素材，生成论文初稿（Pipeline：journal-scout → 并行 sci-writer；润色由 /pen-polish 独立处理，不在本 skill 范围内）"
 ---
 
 # Draft Workflow — 从 structure/ 素材生成初稿
+
+> **Scope 契约（明确边界）**：本 skill 只负责 **初稿生成**（journal-scout → sci-writer → md 落盘 → 可选写入 tex）。**语言润色不在 pipeline 内**——由独立的 `/pen-polish` skill 处理，或在 `/finalize` 阶段统一调用 language-polisher。完成提示提醒用户 `/pen-polish` 不是 pipeline 缺口，而是设计上的分工。
 
 自动读取 `structure/` 下的章节 md、citation pool 和 idea.md，调用 sci-writer 生成初稿。后续审稿润色由 `/pen-polish` 完成。
 

@@ -710,7 +710,9 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 
    b. 在 `## 大纲` 中为每个方向创建 `###` heading（如不存在）
 
-   c. **同步更新 manuscript.tex**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。**定位表插入为 `\subsection*{Literature positioning}`**（带 `*` 的不编号 subsection）——这样 pen-draft Form 2 解析 tex 的 `\subsection` / `\subsection*` 列表时能识别到定位表子节并纳入调度；否则（旧实现"定位表不插入 tex"）会让定位表在 draft 阶段被完全忽略、内容流失。检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection` 或 `\subsection*` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
+   c. **计算 manuscript.tex 更新计划（不立即写入）**：在匹配到的 `\section` 下，为每个方向插入 `\subsection{title}`（如不存在）。**定位表插入为 `\subsection*{Literature positioning}`**（带 `*` 的不编号 subsection）——这样 pen-draft Form 2 解析 tex 的 `\subsection` / `\subsection*` 列表时能识别到定位表子节并纳入调度；否则（旧实现"定位表不插入 tex"）会让定位表在 draft 阶段被完全忽略、内容流失。幂等检查逻辑：读取 tex 中该 `\section` 与下一个 `\section` 之间的内容，如果已有对应 `\subsection{title}` 或精确匹配的 `\subsection*{Literature positioning}` 则跳过，否则在 `\section` 行后按顺序插入。此步骤仅在 `{SECTION_TYPE}` == `"litrev"` 时执行——Introduction 和 Discussion 的 `###` 是隐形结构，不写入 tex。
+   
+   > **⚠️ 原子性约束**：此步骤只做"计算 diff"，**不得立即 Edit tex**。所有写入（md + tex）必须在步骤 7 末尾 `AskUserQuestion` 用户确认之后**作为一个原子批次**执行；用户拒绝时 tex 和 md 均保持不变。禁止"tex 先写、md 后写"——否则用户拒绝时 tex 已被污染。
 
    > **下游契约更新**：pen-draft 的 `{SPLIT_SEGMENTS}` 解析器必须同时匹配 `\subsection{...}` 和 `\subsection*{...}`，否则定位表不会被调度为子节。
 
@@ -776,7 +778,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改文�
 确认写入？
 ```
 
-用户确认 → 执行写入。用户拒绝 → 结束，不写入。
+用户确认 → **原子批次写入**（md 写入 + tex 的 `\subsection{}` / `\subsection*{Literature positioning}` 插入一并落地）。用户拒绝 → 结束，md 和 tex 均保持原状，不写入任何一边。
 
 ## 步骤 8：完成提示
 

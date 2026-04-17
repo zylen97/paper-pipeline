@@ -45,15 +45,38 @@ esac
 1. **待审稿件 PDF**：Glob `*.pdf`。找到唯一 PDF → 确认；找到多个 → 列出让用户选择；找不到 → 停止。
 2. **审稿意见 Word 文档**：Glob `*.docx`。通常目录中不会有现成的 Word 文件，后续步骤会自动新建。如果已有 `Zylen comment-*.docx` → 询问用户是覆盖还是跳过。
 
-### 0.2 读取 PDF
+### 0.2 读取 PDF（三阶段策略）
 
-使用 Read 工具读取 PDF 稿件。**注意**：PDF 超过 10 页时必须使用 `pages` 参数分批读取（如 `pages: "1-10"`、`pages: "11-20"`），每次最多 20 页。从稿件中提取以下信息：
-
-- **目标期刊**：从 header/footer、首页元数据、投稿编号格式中识别（如 COENG = JCEM, PMJ = PMJ, MEENG = JME, JPMA = IJPM 等）
-- **稿件编号**：如 COENG-19268、PMJ-26-0131
+**阶段 A：首次探测（Read pages: "1-5"）**——仅读前 5 页，定位 header/footer/首页元数据，提取：
+- **目标期刊**（COENG=JCEM, PMJ=PMJ, MEENG=JME, JPMA=IJPM 等）
+- **稿件编号**（如 COENG-19268）
 - **论文标题**
-- **研究主题与方法**：简要归纳论文做了什么、用了什么方法
-- **论文结构**：识别各章节标题及大致位置（页码）
+- **总页数**（从 PDF 元数据或首页 footer 获取；若无法判定，读 pages: "-1"（末页）确认）
+- **章节定位表**（结构性扫描）：用 Read 查找 `## Introduction / Literature / Methodology / Results / Discussion / References / Appendix` 等常见 section heading，记录每个 section 的**起始页码**（用于阶段 C 精读定位）
+
+**阶段 B：上限检查**
+- 若 `总页数 > 60` → 🟡 提示用户"稿件超长（{N} 页）。建议仅审核正文（~前 40 页），Appendix 单独评估"，AskUserQuestion 选择范围
+- 若 `总页数 > 100` → 🔴 拒绝，提示"稿件过长（>100 页），超出单次审稿能力；建议拆分为分章审查"
+
+**阶段 C：结构化累积读取**
+- 根据阶段 A 的章节定位表，按 section 为单位分段读取（每段不超过 20 页，遵守 Read 工具硬约束）
+- 每读一段立即抽取结构化笔记（保存在内存对象 `{REVIEW_NOTES}` 中），不保留原始 PDF 文本：
+  ```
+  {REVIEW_NOTES} = {
+    "sections": [
+      {"name": "Introduction", "pages": "1-3", "key_points": [...], "issues": [...]},
+      {"name": "Literature", "pages": "4-8", ...},
+      ...
+    ],
+    "figures": [{"id": "Fig. 1", "page": 5, "caption": "..."}],
+    "tables":  [{"id": "Table 1", "page": 7, "caption": "..."}]
+  }
+  ```
+- **避免重复读取**：已读段落的原文不再二次拉取；需要回溯时引用 `{REVIEW_NOTES}` 中的 key_points
+
+**输出（阶段 A 完成即展示）**：
+- **研究主题与方法**（从首 5 页归纳）
+- **论文结构**（章节 + 页码定位表）
 
 向用户确认：
 ```

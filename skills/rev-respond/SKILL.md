@@ -429,7 +429,8 @@ AskUserQuestion：
 
 **情况 B — 占位符已被替换**（0e 选"覆盖重做"或用户提前手填过）：
 - 不存在 `[TO BE FILLED]` 锚点，但存在旧的 `\response{...}` 段。
-- 使用结构锚点定位：`\reviewercomment{Comment \#N-K.}` + 紧随其后的 `\responseheader` → 取到这一行至下一个 `\bigskip` / `\reviewercomment` / `\newpage` / `\end{document}` 之间的整个 `\response{...}` 段，作为 `old_string` 执行 Edit 替换（`new_string` = 新的 `\response{润色后正文}`）。
+- 使用结构锚点定位：`\reviewercomment{Comment \#N-K.}` + 紧随其后的 `\responseheader` → 取到这一行至下一个分隔锚点（`\bigskip` / `\reviewercomment` / `\newpage` / `\end{document}`）之间的**整块内容**（含中间所有 `\response{...}`、`\manuscriptquote{...}` 以及它们之间的 `\bigskip` 间隔符），作为 `old_string` 执行 Edit 替换。`new_string` = 新的整块（可保留多段 `\response{}` + `\manuscriptquote{}` 交替结构，与情况 A 产出保持一致）。
+- **多匹配消歧**：同一 Comment 下若有多段 `\response{}` 与 `\manuscriptquote{}` 交替（Part A 的产出就是这种多段结构，见 168-183 行示例），**不要**只替换第一个 `\response{}`——必须把 reviewercomment 与下一个分隔锚点之间的**整块**作为替换单元，避免漏掉后续段落。
 - 0e 若选"覆盖重做"，**必须**走情况 B 路径，严禁退化为"找不到就跳过"（这是之前的 bug：覆盖后 response-letter.tex 静默保留旧内容）。
 
 ### 4c. 编译验证

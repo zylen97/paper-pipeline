@@ -242,15 +242,22 @@ END FOR
 
 将各章节大纲保存到项目的 `sections/` 目录（与 `/fund-init` 创建的章节文件同级）：
 
+示例（**国自然 8 节**，与 fund-init NSFC 目录对齐；省基金/校级按实际节数）：
+
 ```
 sections/
 ├── 01_立项依据_outline.md
-├── 02_研究内容_outline.md
-├── 03_研究方案_outline.md
-├── 04_创新点_outline.md
-├── 05_研究基础_outline.md
+├── 02_研究目标_outline.md
+├── 03_研究内容_outline.md
+├── 04_研究方案_outline.md
+├── 05_创新点_outline.md
+├── 06_可行性分析_outline.md
+├── 07_研究基础_outline.md
+├── 08_经费预算_outline.md         # 可选，实际字数通常零；/fund-draft 自定义生成
 └── synthesis_summary.md
 ```
+
+> **跨基金类型适配**：实际产出文件数与 fund-init 创建的章节文件一一对应；省基金约 5 节（02/04 合并为 `02_研究目标与内容`、03/06 合并为 `03_研究方案与技术路线`），校级约 4 节（更激进合并）。**务必以 fund-init 创建的 `sections/*.md` 实际清单为准**，不要把国自然 8 节清单套到省基金/校级项目上。
 
 每个大纲文件包含：
 - 章节标题

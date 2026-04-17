@@ -280,15 +280,11 @@ gh repo create paper_{ID} --private --source=. --remote=origin
 
 ### Step 1.5: Idea-mine 导入执行（条件步骤，仅当选择导入时执行）
 
-按照上方「Idea-mine 导入」章节的操作 1-4 执行文件复制。操作 5（重组写入 idea.md）在 Step 3 创建骨架文件后执行——因为需要先有 `idea.md.tmpl` 生成的空文件，再用 idea-mine 内容覆盖。
+按照本文件上方「导入操作」小节的 6 步逐步执行（PDF 双份复制、paper_note 重命名、migration_analysis 提取、idea/review glob 复制、idea.md 重组）。
 
-具体：
-1. 匹配并复制源论文 PDF → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/raw literature/`
-2. 复制 paper note → `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
-3. 复制所有 idea 文件（glob `idea_{PAPER_ID}_{IDEA_SHORT}_*.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
-4. 复制所有 review 文件（glob `review_*_P{PAPER_ID}.md`）→ `{PROJECT_PARENT_DIR}/{OUTER_DIR}/{ID}_latexfile/structure/0_global/idea-mine-ref/`
-
-> **操作 5（重组写入 idea.md）放在 Step 3 末尾执行**，见 Step 3 末尾的「Idea-mine 内容写入」。
+> **唯一权威清单**：以上方「导入操作」6 步为准（L139-160），此处不再重复罗列以避免漂移。
+>
+> **操作 6（重组写入 idea.md）放在 Step 3 末尾执行**，见 Step 3 末尾的「Idea-mine 内容写入」。
 
 ---
 

@@ -135,6 +135,45 @@ description: "初始化基金申请项目：关联源项目 + 按基金类型选
 └── attachments/
 ```
 
+### Step 3.5: 创建 LaTeX 骨架（可选，用户选择启用）
+
+AskUserQuestion："是否初始化 LaTeX 骨架（main.tex + chapters/）？基金 md 写作与 LaTeX 编译可并行，正式提交时从 md 灌入 tex。"
+
+若选"是"，按基金类型复制模板：
+
+```bash
+TEMPLATE_DIR=~/.claude/skills/fund-init/templates
+
+case "$FUND_TYPE" in
+  nsfc)       cp $TEMPLATE_DIR/nsfc.tex.tmpl       main.tex ;;
+  provincial) cp $TEMPLATE_DIR/provincial.tex.tmpl main.tex ;;
+  university) cp $TEMPLATE_DIR/university.tex.tmpl main.tex ;;
+esac
+cp $TEMPLATE_DIR/latexmkrc.tmpl latexmkrc
+
+# 替换占位符
+sed -i '' "s/{PROJECT_SLUG}/$PROJECT_SLUG/g"   main.tex
+sed -i '' "s/{PROJECT_TITLE}/$PROJECT_TITLE/g" main.tex
+sed -i '' "s/{APPLICANT}/$APPLICANT/g"         main.tex
+sed -i '' "s/{AFFILIATION}/$AFFILIATION/g"     main.tex
+sed -i '' "s/{PROPOSAL_DATE}/$(date +%Y-%m-%d)/g" main.tex
+
+# 创建 chapters/ 骨架（每个 .tex 是 input 对象，内容后期从 sections/*.md 灌入）
+mkdir -p chapters
+for f in nsfc:{01_立项依据,02_研究目标,03_研究内容,04_研究方案,05_创新点,06_可行性分析,07_研究基础,08_经费预算} \
+         provincial:{01_立项依据与研究意义,02_研究目标与内容,03_研究方案与技术路线,04_创新点,05_研究基础与工作条件} \
+         university:{01_选题与研究意义,02_研究内容与方案,03_创新点,04_研究基础}; do
+  # 根据 FUND_TYPE 筛选匹配前缀的，创建空 .tex 占位（仅 placeholder comment）
+  ...
+done
+```
+
+> **Bib 契约**：`{项目简称}.bib` 在项目根目录（与 paper-init 对齐），LaTeX 通过 `\addbibresource{{项目简称}.bib}` 加载。
+>
+> **图路径契约**：main.tex 已含 `\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}`，与 figure skill 的产出目录对齐。
+>
+> **编译验证**：生成后运行 `latexmk -xelatex main.tex` 做空稿验证；失败记录到 build log，不阻断 init。
+
 ### Step 4: 生成项目 CLAUDE.md
 
 在项目根目录生成 `CLAUDE.md`，内容模板：

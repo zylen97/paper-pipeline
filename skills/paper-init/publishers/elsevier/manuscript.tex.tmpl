@@ -12,6 +12,8 @@
 \usepackage{bm}           % 加粗数学符号
 
 % 基础功能宏包（elsarticle已包含graphicx）
+\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}
+% ↑ 图片查找路径链：pre-finalize → post-finalize → 备用路径；\includegraphics{} 使用纯文件名即可
 \usepackage{booktabs}     % 制作专业表格（\toprule、\midrule、\bottomrule）
 \usepackage{multirow}     % 表格跨行合并
 \usepackage{longtable}    % 跨页长表格

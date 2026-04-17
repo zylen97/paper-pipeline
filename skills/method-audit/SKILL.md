@@ -156,6 +156,13 @@ results.md:
 按优先级依次检查（命中即停，不继续后续判断）：
 
 ```
+0. 前置：citation_pool 目录存在性检查（最先执行）
+   IF NOT exist structure/2_literature/citation_pool/:
+     → 🔴 阻断：
+       "未检测到 citation_pool/ 目录。请先完成 /lit-plan → /lit-review → /lit-tag → /lit-pool
+        再运行 /method-audit。降级模式（纯知识审计）仅在 citation_pool/ 存在但 METHOD/COMP 标签为空时触发。"
+     → exit 1，不进入后续判断
+
 1. 检查缓存（最高优先级）：
    IF structure/3_methodology/benchmark/cross_comparison.md 存在且时间戳 < 7 天:
      → AskUserQuestion：
@@ -867,6 +874,11 @@ AskUserQuestion：
 用户选 (1) → 构建处理队列 `{QUEUE}` = 全部条目，按 🔴→🟡→🟢→📐（📐 内部按 SO-S→SO-M→SO-F）排序
 用户选 (2) → 构建处理队列 `{QUEUE}` = 仅包含用户指定的条目（按严重等级排序）
 用户选 (3) → 结束。用户可稍后重新运行 `/method-audit`（可重复运行机制会跳过已 Fixed 的条目）
+
+> **依赖拓扑约束（防止严重度排序覆盖修复链）**：
+> 每条审计项（ST/MF/SO/PM）若依赖其他条目的修复结果（如 "MF-2 的参数重标定依赖 ST-1 变量定义修正后才能执行"），应在条目的 `前置依赖` 字段声明（形如 `依赖: [ST-1, MF-0]`，在步骤 2.5 分类模板中补充此字段）。
+> 队列构建时做拓扑排序：若 `A` 的前置依赖 `B` 在队列中，则 `A` 必须排在 `B` 之后，即使 `A` 严重度为 🔴、`B` 为 🟡。纯严重度排序可能把修复链倒挂，导致依赖 B 的修复结果被 A 覆盖或失效。
+> 若无 `前置依赖` 字段则按当前严重度排序（兼容旧版本）。
 
 ---
 

@@ -1,0 +1,43 @@
+% !TEX program = xelatex
+% 校级项目申请书正文模板（最简版）
+% 需要 XeLaTeX 编译
+
+\documentclass[11pt,a4paper]{ctexart}
+
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{graphicx}
+\graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{caption}
+\captionsetup{font=small,labelsep=quad}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=black,citecolor=blue}
+
+\usepackage[style=gb7714-2015,sorting=none,backend=biber]{biblatex}
+\addbibresource{{{PROJECT_SLUG}}.bib}
+
+\title{{\bf 校级科研项目申请书}\\[6pt]\Large {PROJECT_TITLE}}
+\author{{申请人}：{APPLICANT} \\ {所在学院}：{AFFILIATION}}
+\date{{PROPOSAL_DATE}}
+
+\begin{document}
+\maketitle
+
+\input{chapters/01_选题与研究意义}
+\input{chapters/02_研究内容与方案}
+\input{chapters/03_创新点}
+\input{chapters/04_研究基础}
+
+\printbibliography[title={参考文献}]
+
+\end{document}

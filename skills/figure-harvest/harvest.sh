@@ -165,8 +165,36 @@ while IFS='|' read -r PII SHORT; do
     echo "  [$PADNUM] $SHORT — $FCOUNT 张图片"
     TOTAL_FIGS=$((TOTAL_FIGS + FCOUNT))
   fi
+  # 反爬节流：每篇 1s，约束 CDN 请求速率，降低机构 IP 被封风险
+  sleep 1
 done < <(tail -n +2 /tmp/harvest_${JID}.txt)
 
 echo ""
 echo "=== [$JID] 采集完成: $VOL_LABEL ==="
 echo "RESULT:$JID|$VOL_LABEL|$ARTICLE_COUNT|$TOTAL_FIGS|$OUTDIR"
+
+# ─── 3. 更新 harvest_log.json（增量采集标记） ──────────────────────
+LOG_FILE="$(dirname "$(realpath "$0")")/harvest_log.json"
+TODAY=$(date +%Y-%m-%d)
+python3 - "$LOG_FILE" "$JID" "$VOL_LABEL" "$TODAY" "$ARTICLE_COUNT" "$TOTAL_FIGS" <<'PY'
+import json, sys
+from pathlib import Path
+
+log_file, jid, vol, today, n_art, n_fig = sys.argv[1:]
+path = Path(log_file)
+entry = {
+    "volume_label": vol,
+    "harvest_date": today,
+    "article_count": int(n_art),
+    "figure_count": int(n_fig),
+}
+data = {}
+if path.exists():
+    try:
+        data = json.loads(path.read_text())
+    except Exception:
+        data = {}
+data.setdefault(jid, []).append(entry)
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+print(f"✓ harvest_log.json updated: {jid} → {vol}")
+PY

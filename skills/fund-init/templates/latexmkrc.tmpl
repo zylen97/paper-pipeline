@@ -1,0 +1,7 @@
+#!/usr/bin/env perl
+# fund-init 默认 latexmkrc（XeLaTeX + biber）
+$pdf_mode = 5;               # 5 = xelatex
+$bibtex_use = 2;
+$biber = 'biber --debug';    # 如改为 bibtex，将 $pdf_mode 保留 5 即可
+$out_dir = 'build';
+$clean_ext = 'bbl run.xml synctex.gz fdb_latexmk fls';

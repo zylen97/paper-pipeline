@@ -40,16 +40,26 @@ description: "根据研究idea规划文献检索方向，生成WoS/CNKI检索式
   - `{SEARCH_PLATFORMS}` = `wos+cnki`
 - 纯 WoS 模式下（未检测到 `--cnki`），直接使用 `$ARGUMENTS` 中的数字作为 `{TOTAL_BUDGET}`，不触发交互
 
-### 0.2 获取项目上下文
+### 0.2 工作流类型探测 + 路径映射
+
+根据 `$PWD` 和项目根目录判定 `{WORKFLOW}` 和 `{IDEA_SOURCE}` / `{LIT_DIR}`：
+
+| `$PWD` 包含 | `{WORKFLOW}` | `{IDEA_SOURCE}`（降级链，首个存在的命中） | `{LIT_DIR}` |
+|:---|:---|:---|:---|
+| `papers/` 或 `_gym paper/` | `paper` | `structure/0_global/idea.md` | `structure/2_literature/` |
+| `dissertations/` | `diss` | `structure/0_global/idea.md` → `../源论文_latexfile/structure/0_global/idea.md` → `CLAUDE.md § 章节规划` | `structure/2_literature/` |
+| `fundings/` | `fund` | `structure/0_global/idea.md` → `fund-idea.md` → `_drafts/fund-idea_*.md`（最新） | `structure/2_literature/` |
+
 - 读取 `CLAUDE.md` → 提取项目编号、英文标题、一句话概括、方法、目标期刊
-- 读取 `structure/0_global/idea.md` → 提取可用信息，并判断成熟度：
+- 按 `{IDEA_SOURCE}` 降级链依次尝试读取；首个存在且字数 ≥100 的文件作为 idea 输入
+- 判断成熟度：
   - **成熟（有明确Gap/RQ）**：提取 §2 Gap/RQ、§3 方法论、§4 贡献意图 → 检索方向围绕Gap/方法论精准设计
   - **初步（有研究主题和大致方向，但Gap/RQ不明确）**：提取研究背景、方法论倾向、关键概念 → 检索方向偏探索性，覆盖面更广
-- 如果 `idea.md` 不存在或内容 < 100 字 → 停止，提示用户至少提供研究主题和大致方向
+- 如果降级链全部失败（所有源都 < 100 字或不存在）→ 停止，提示用户至少提供研究主题和大致方向（fund 项目：先跑 `/fund-mine`；diss 项目：先跑 `/diss-init`）
 - 将成熟度标记为 `{IDEA_MATURITY}` = `mature` / `exploratory`，传递给后续 `/lit-review` 使用
 
 ### 0.3 检查已有检索方案
-- 检查 `structure/2_literature/literature_search_plan.md` 是否已存在
+- 检查 `{LIT_DIR}literature_search_plan.md` 是否已存在
 - 已存在 → 提示用户：已有检索方案，是覆盖还是增量更新？等待确认
 
 ---
