@@ -240,6 +240,51 @@ AskUserQuestion（如 `$ARGUMENTS` 未提供足够信息）：
 
 写入 `{FIGURES_DIR}fig{N}_{description}.tex`。
 
+#### 2A.3.1 分层流程图（Layered architecture diagram）专项规范
+
+当用户要画"架构图 / 流程图 / 分层图"时，在通用规范之上额外遵守以下 6 条准则。违反其中任何一条都容易产生"乱、糊、歪"的视觉缺陷。
+
+**① 色彩宪法：3 色点睛 + 其余全灰**
+- 整图最多 **3 种语义色**（如 blue=某类型知识、gold=另一类型、rose=人工干预）
+- 每种色对应**唯一且明确**的语义角色（不可一色多用）
+- 结构性元素（层容器、流水线 stage、I/O 盒、普通连接箭头、DTT/日志类）一律 `morandigray`
+- **规则 a**：如果盒子有填色，就**不加描边**；反之加描边就别填色（二选一）
+- **规则 b**：反馈/回流路径必须用"语义色 + 虚线"，和主流程（实线）区分
+
+**② 层容器（Layer container）统一样式**
+```latex
+layerbox/.style={draw=morandigray, thick, fill=none,
+    rounded corners=8pt, dash pattern=on 3pt off 2pt},
+```
+- **圆角必须**：`rounded corners=8pt`（无圆角显得生硬）
+- **显式 dash pattern**：`on 3pt off 2pt`（TikZ 默认 `dashed` 在圆角处 dash 不规律，看着像斜线）
+- **填色禁止**：`fill=none`（填色 + 虚线双重装饰视觉污染）
+- **多层必须同宽 + 同中心 x**：用**显式坐标** `minimum width=Ncm` + `at (center_x, y) {}`，**避免用 fit**（fit 会因内容边界不同计算出略偏中心）
+
+**③ 层标签位置**
+```latex
+\node[layerlabel, anchor=south west] at ($(L1bg.north west)+(0.0,0.08)$) {Layer 1: ...};
+```
+- Label 放容器**外部顶部**（`anchor=south west` + 稍微向上偏移 0.08cm），避免被虚线边框切过
+- 不要放容器内部（除非容器有填色能遮挡虚线）
+
+**④ 流向 + 连接箭头**
+- 自顶向下阅读：层编号 1→N 从上到下（不要倒着排）
+- I/O 节点（输入/输出盒）置于图**最顶**和**最底**，保持纵向流 `Input ↓ L1 ↓ L2 ↓ ... ↓ LN ↓ Output`
+- **所有垂直连接箭头用显式坐标** `(center_x, y_from) -- (center_x, y_to)`，**不用 node anchor**（避免 anchor 计算偏差导致箭头歪斜）
+- 箭头长度控制在 **0.5~1.5cm**；过长说明层间距太松，需压缩；过短则给层容器留高度
+- **折线/回流路径用三段显式 polyline**：`(x1,y1) -- (x2,y1) -- (x2,y2) -- (x3,y2)`，**不用 `-|` 或 `|-`**（与 `rounded corners` 同时使用时会产生不工整圆弧）
+
+**⑤ 容器内元素布局**
+- 多个同级元素（stage 盒、KB 块）**间距 ≥ 0.4cm**，过短视觉挤压
+- 容器内边距 `inner xsep=0.3cm`（与容器边保持最小 0.3cm 距离）
+- 容器高度设定要为辅助标注（如 Backtrack 箭头 + 其 label）留**至少 0.3cm 净空**，避免压到虚线边框
+- **多行文字（如 "Stage 2\\Assessment\\FC: ..."）**在固定高度盒子里需验证：总行高 + 行间距 < 盒子高度 − 0.3cm 边距
+
+**⑥ 复合文字居中**
+- 标题 + 副标题/schema row **作为整体居中**，不要各自居中导致组合偏离容器几何中心
+- 做法：确定配对文字的高度总和与几何重心，反推两行 y 坐标使 `(y_title + y_schema) / 2 ≈ container_center_y`
+
 ### 2A.4 编译验证
 
 ```bash
