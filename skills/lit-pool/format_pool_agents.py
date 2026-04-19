@@ -88,6 +88,7 @@ def normalize_field(raw: str) -> str | None:
 def parse_kv_block(lines: list[str]) -> dict[str, str] | None:
     """从一组行中解析 key-value 对，返回标准字段字典。"""
     fields: dict[str, str] = {}
+    unknown_keys: list[str] = []
     for line in lines:
         clean = re.sub(r"\*\*", "", line.strip())
         m = KV_RE.match(clean)
@@ -99,8 +100,17 @@ def parse_kv_block(lines: list[str]) -> dict[str, str] | None:
         std_key = normalize_field(raw_key)
         if std_key:
             fields[std_key] = raw_val
+        else:
+            # 记录非标字段（如 引用键 / 文献 / 核心观点 / 偏好），用于诊断
+            if raw_key.strip().lower() not in SKIP_FIELDS:
+                unknown_keys.append(raw_key.strip())
 
     if "citation_key" not in fields:
+        # 诊断：如果有 unknown_keys 说明 agent 用了非标字段名
+        if unknown_keys:
+            fields["_unknown_keys"] = ",".join(unknown_keys)
+            fields["_parse_fail_reason"] = "non_standard_field_names"
+            return fields
         return None
     return fields
 
@@ -126,19 +136,31 @@ TABLE_HEADER = (
 )
 
 
-def parse_entries(content: str) -> list[dict]:
-    """解析文件中所有 ### paperN 条目块。"""
-    entries = []
+def parse_entries(content: str) -> tuple[list[dict], list[dict]]:
+    """解析文件中所有 ### paperN 条目块。
+
+    Returns:
+        (valid_entries, failed_entries) — failed_entries 保留未通过解析的块
+        （含 _parse_fail_reason 和 _unknown_keys 诊断字段）供调用方诊断
+    """
+    entries: list[dict] = []
+    failed: list[dict] = []
     current_lines: list[str] | None = None
+
+    def flush():
+        if current_lines is None:
+            return
+        fields = parse_kv_block(current_lines)
+        if fields and "_parse_fail_reason" in fields:
+            failed.append(fields)
+        elif fields:
+            entries.append(fields)
 
     for line in content.split("\n"):
         stripped = line.strip()
 
         if re.match(r"^#{2,3}\s+", stripped):
-            if current_lines is not None:
-                fields = parse_kv_block(current_lines)
-                if fields:
-                    entries.append(fields)
+            flush()
             current_lines = []
             continue
 
@@ -146,12 +168,19 @@ def parse_entries(content: str) -> list[dict]:
             current_lines.append(stripped)
 
     # 最后一个块
-    if current_lines is not None:
-        fields = parse_kv_block(current_lines)
-        if fields:
-            entries.append(fields)
+    flush()
 
-    return entries
+    return entries, failed
+
+
+def detect_multi_tag_entries(entries: list[dict]) -> list[dict]:
+    """检测"一篇文献含多个标签"的违规（skill 明确要求只写一个标签）。"""
+    violations = []
+    for fields in entries:
+        tag = fields.get("标签", "")
+        if "," in tag or "，" in tag:
+            violations.append(fields)
+    return violations
 
 
 def group_by_tag(entries: list[dict]) -> dict[str, list[str]]:
@@ -195,19 +224,37 @@ def process_file(input_path: Path, output_path: Path) -> dict:
     if not content.strip():
         return {"status": "SKIP", "msg": "Empty file", "papers": 0}
 
-    entries = parse_entries(content)
+    entries, failed = parse_entries(content)
 
     if not entries:
-        return {"status": "WARN", "msg": "No papers parsed", "papers": 0}
+        # 0 条有效条目：升级为 FAIL。诊断非标字段名（agent 格式违规典型症状）
+        if failed:
+            sample_unknown = set()
+            for f in failed[:3]:
+                for k in f.get("_unknown_keys", "").split(","):
+                    if k:
+                        sample_unknown.add(k.strip())
+            msg = (f"No papers parsed — detected {len(failed)} blocks with non-standard "
+                   f"field names (e.g. {sorted(sample_unknown)}). Agent violated format spec; "
+                   f"re-dispatch with explicit 7-field example.")
+        else:
+            msg = "No papers parsed — file may be empty or missing ### paperN headers."
+        return {"status": "FAIL", "msg": msg, "papers": 0}
 
+    multi_tag = detect_multi_tag_entries(entries)
     groups = group_by_tag(entries)
     output = generate_output(groups)
     output_path.write_text(output, encoding="utf-8")
 
     paper_count = len(entries)
     section_count = len(groups)
-    return {"status": "OK", "msg": f"{section_count} sections, {paper_count} papers",
-            "papers": paper_count}
+    msg = f"{section_count} sections, {paper_count} papers"
+    status = "OK"
+    if multi_tag:
+        status = "WARN"
+        msg += (f"; {len(multi_tag)} entries violated 'single tag per paper' rule "
+                f"(will cause downstream duplication)")
+    return {"status": status, "msg": msg, "papers": paper_count}
 
 
 def main():
@@ -243,13 +290,14 @@ def main():
 
         result = process_file(fp, output_path)
 
-        status_icon = {"OK": "OK", "WARN": "WARN", "ERROR": "FAIL", "SKIP": "SKIP"
-                        }.get(result["status"], result["status"])
+        status_icon = {"OK": "OK", "WARN": "WARN", "ERROR": "FAIL", "FAIL": "FAIL",
+                       "SKIP": "SKIP"}.get(result["status"], result["status"])
 
         print(f"  {fp.name} -> {out_name}: {status_icon} — {result['msg']}")
         total_papers += result["papers"]
 
-        if result["status"] in ("ERROR",):
+        # FAIL / ERROR 都会导致整体失败
+        if result["status"] in ("ERROR", "FAIL"):
             all_pass = False
 
     print()
@@ -258,10 +306,14 @@ def main():
 
     if all_pass and total_papers > 0:
         print("=== VERIFY: PASS ===")
-    elif total_papers > 0:
-        print("=== VERIFY: PASS (with warnings) ===")
-    else:
+    elif all_pass:
         print("=== VERIFY: FAIL — no papers were formatted ===")
+        sys.exit(1)
+    else:
+        # 有 FAIL 文件：明确失败而非"带 warnings 的 pass"
+        print("=== VERIFY: FAIL — one or more agent outputs failed to parse ===")
+        print("    Action: check flagged files above, re-dispatch agents with "
+              "explicit 7-field format, or fix files manually.")
         sys.exit(1)
 
 

@@ -96,9 +96,30 @@ def get_tag_group(tag: str) -> str:
 # 解析临时文件
 # ---------------------------------------------------------------------------
 
-def parse_tmp_files(tmp_dir: Path) -> dict[str, list[dict]]:
-    """读取所有 _tmp_pool_agent*.md 文件，按标签分组提取表格行。"""
+def _extract_citation_key(row: str) -> str | None:
+    """从 markdown 表格行提取 citation_key（第 4 列），用于去重。"""
+    cells = [c.strip() for c in row.split("|")]
+    # row 形如 "| 分级 | 作者 | 年份 | citation_key | ... |"
+    # split 后第 0 和最后一个是空串，citation_key 在 cells[4]
+    if len(cells) >= 5:
+        return cells[4] or None
+    return None
+
+
+def parse_tmp_files(tmp_dir: Path, verbose_warn: bool = True) -> tuple[dict[str, list[str]], int]:
+    """读取所有 _tmp_pool_agent*.md 文件，按标签分组提取表格行。
+
+    每个 pool 文件内按 citation_key 去重：如果 agent 把同一篇文献打了多个标签
+    （违反 skill "只写一个标签" 规则），一行 table 会被拆到多个 tag 组——
+    但每个 tag 组内对同一 citation_key 只保留第一次出现。
+
+    Returns:
+        (tag_rows, dup_count) — 去重后的映射 + 被去重的总行数
+    """
     tag_rows: dict[str, list[str]] = defaultdict(list)
+    seen_per_tag: dict[str, set] = defaultdict(set)
+    dup_count = 0
+    multi_tag_headers_found = 0
 
     tmp_files = sorted(tmp_dir.glob("_tmp_pool_agent*.md"))
     if not tmp_files:
@@ -122,6 +143,9 @@ def parse_tmp_files(tmp_dir: Path) -> dict[str, list[dict]]:
                 header_text = tag_match.group(1).strip()
                 # 按逗号拆分，支持组合标签
                 candidate_tags = [t.strip() for t in header_text.split(",")]
+                # 检测多标签（skill 违规）
+                if len(candidate_tags) > 1 and verbose_warn:
+                    multi_tag_headers_found += 1
                 valid_tags = []
                 for potential_tag in candidate_tags:
                     # 归一化：BG(2024-2026) → BG
@@ -146,12 +170,23 @@ def parse_tmp_files(tmp_dir: Path) -> dict[str, list[dict]]:
                 cells = [c.strip() for c in line.split("|") if c.strip()]
                 if cells and cells[0] in ("分级", "#", "Tier", "Grade", "标签"):
                     continue
-                # 有实质内容的表格行 → 分配到所有当前标签
+                # 有实质内容的表格行 → 分配到所有当前标签（按 citation_key 去重）
                 if re.match(r"\|\s*\S", line):
+                    ckey = _extract_citation_key(line)
                     for tag in current_tags:
+                        # 每个 tag 组内按 citation_key 去重
+                        if ckey and ckey in seen_per_tag[tag]:
+                            dup_count += 1
+                            continue
+                        if ckey:
+                            seen_per_tag[tag].add(ckey)
                         tag_rows[tag].append(line)
 
-    return {tag: rows for tag, rows in tag_rows.items()}
+    if multi_tag_headers_found and verbose_warn:
+        print(f"WARNING: Detected {multi_tag_headers_found} multi-tag headers (agent violated "
+              f"'single tag per paper' rule). Intra-pool dedup applied.", file=sys.stderr)
+
+    return {tag: rows for tag, rows in tag_rows.items()}, dup_count
 
 
 # ---------------------------------------------------------------------------
@@ -322,7 +357,7 @@ def main():
     output_dir = Path(args.output_dir)
 
     # 1. 解析临时文件
-    tag_rows = parse_tmp_files(tmp_dir)
+    tag_rows, dup_count = parse_tmp_files(tmp_dir)
 
     # 2. 组装文件
     file_counts = assemble_files(tag_rows, output_dir)
@@ -341,6 +376,9 @@ def main():
     print(f"Tmp files parsed: {len(list(tmp_dir.glob('_tmp_pool_agent*.md')))}")
     print(f"Tags found: {', '.join(sorted(tag_rows.keys()))}")
     print(f"Total rows: {sum(len(r) for r in tag_rows.values())}")
+    if dup_count:
+        print(f"Intra-pool duplicates removed: {dup_count} (same citation_key appeared "
+              f"multiple times within one pool file, typically from agent multi-tag violations)")
     print()
 
     print("Output files:")
