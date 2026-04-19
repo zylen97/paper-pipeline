@@ -1,33 +1,31 @@
 % !TEX program = pdflatex
-% 这行告诉LaTeX编辑器使用pdfLaTeX引擎编译
 
-% Elsarticle文档类声明：review格式，10pt字体（5号字），author-year引用风格
+% Elsarticle document class: review format, 10pt, author-year citation style
 \documentclass[authoryear,preprint,review,times,10pt]{elsarticle}
 
-% ===== 宏包导入部分 =====
-% 数学相关宏包（必备！工程管理论文经常用到数学公式）
-\usepackage{amsmath}      % 强大的数学环境，如align、equation等
-\usepackage{amssymb}      % 数学符号，如∈、⊆、∀、∃等
-\usepackage{amsfonts}     % 数学字体，如粗体向量、花体字母等
-\usepackage{bm}           % 加粗数学符号
+% ===== Package imports =====
+% Math packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}
 
-% 基础功能宏包（elsarticle已包含graphicx）
+% Graphics path chain: pre-finalize -> post-finalize -> fallback
 \graphicspath{{structure/figures_tables/figures/}{figures_tables/figures/}{figures/}}
-% ↑ 图片查找路径链：pre-finalize → post-finalize → 备用路径；\includegraphics{} 使用纯文件名即可
-\usepackage{booktabs}     % 制作专业表格（\toprule、\midrule、\bottomrule）
-\usepackage{multirow}     % 表格跨行合并
-\usepackage{longtable}    % 跨页长表格
-\usepackage{threeparttable} % 支持表格注释
-\usepackage{tabularx}     % 自动分配列宽的表格
-\usepackage{caption}      % caption格式控制
-\usepackage{adjustbox}    % 自动调整表格大小
-\usepackage{pdflscape}    % 横向页面（PDF阅读器中自动旋转）
-\usepackage{enumitem}     % 增强列表功能（itemize、enumerate）
-\usepackage{lineno}       % 行号宏包（review格式需要）
-\usepackage{setspace}     % 行距控制
-\doublespacing            % 全文双倍行距
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{threeparttable}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{adjustbox}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{lineno}
+\usepackage{setspace}
+\doublespacing
 
-% 页边距调整（草稿阶段使用，投稿时可注释掉）
+% Margins (draft stage; comment out before submission)
 \usepackage{geometry}
 \geometry{
     left=2.5cm,
@@ -36,21 +34,20 @@
     bottom=2.5cm,
 }
 
-\usepackage{hyperref}     % 超链接和PDF书签（应该放在最后导入）
+\usepackage{hyperref}
 
-% 移除frontmatter后的双横线
+% Remove the double rule after frontmatter, keep Email display
 \makeatletter
 \def\ps@pprintTitle{%
   \let\@oddhead\@empty
   \let\@evenhead\@empty
-  \def\@oddfoot{\hfil\thepage\hfil}%  % 页脚居中显示页码
+  \def\@oddfoot{\hfil\thepage\hfil}%
   \let\@evenfoot\@oddfoot}
-% 重新定义pprintMaketitle，移除横线但保留Email显示
 \def\pprintMaketitle{\clearpage
   \iflongmktitle\if@twocolumn\let\columnwidth=\textwidth\fi\fi
   \resetTitleCounters
   \def\baselinestretch{1}%
-  \printFirstPageNotes  % 恢复脚注显示（包含Email和通讯作者信息）
+  \printFirstPageNotes
   \begin{center}%
    \thispagestyle{pprintTitle}%
    \def\baselinestretch{1}%
@@ -64,17 +61,16 @@
   }
 \makeatother
 
-% 指定目标期刊（根据实际投稿期刊修改）
+% Target journal (fill in before submission)
 \journal{}
 
 \begin{document}
 
-% 行号设置（审稿格式）
+% Line numbering for review format
 \modulolinenumbers[1]
 \runninglinenumbers
 \begin{frontmatter}
 
-% 论文标题
 \title{TODO: Paper title here}
 
 % === AUTHOR INFO (uncomment and fill in before submission) ===
@@ -113,7 +109,7 @@
 
 \end{frontmatter}
 
-% ===== 正文各章节 =====
+% ===== Main body =====
 
 \section{Introduction}
 % TODO: Write content here
@@ -157,11 +153,11 @@
 \section*{Declaration of competing interest}
 % TODO: Write declaration here
 
-% ===== 参考文献 =====
+% ===== References =====
 \bibliographystyle{elsarticle-harv}
 \bibliography{{ID}}
 
-% ===== 表格模板（复制使用） =====
+% ===== Table template (copy to use) =====
 
 % \begin{table}[!htbp]
 % \centering

@@ -209,8 +209,7 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
    - modeling → `Methodology, Results, Simulation`
    - survey-sem → `Methodology, Results`
    - panel-regression → `Methodology, Results`
-8. 将 claude-settings.json.tmpl 中的 `{PROJECT_PARENT_DIR}` 替换为实际的项目父目录绝对路径（步骤 0 推导所得）
-9. 写入目标路径
+8. 写入目标路径
 
 ### {STRUCTURE_TABLE} 替换内容
 
@@ -292,12 +291,12 @@ gh repo create paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission .claude
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission
 ```
 
 ---
@@ -314,11 +313,10 @@ mkdir -p structure/0_global structure/1_introduction structure/2_literature stru
 |---|---------|---------|
 | 1 | `CLAUDE.md.tmpl` | `CLAUDE.md` |
 | 2 | `gitignore.tmpl` | `.gitignore` |
-| 3 | `claude-settings.json.tmpl` | `.claude/settings.local.json` |
 
 > **注意**：
 > - 不生成 `.vscode/settings.json`。LaTeX Workshop 配置已在 VS Code 全局 User Settings 中统一管理（onSave 编译、latexmk、outDir、files.exclude 等）。各项目编译差异由 `latexmkrc` 控制。
-> - 不再生成项目级 hook 脚本。`unicode-guard`（编辑前 Unicode 把关）和 `latex-compile`（编辑后自动编译）已迁移至系统级 `~/.claude/hooks/`，对所有项目全局生效。`claude-settings.json.tmpl` 仅保留 `permissions` 配置。
+> - 不生成项目级 `.claude/` 目录。permissions / hooks / statusLine / env 统一在系统级 `~/.claude/settings.json` 全局管理，项目级无需重复配置。
 
 #### LaTeX 文件（根据 {PUBLISHER} 选择）
 
@@ -613,32 +611,32 @@ latexmk manuscript.tex
 
 **elsevier**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc elsarticle.cls elsarticle-harv.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc elsarticle.cls elsarticle-harv.bst structure/ submission/
 ```
 
 **asce**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc ascelike.cls ascelike.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc ascelike.cls ascelike.bst structure/ submission/
 ```
 
 **emerald**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc structure/ submission/
 ```
 
 **sage**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc sagej.cls SageH.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc sagej.cls SageH.bst structure/ submission/
 ```
 
 **ieee**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc IEEEtran.cls IEEEtran.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc IEEEtran.cls IEEEtran.bst structure/ submission/
 ```
 
 **wiley**：
 ```bash
-git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/ .claude/
+git add .gitignore CLAUDE.md manuscript.tex {ID}.bib latexmkrc WileyNJDv5.cls wileyNJD-APA.bst structure/ submission/
 ```
 
 ```bash
