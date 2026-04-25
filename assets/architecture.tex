@@ -4,7 +4,7 @@
 \begin{document}
 \begin{tikzpicture}[x=1cm,y=1cm]
   \node[title] at (7.8,1.0) {Claude Academic OS Architecture};
-  \node[subtitle] at (7.8,0.55) {Six layers: infrastructure, cognition, literature radar, production pipelines, QA agents, and dissemination};
+  \node[subtitle] at (7.8,0.55) {Six layers: infrastructure, cognition, literature radar, production pipelines, QA, and knowledge writing};
 
   \fill[mist!35, rounded corners=4pt] (-0.55,-0.25) rectangle (16.15,-1.55);
   \node[layerlabel] at (-0.25,-0.55) {Layer 1: Infrastructure};
@@ -43,21 +43,25 @@
   \draw[branch] (lit.north) -- ++(0,0.38) -| (fund.north);
 
   \fill[blue!10, rounded corners=4pt] (-0.55,-7.65) rectangle (16.15,-9.15);
-  \node[layerlabel] at (-0.25,-7.95) {Layer 5: Quality Assurance Agents};
+  \node[layerlabel] at (-0.25,-7.95) {Layer 5: Quality Assurance \& Review};
   \node[qa] (writer) at (1.45,-8.5) {sci-writer\\EN / ZH};
   \node[qa] (strict) at (4.1,-8.5) {strict-reviewer\\harsh audit};
   \node[qa] (idearev) at (6.75,-8.5) {idea-reviewer\\method audit};
   \node[qa] (polisher) at (9.4,-8.5) {language\\polish/audit};
   \node[qa] (journal) at (12.05,-8.5) {journal-scout\\guidelines};
-  \node[qa] (agentnote) at (14.7,-8.5) {8 agents\\skill-dispatched};
+  \node[qa] (peer) at (14.7,-8.5) {\texttt{/peer-review}\\review docx};
 
   \fill[teal!10, rounded corners=4pt] (-0.55,-9.65) rectangle (16.15,-11.15);
-  \node[layerlabel] at (-0.25,-9.95) {Layer 6: Knowledge Dissemination};
-  \node[disseminate] (blog) at (2.15,-10.5) {\texttt{/blog-draft}\\Obsidian to blog};
-  \node[disseminate] (wechat) at (5.65,-10.5) {\texttt{/wechat-publish}\\WeChat draft};
-  \node[disseminate] (kb) at (9.15,-10.5) {\texttt{/kb}\\values model};
-  \node[disseminate] (peer) at (12.65,-10.5) {\texttt{/peer-review}\\review docx};
+  \node[layerlabel] at (-0.25,-9.95) {Layer 6: Knowledge Writing \& Dissemination};
+  \node[disseminate] (vault) at (1.45,-10.5) {Obsidian Vault\\notes + signals};
+  \node[disseminate] (kb) at (4.45,-10.5) {\texttt{/kb}\\mental model};
+  \node[disseminate] (blog) at (7.45,-10.5) {\texttt{/blog-draft}\\long-form post};
+  \node[disseminate] (wechat) at (10.45,-10.5) {\texttt{/wechat-publish}\\WeChat draft};
+  \node[disseminate] (outputs) at (13.45,-10.5) {Academic Site\\WeChat OA};
+  \draw[arrow] (vault) -- (kb);
+  \draw[arrow] (kb) -- (blog);
   \draw[arrow] (blog) -- (wechat);
+  \draw[arrow] (wechat) -- (outputs);
 
   \draw[branch] (mine.south) -- ++(0,-0.35) -| (paper.north);
   \draw[branch] (paper.south) -- ++(0,-0.35) -| (writer.north);

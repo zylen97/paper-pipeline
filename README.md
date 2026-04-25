@@ -1,6 +1,6 @@
 # Claude Academic OS
 
-A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 39 skills, 8 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge dissemination.
+A personal academic operating system built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 39 skills, 8 specialized agents, and an 80-journal daily literature radar covering the full research lifecycle from intelligence gathering to knowledge writing and dissemination.
 
 ## System Architecture
 
@@ -131,16 +131,17 @@ Eight specialized agents that skills dispatch as sub-agents. They are not invoke
 | `language-polisher-zh` | Chinese prose polish (register, terminology, coherence) | `/diss-polish`, `/fund-polish` |
 | `journal-scout` | Fetch target journal guidelines & conventions | `/pen-draft`, `/pen-polish` |
 
-## Layer 6: Knowledge Dissemination
+## Layer 6: Knowledge Writing & Dissemination
 
-The knowledge dissemination layer includes a personal values knowledge base (`/kb`) backed by an Obsidian vault with 8 theme files, a living mental model (`_mental-model.md`), and a writing craft guide. The mental model evolves with each ingest cycle and serves as the cognitive foundation for blog writing and WeChat publishing.
+This layer is an independent writing input/output pipeline, not a loose extension bucket. `/kb` ingests and audits Obsidian value notes, life/work signals, and source material into a living mental model (`_mental-model.md`). `/blog-draft` turns that model and selected notes into long-form public writing, while `/wechat-publish` adapts the result into a WeChat Official Account draft.
+
+**Flow**: Obsidian Vault / source notes → `/kb` → `/blog-draft` → `/wechat-publish` → Academic Site / WeChat OA
 
 | Skill | Description |
 |:------|:------------|
+| `/kb` | Personal values knowledge base with 3 modes: `ingest` (batch import with content filtering + parallel sub-agents), `lint` (health check: contradictions, duplicates, format, sensitive content), `model` (view/update living mental model `_mental-model.md`). Supports pre-classification + parallel sub-agent integration for large batches |
 | `/blog-draft` | Generate long-form blog posts from Obsidian value notes + NB2 cover images → Academic Site |
 | `/wechat-publish` | Adapt blog posts and push to WeChat Official Account draft box |
-| `/kb` | Personal values knowledge base with 3 modes: `ingest` (batch import with content filtering + parallel sub-agents), `lint` (health check: contradictions, duplicates, format, sensitive content), `model` (view/update living mental model `_mental-model.md`). Supports pre-classification + parallel sub-agent integration for large batches |
-| `/peer-review` | Act as journal reviewer: read manuscript PDF, generate structured review comments to Word |
 
 ## Utilities
 
@@ -148,6 +149,7 @@ The knowledge dissemination layer includes a personal values knowledge base (`/k
 |:------|:------------|
 | `/resume` | Quick-load project context for new Claude Code sessions |
 | `/web-access` | Browser CDP: search, fetch, login-required pages, CNKI/social media scraping |
+| `/peer-review` | Act as journal reviewer: read manuscript PDF, generate structured review comments to Word |
 
 ## Companion Apps
 
