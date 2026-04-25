@@ -5,7 +5,7 @@ A personal academic operating system built on [Claude Code](https://docs.anthrop
 ## System Architecture
 
 <p align="center">
-  <img src="assets/architecture.png" alt="Six-Layer Architecture" width="100%">
+  <img src="assets/architecture.svg" alt="Six-Layer Architecture" width="100%">
 </p>
 
 ## Layer 3: Literature Radar
@@ -32,7 +32,7 @@ An automated intelligence-gathering system that scans 80 journals daily. Scanner
 The core pipeline, from idea to revision response. Each skill is invoked via slash command in Claude Code.
 
 <p align="center">
-  <img src="assets/skills_pipeline.png" alt="English Paper Pipeline" width="100%">
+  <img src="assets/skills_pipeline.svg" alt="English Paper Pipeline" width="100%">
 </p>
 
 **Phase 1: Idea & Init**

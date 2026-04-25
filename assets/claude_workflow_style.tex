@@ -1,0 +1,51 @@
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{xcolor}
+\usetikzlibrary{arrows.meta,positioning,calc,backgrounds}
+
+\definecolor{ink}{HTML}{2F3437}
+\definecolor{line}{HTML}{6B6F72}
+\definecolor{paper}{HTML}{F8F7F3}
+\definecolor{mist}{HTML}{ECEBE5}
+\definecolor{blue}{HTML}{6F7F99}
+\definecolor{teal}{HTML}{6F9894}
+\definecolor{sage}{HTML}{8E9F87}
+\definecolor{sand}{HTML}{C8B58C}
+\definecolor{clay}{HTML}{C78F76}
+\definecolor{rose}{HTML}{B78A8A}
+\definecolor{lavender}{HTML}{8D89A6}
+
+\tikzset{
+  >=Stealth,
+  every node/.style={font=\small, text=ink},
+  every picture/.append style={
+    background rectangle/.style={fill=white},
+    show background rectangle
+  },
+  title/.style={font=\bfseries\large, align=center},
+  subtitle/.style={font=\footnotesize, align=center, text=line},
+  nodebox/.style={
+    draw=ink,
+    line width=0.55pt,
+    rounded corners=2pt,
+    align=center,
+    minimum height=8.5mm,
+    text width=25mm,
+    inner xsep=4pt,
+    inner ysep=3pt,
+    fill=mist,
+    font=\footnotesize
+  },
+  widebox/.style={nodebox, text width=32mm},
+  layerlabel/.style={font=\bfseries\footnotesize, text=line, align=right, anchor=east},
+  infra/.style={nodebox, fill=mist},
+  cognition/.style={nodebox, fill=rose!25},
+  radar/.style={nodebox, fill=sage!32},
+  pipeline/.style={nodebox, fill=sand!35},
+  qa/.style={nodebox, fill=blue!24},
+  disseminate/.style={nodebox, fill=teal!25},
+  optional/.style={nodebox, dashed, fill=paper},
+  gate/.style={nodebox, fill=lavender!22},
+  arrow/.style={->, line width=0.65pt, draw=line},
+  branch/.style={->, line width=0.55pt, draw=line, dashed}
+}

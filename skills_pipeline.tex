@@ -1,244 +1,65 @@
-\documentclass[tikz, border=12pt]{standalone}
-\usepackage{newtxtext,newtxmath}
-\usetikzlibrary{arrows.meta, shapes.geometric, fit, positioning, calc, backgrounds}
-
-\definecolor{steelblue}{HTML}{576fa0}
-\definecolor{steelbluelight}{HTML}{a7b9d7}
-\definecolor{gold}{HTML}{e3b87f}
-\definecolor{goldlight}{HTML}{fadcb4}
-\definecolor{rose}{HTML}{b57979}
-\definecolor{roselight}{HTML}{dea3a2}
-\definecolor{morandigray}{HTML}{9f9f9f}
-\definecolor{morandigraylight}{HTML}{cfcece}
-\definecolor{bgblue}{HTML}{e8edf5}
-\definecolor{bggold}{HTML}{f5eedf}
-\definecolor{bgrose}{HTML}{f0e2e2}
-\definecolor{bggray}{HTML}{ececec}
-\definecolor{bggreen}{HTML}{e2ede6}
-\definecolor{indigo}{HTML}{6366F1}
-\definecolor{indigolight}{HTML}{c7d2fe}
-\definecolor{teal}{HTML}{0d9488}
-\definecolor{teallight}{HTML}{99f6e4}
+\documentclass[tikz,border=10pt]{standalone}
+\input{assets/claude_workflow_style.tex}
 
 \begin{document}
-\begin{tikzpicture}[
-  font=\small,
-  >=Stealth,
-  every node/.style={inner sep=0pt},
-  skill/.style={
-    draw=steelblue, thick, rectangle, rounded corners=3pt,
-    fill=steelbluelight!50, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillgold/.style={
-    draw=gold!80!black, thick, rectangle, rounded corners=3pt,
-    fill=goldlight!60, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillrose/.style={
-    draw=rose, thick, rectangle, rounded corners=3pt,
-    fill=roselight!50, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillgray/.style={
-    draw=morandigray, thick, rectangle, rounded corners=3pt,
-    fill=morandigraylight!50, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillgreen/.style={
-    draw={rgb,255:red,100;green,140;blue,110}, thick, rectangle, rounded corners=3pt,
-    fill=bggreen!80, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillindigo/.style={
-    draw=indigo, thick, rectangle, rounded corners=3pt,
-    fill=indigolight!50, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  skillteal/.style={
-    draw=teal, thick, rectangle, rounded corners=3pt,
-    fill=teallight!40, align=center, inner sep=6pt,
-    minimum width=2.5cm, minimum height=0.85cm,
-    font=\small\bfseries,
-  },
-  desc/.style={font=\scriptsize\color{black!45}, align=center},
-  arr/.style={->, thick, steelblue!65},
-  arrdash/.style={->, thick, dashed, morandigray!60},
-  phase/.style={font=\normalsize\bfseries, text=black!60},
-]
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[title] at (7.0,1.0) {Claude Academic OS Skill Pipeline};
+  \node[subtitle] at (7.0,0.55) {English paper production path with shared literature pipeline, QA agents, and revision loop};
 
-% Layout constants
-\def\vs{2.4}   % vertical step
-\def\hs{5.0}   % horizontal step
+  \node[layerlabel] at (-0.25,-0.35) {Idea \& Init};
+  \node[radar] (scout) at (0.9,-0.9) {\texttt{/idea-scout}\\radar};
+  \node[pipeline] (mine) at (4.0,-0.9) {\texttt{/idea-mine}\\idea.md};
+  \node[pipeline] (init) at (7.1,-0.9) {\texttt{/paper-init}\\project};
+  \node[gate] (refine) at (10.2,-0.9) {\texttt{/idea-refine}\\review loop};
 
-%% ============================================================
-%% COLUMN 1: Phase 1 — Idea & Init (x=0)
-%% ============================================================
-\node[phase] at (0, 1.2) {Phase 1: Idea \& Init};
+  \node[layerlabel] at (-0.25,-2.45) {Literature};
+  \node[pipeline] (plan) at (0.9,-3.0) {\texttt{/lit-plan}\\queries};
+  \node[optional] (screen) at (4.0,-3.0) {\texttt{/lit-screen}\\optional};
+  \node[pipeline] (review) at (7.1,-3.0) {\texttt{/lit-review}\\screening};
+  \node[pipeline] (tag) at (10.2,-3.0) {\texttt{/lit-tag}\\taxonomy};
+  \node[pipeline] (pool) at (13.3,-3.0) {\texttt{/lit-pool}\\master.bib};
 
-\node[skillindigo] (ideascout) at (0, 0) {/idea-scout};
-\node[desc, below=4pt of ideascout] {28 FT50/UTD24\\OpenAlex + App};
+  \node[layerlabel] at (-0.25,-4.55) {Technical \& Narrative Writing};
+  \node[qa] (audit) at (0.9,-5.1) {\texttt{/method-audit}\\benchmark};
+  \node[pipeline] (methodend) at (4.0,-5.1) {\texttt{/method-end}\\chapter md};
+  \node[qa] (assets) at (7.1,-5.1) {\texttt{/figure}\\\texttt{/latex-table}};
+  \node[pipeline] (outline) at (10.2,-5.1) {\texttt{/pen-outline}\\sentences};
+  \node[pipeline] (draft) at (13.3,-5.1) {\texttt{/pen-draft}\\writers};
 
-\node[skillgold] (ideamine) at (0, -\vs) {/idea-mine};
-\node[desc, below=4pt of ideamine] {PDF $\to$ idea.md};
+  \node[layerlabel] at (-0.25,-6.65) {Polish, Submit, Revise};
+  \node[qa] (polish) at (0.9,-7.2) {\texttt{/pen-polish}\\review/polish};
+  \node[pipeline] (finalize) at (4.0,-7.2) {\texttt{/finalize}\\abstract/cover};
+  \node[qa] (presubmit) at (7.1,-7.2) {\texttt{/pre-submit}\\checks};
+  \node[radar] (revinit) at (10.2,-7.2) {\texttt{/rev-init}\\baseline};
+  \node[radar] (revrespond) at (13.3,-7.2) {\texttt{/rev-respond}\\execute};
 
-\node[skill] (paperinit) at (0, -2*\vs) {/paper-init};
-\node[desc, below=4pt of paperinit] {project skeleton\\Git + GitHub};
+  \node[layerlabel] at (-0.25,-8.75) {Cross-cutting};
+  \node[infra] (resume) at (1.35,-9.3) {\texttt{/resume}\\context};
+  \node[infra] (web) at (4.45,-9.3) {\texttt{/web-access}\\CDP};
+  \node[infra] (peer) at (7.55,-9.3) {\texttt{/peer-review}\\reviewer};
+  \node[infra] (agents) at (10.65,-9.3) {Agents\\writer/reviewer};
+  \node[infra] (journal) at (13.75,-9.3) {journal-scout\\guidelines};
 
-
-%% ============================================================
-%% COLUMN 2: Phase 2 — Literature (x=5)
-%% ============================================================
-\node[phase] at (\hs, 1.2) {Phase 2: Literature};
-
-\node[skill] (litplan) at (\hs, 0) {/lit-plan};
-\node[desc, below=4pt of litplan] {search directions\\WoS / CNKI};
-
-\node[skill] (litreview) at (\hs, -\vs) {/lit-review};
-\node[desc, below=4pt of litreview] {RIS screening\\direction reports};
-
-\node[skill] (littag) at (\hs, -2*\vs) {/lit-tag};
-\node[desc, below=4pt of littag] {functional tags\\BG / LR / GAP};
-
-\node[skill] (litpool) at (\hs, -3*\vs) {/lit-pool};
-\node[desc, below=4pt of litpool] {citation pool\\master.bib};
-
-%% ============================================================
-%% COLUMN 3: Phase 3 — Writing (x=10)
-%% ============================================================
-\node[phase] at (2*\hs, 1.2) {Phase 3: Writing};
-
-\node[skillrose] (methodaudit) at (2*\hs, 0) {/method-audit};
-\node[desc, below=4pt of methodaudit] {benchmark\\methodology};
-
-\node[skillgold] (methodend) at (2*\hs, -\vs) {/method-end};
-\node[desc, below=4pt of methodend] {\_dev.md $\to$ chapter .md};
-
-\node[skillgold] (penoutline) at (2*\hs, -2*\vs) {/pen-outline};
-\node[desc, below=4pt of penoutline] {outline + citations};
-
-\node[skillgold] (pendraft) at (2*\hs, -3*\vs) {/pen-draft};
-\node[desc, below=4pt of pendraft] {sci-writer, first draft};
-
-\node[skillgold] (penpolish) at (2*\hs, -4*\vs) {/pen-polish};
-\node[desc, below=4pt of penpolish] {strict-reviewer\\language-polisher};
-
-%% ============================================================
-%% COLUMN 4 upper: Phase 4 — Finalize (x=15)
-%% ============================================================
-\node[phase] at (3*\hs, 1.2) {Phase 4: Finalize};
-
-\node[skillgold] (finalize) at (3*\hs, 0) {/finalize};
-\node[desc, below=4pt of finalize] {Conclusion, Abstract\\Cover Letter};
-
-\node[skillrose] (presubmit) at (3*\hs, -\vs) {/pre-submit};
-\node[desc, below=4pt of presubmit] {checklist\\read-only audit};
-
-%% ============================================================
-%% COLUMN 4 lower: Phase 5 — Revision (x=15)
-%% ============================================================
-\node[phase] at (3*\hs, -2.6*\vs) {Phase 5: Revision};
-
-\node[skillgreen] (revinit) at (3*\hs, -3.2*\vs) {/rev-init};
-\node[desc, below=4pt of revinit] {freeze baseline\\parse comments};
-
-\node[skillgreen] (revrespond) at (3*\hs, -4.2*\vs) {/rev-respond};
-\node[desc, below=4pt of revrespond] {strategy $\to$ draft\\$\to$ polish $\to$ execute};
-
-%% ============================================================
-%% Bottom: Cross-cutting Utilities
-%% ============================================================
-\def\uty{-5.6*\vs}
-\node[phase] at (1.5*\hs, \uty + 0.6) {Cross-cutting Utilities};
-
-\node[skillteal] (idearefine) at (0,            \uty - 0.2) {/idea-refine};
-\node[desc, below=3pt of idearefine] {iterative idea audit};
-
-\node[skillgray] (resume)     at (2.6,          \uty - 0.2) {/resume};
-\node[desc, below=3pt of resume] {context loader};
-
-\node[skillgray] (figure)     at (5.2,          \uty - 0.2) {/figure};
-\node[desc, below=3pt of figure] {TikZ / Python / R};
-
-\node[skillgray] (figharvest) at (7.8,          \uty - 0.2) {/figure-harvest};
-\node[desc, below=3pt of figharvest] {Elsevier CDN};
-
-\node[skillgray] (latextable) at (10.4,         \uty - 0.2) {/latex-table};
-\node[desc, below=3pt of latextable] {table formatting};
-
-\node[skillgray] (webaccess)  at (13.0,         \uty - 0.2) {/web-access};
-\node[desc, below=3pt of webaccess] {browser CDP};
-
-\node[skillgray] (peerreview) at (15.6,         \uty - 0.2) {/peer-review};
-\node[desc, below=3pt of peerreview] {reviewer simulation};
-
-%% ============================================================
-%% ARROWS: Main pipeline (no inline labels)
-%% ============================================================
-
-% Phase 1 internal
-\draw[arr] (ideascout) -- (ideamine);
-\draw[arr] (ideamine) -- (paperinit);
-
-% Phase 1 → Phase 2
-\draw[arr] (paperinit.east) -- ++(1.0, 0) |- (litplan.west);
-
-% Phase 2 internal
-\draw[arr] (litplan) -- (litreview);
-\draw[arr] (litreview) -- (littag);
-\draw[arr] (littag) -- (litpool);
-
-% Phase 2 → Phase 3
-\draw[arr] (litpool.east) -- ++(1.0, 0) |- (penoutline.west);
-
-% Phase 3 internal
-\draw[arr] (methodaudit) -- (methodend);
-\draw[arr] (methodend) -- (penoutline);
-\draw[arr] (penoutline) -- (pendraft);
-\draw[arr] (pendraft) -- (penpolish);
-
-% Phase 3 → Phase 4
-\draw[arr] (penpolish.east) -- ++(1.0, 0) |- (finalize.west);
-
-% Phase 4 internal
-\draw[arr] (finalize) -- (presubmit);
-
-% Phase 4 → Phase 5
-\draw[arr] (presubmit) -- ++(0, -0.6*\vs) -- (revinit);
-
-% Phase 5 internal
-\draw[arr] (revinit) -- (revrespond);
-
-% Revision loop back to pen-polish (route below to avoid overlap)
-\draw[arrdash, rose] (revrespond.west) -- ++(-1.2, 0) -- ++(0, 0.3) -| ([xshift=6pt]penpolish.south);
-
-%% ============================================================
-%% ARROWS: Secondary connections (clean routing)
-%% ============================================================
-
-% method-audit entry from paper-init (dashed, routed above)
-\draw[arrdash] (paperinit.east) -- ++(1.0, 0) |- ([yshift=4pt]methodaudit.west);
-
-% lit-pool also feeds pen-draft
-\draw[arrdash] (litpool.east) -- ++(1.0, 0) |- ([xshift=-6pt]pendraft.west);
-
-%% ============================================================
-%% BACKGROUND REGIONS
-%% ============================================================
-\begin{scope}[on background layer]
-  \node[fit=(ideascout)(paperinit), inner sep=16pt, fill=bggold!40, rounded corners=6pt] {};
-  \node[fit=(litplan)(litpool), inner sep=16pt, fill=bgblue!50, rounded corners=6pt] {};
-  \node[fit=(methodaudit)(penpolish), inner sep=16pt, fill=bggold!30, rounded corners=6pt] {};
-  \node[fit=(finalize)(presubmit), inner sep=16pt, fill=bgrose!40, rounded corners=6pt] {};
-  \node[fit=(revinit)(revrespond), inner sep=16pt, fill=bggreen!50, rounded corners=6pt] {};
-  \node[fit=(idearefine)(peerreview), inner sep=16pt, fill=bggray!40, rounded corners=6pt] {};
-\end{scope}
-
+  \draw[arrow] (scout) -- (mine);
+  \draw[arrow] (mine) -- (init);
+  \draw[arrow] (init) -- (refine);
+  \draw[arrow] (init.south) -- ++(0,-0.55) -| (plan.north);
+  \draw[branch] (plan) -- (screen);
+  \draw[arrow] (screen) -- (review);
+  \draw[arrow] (review) -- (tag);
+  \draw[arrow] (tag) -- (pool);
+  \draw[arrow] (pool.south) -- ++(0,-0.55) -| (audit.north);
+  \draw[arrow] (audit) -- (methodend);
+  \draw[arrow] (methodend) -- (assets);
+  \draw[arrow] (assets) -- (outline);
+  \draw[arrow] (outline) -- (draft);
+  \draw[arrow] (draft.south) -- ++(0,-0.55) -| (polish.north);
+  \draw[arrow] (polish) -- (finalize);
+  \draw[arrow] (finalize) -- (presubmit);
+  \draw[arrow] (presubmit) -- (revinit);
+  \draw[arrow] (revinit) -- (revrespond);
+  \draw[branch] (revrespond.north) .. controls (13.6,-6.2) and (2.0,-6.2) .. (polish.north);
+  \draw[branch] (agents.north) -- ++(0,0.55) -| (draft.south);
+  \draw[branch] (journal.north) -- ++(0,0.55) -| (draft.south);
 \end{tikzpicture}
 \end{document}
