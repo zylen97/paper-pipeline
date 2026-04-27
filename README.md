@@ -133,15 +133,19 @@ Eight specialized agents that skills dispatch as sub-agents. They are not invoke
 
 ## Layer 6: Knowledge Writing & Dissemination
 
-This layer is an independent writing input/output pipeline, not a loose extension bucket. `/kb` ingests and audits Obsidian value notes, life/work signals, and source material into a living mental model (`_mental-model.md`). `/blog-draft` turns that model and selected notes into long-form public writing, while `/wechat-publish` adapts the result into a WeChat Official Account draft.
+This layer is an independent writing input/output pipeline, not a loose extension bucket. `/kb` ingests and audits Obsidian value notes, life/work signals, and source material into a living mental model (`_mental-model.md`); KB maintenance is independent (daily harvest + weekly lint via Codex Automations) and is **not** part of the writing workflow. `/daily-write` runs the full daily writing workflow—source mode selection, topics/directions funnel, deep-forging, long-form drafting, NB2 cover/illustrations, site deploy, and WeChat draft push—aligned with the academic-os-dashboard data contract (`_writing/daily/{date}/runs/{runId}/`). `/wechat-publish` remains as a standalone post-only entry for republishing existing blog slugs without re-running the full draft pipeline.
 
-**Flow**: Obsidian Vault / source notes → `/kb` → `/blog-draft` → `/wechat-publish` → Academic Site / WeChat OA
+**Flow (daily writing)**: Obsidian Vault / source notes (lyrics / links / library) → `/daily-write` → Academic Site + WeChat OA
+
+**Standalone fallback**: existing `src/data/blog/{slug}.md` → `/wechat-publish` → WeChat OA
+
+**KB maintenance (parallel, independent)**: source material → `/kb` (ingest / lint / model) → `_mental-model.md`
 
 | Skill | Description |
 |:------|:------------|
 | `/kb` | Personal values knowledge base with 3 modes: `ingest` (batch import with content filtering + parallel sub-agents), `lint` (health check: contradictions, duplicates, format, sensitive content), `model` (view/update living mental model `_mental-model.md`). Supports pre-classification + parallel sub-agent integration for large batches |
-| `/blog-draft` | Generate long-form blog posts from Obsidian value notes + NB2 cover images → Academic Site |
-| `/wechat-publish` | Adapt blog posts and push to WeChat Official Account draft box |
+| `/daily-write` | Daily writing workflow (9 phases): source mode (lyrics/links/library) → topics → 3 directions/topic → personal anchors → deep-forging (Challenger × Deep-Diver) → 3000-3500 word draft → NB2 images (literary graphic novel style) → site deploy → WeChat draft push. Dashboard-aligned data contract; supports `from-phase=N` resume + `--skip-deploy` / `--skip-wechat` escape hatches |
+| `/wechat-publish` | Standalone post-only entry: adapt existing blog slug and push to WeChat draft (協议 sync with /daily-write Phase 8) |
 
 ## Utilities
 
@@ -196,8 +200,8 @@ Claude Code auto-discovers all skills from `~/.claude/skills/` and agents from `
 │   ├── rev-*/                # Revision pipeline (2 skills)
 │   ├── diss-*/               # Dissertation pipeline (5 skills)
 │   ├── fund-*/               # Funding pipeline (6 skills)
-│   ├── blog-draft/           # Blog generation
-│   ├── wechat-publish/       # WeChat publishing
+│   ├── daily-write/          # Daily writing workflow (9 phases: source→draft→deploy→wechat)
+│   ├── wechat-publish/       # Standalone post-only entry: existing slug → WeChat draft
 │   ├── kb/                   # Personal knowledge base (ingest/lint/model)
 │   └── shared/               # Shared utilities (Python)
 # scheduled/ → github.com/zylen97/idea-scout/pipeline

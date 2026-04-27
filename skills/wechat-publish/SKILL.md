@@ -1,12 +1,19 @@
 ---
-description: "将博客文章适配并推送到微信公众号「夕阳乃常事」草稿箱"
+description: "已有 src/data/blog/{slug}.md 的独立后置入口：把博客适配并推送到微信公众号「夕阳乃常事」草稿箱"
 ---
 
-# WeChat Publish — 博客 → 公众号草稿
+# WeChat Publish — 博客 → 公众号草稿（独立后置入口）
 
 读取 academic-site 的博客 markdown，自动适配微信格式，推送到公众号草稿箱。
 
 **输入**：`/wechat-publish {slug}`（slug 对应 `src/data/blog/{slug}.md`）
+
+> **定位（重要）**：
+> 本 skill 是**独立后置入口**——专门处理"已有 `src/data/blog/{slug}.md`，单独发微信"的场景（如：补发老博文、博文从其他途径产生）。
+>
+> 日常的"写新文章 + 同步发微信"完整 workflow 在 `/daily-write`（Phase 8 inline 完整 wechat 逻辑）。
+>
+> **协议同步声明**：本 skill 与 `/daily-write` Phase 8 主体步骤对齐。修改 wechat 协议时（标题/摘要长度、API 路径、HTML 转换规则等）**两个 skill 必须同步更新**，避免行为漂移。
 
 ---
 
@@ -45,7 +52,7 @@ source ~/.claude/scheduled/email-config.sh
 
 ## Step 1：读取博客源文件
 
-> **上游来源**：由 `/blog-draft` 输出到 `src/data/blog/{slug}.md`
+> **上游来源**：由 `/daily-write` Phase 6 输出到 `src/data/blog/{slug}.md`，或用户手动放置
 
 读取：`/Users/zylen/Library/CloudStorage/Dropbox/04-Coding/academic-site/src/data/blog/{slug}.md`
 
@@ -164,7 +171,7 @@ curl -s -X POST \
 
 ### 4.0 阅读时间
 
-博客 md 中已由 `/blog-draft` 插入了阅读时间行（`*阅读时间：约 {N} 分钟 · {字数} 字*`），**不要重复插入或修改源文件**。
+博客 md 中已由 `/daily-write` 插入了阅读时间行（`*阅读时间：约 {N} 分钟 · {字数} 字*`），**不要重复插入或修改源文件**。
 
 转换为公众号 HTML 时，检测以 `*阅读时间：` 开头的段落，使用专属样式（不走普通斜体规则）：
 - `<p style="font-size:13px;color:#999;margin:0 0 24px;text-align:center;">阅读时间：约 {N} 分钟 · {字数} 字</p>`
@@ -320,4 +327,4 @@ npx gh-pages -d dist --dotfiles
 | 凭证缺失 | 提示用户检查 `~/.claude/scheduled/email-config.sh`（→ secrets-vault 符号链接） |
 | 所有图片上传失败 | 询问用户是否推送无图草稿，或放弃本次推送 |
 | 博客 frontmatter 缺 title | 报错，title 为必须字段 |
-| 博客 frontmatter 缺 cover | 提醒用户补充封面图（可用 `/blog-draft` 重新生成），或询问是否使用默认封面 |
+| 博客 frontmatter 缺 cover | 提醒用户补充封面图（可用 `/daily-write` 重新生成），或询问是否使用默认封面 |
