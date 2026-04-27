@@ -50,6 +50,9 @@ prompt：
 - 时态约束：未完成工作用将来时，已有成果用过去时
 - AIGC 规避：避免过度连词/模板句式/空洞论断
 
+## 结构保护硬约束
+禁止改动 `\cite{}` / `\ref{}` / `\label{}` 命令及其参数（key/label）。如发现引用相关的措辞问题（如缺少作者主语前缀），仅在响应中报告，不在输出中改动 cite/ref/label 本身。Step 2.6 Token Drift 检查会做前后多重集对比，越界即触发回退。
+
 ## 输出
 - 润色后的完整章节文本
 - 修改摘要：按"原文 → 润色后 → 修改理由"三列表格呈现（用于 Step 4 展示）
@@ -58,7 +61,7 @@ prompt：
 
 **约束**：
 - 一次一章，不并行（基金正文章节间逻辑耦合紧，需用户章间确认才推下一节）
-- 读取 Agent 的输出后**不立即写回文件**——进入 Step 3 自审
+- 读取 Agent 的输出后**不立即写回文件**——先进入 Step 2.6 Token Drift 检查，通过后再进入 Step 3 自审
 
 #### 2.1 学术规范性
 - 表述是否符合基金申请书的文体要求（不同于论文、不同于报告）
@@ -88,6 +91,49 @@ prompt：
 - 引用的统计数据/数字前后是否一致
 - 百分比、金额、年份等是否有明显错误
 - 文献引用是否准确（作者、年份、期刊）
+
+#### 2.6 Token Drift 检查（强制，逐章）
+
+每章 polisher 输出后立即执行（早于 Step 3 自审），与 /diss-polish Step 5.3 契约对称——polisher 越界改动 `\cite/\ref/\label` 是静默 bug，必须前后多重集对比兜底。
+
+**Token 快照（润色前）**：在 Step 2.0 调用 polisher 前，对当前 `sections/{NN}_{名}.md` 全文扫描三类 token **多重集**（按出现顺序保留重复，逗号分隔的多 key 引用如 `\cite{a,b,c}` 展开为独立元素）：
+- `{CITE_BEFORE}`：`\cite{...}` / `\citep{...}` / `\citet{...}` 中的所有 key
+- `{REF_BEFORE}`：`\ref{...}` / `\autoref{...}` / `\eqref{...}` 中的所有 label
+- `{LABEL_BEFORE}`：`\label{...}` 定义的所有 label
+
+**Token 快照（润色后）**：对 polisher 返回的章节文本做相同扫描，得 `{CITE_AFTER}` / `{REF_AFTER}` / `{LABEL_AFTER}`。
+
+**多重集差异**：
+- `cite_added` = AFTER 中存在但 BEFORE 中不足的 key
+- `cite_removed` = BEFORE 中存在但 AFTER 中不足的 key
+- `ref_added` / `ref_removed` / `label_added` / `label_removed` 同理
+
+**判定**：
+- **全部为空** → 静默通过，进入 Step 3 自审
+- **任一非空** → **强制输出 Token Drift 报告 + AskUserQuestion**，绝不静默吸收：
+
+```
+⚠️ Token Drift 报告（{章节名} 润色前后引用/标签结构变化）
+
+\cite{} 变化：
+  + 新增（M 处）：key1, key2, ...
+  - 删除（N 处）：key3, key4, ...
+
+\ref{} 变化：
+  + 新增：...
+  - 删除：...
+
+\label{} 变化：
+  + 新增：...
+  - 删除：...
+
+选项：
+  [1] 接受全部变化（确认是合理重写，进入 Step 3 自审）
+  [2] 回退并重试（重新调用 polisher 并强调"不得改动 \cite/\ref/\label"）
+  [3] 部分接受（用户指明保留/恢复哪些变化，主 agent 据此手动合并）
+```
+
+**严禁**在未显式呈现 Token Drift 的情况下进入 Step 3。即使 polisher 自称"未改动引用结构"，仍必须执行多重集对比——本步骤为"结构保护硬约束"提供强制兜底。
 
 ### Step 3: 格式合规检查
 

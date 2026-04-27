@@ -95,6 +95,20 @@ description: "学位论文中文润色：逐章审查 + 调用中文润色 agent
 
 #### Step 5 — 调用润色 agent
 
+##### Step 5.1 — Token 快照（润色前）
+
+调用 polisher 前，对当前章节 .tex 全文扫描并记录三类 token **多重集**（按出现顺序保留重复，捕获同一 key/label 多处使用的情况）：
+
+| 集合 | 来源命令 |
+|:-----|:--------|
+| `{CITE_BEFORE}` | `\cite{...}` / `\citep{...}` / `\citet{...}` 中的所有 key |
+| `{REF_BEFORE}` | `\ref{...}` / `\autoref{...}` / `\eqref{...}` 中的所有 label |
+| `{LABEL_BEFORE}` | `\label{...}` 定义的所有 label |
+
+逗号分隔的多 key 引用（如 `\cite{a,b,c}`）展开为独立元素计入。
+
+##### Step 5.2 — 调用 polisher
+
 根据用户确认的修改范围，调用 `language-polisher-zh` agent：
 
 ```
@@ -105,9 +119,47 @@ description: "学位论文中文润色：逐章审查 + 调用中文润色 agent
   - 语言表达润色指令（口语化/翻译腔、句式/流畅度、标点/格式规范）
   - 反 AIGC 表达多样化指令（句长变异、过渡去模板、段落结构轮换、套话频率控制、对称性打破、具体性锚定、词汇丰富度）
   - 术语表约束
+  - **结构保护硬约束**：禁止改动 `\cite{}` / `\ref{}` / `\label{}` 命令及其参数（key/label）；如发现引用相关的措辞问题（如缺少作者主语前缀），仅在响应中报告，不在输出中改动 cite/ref/label 本身
 输出：
   - 润色后的完整章节文本（整合内容层 + 语言层修改）
 ```
+
+##### Step 5.3 — Token Drift 检查（强制）
+
+对 polisher 输出做与 5.1 相同的扫描，得到 `{CITE_AFTER}` / `{REF_AFTER}` / `{LABEL_AFTER}`。
+
+**多重集差异计算**：
+- `cite_added` = AFTER 中存在但 BEFORE 中不足的 key（含同一 key 出现次数减少未达 AFTER 数量的差额）
+- `cite_removed` = BEFORE 中存在但 AFTER 中不足的 key
+- `ref_added` / `ref_removed` / `label_added` / `label_removed` 同理
+
+**判定规则**：
+
+- **全部为空** → 静默通过，直接进入 Step 6（不打扰用户）
+- **任一非空** → **强制输出 Token Drift 报告 + AskUserQuestion**（绝不允许静默吸收）：
+
+```
+⚠️ Token Drift 报告（润色前后引用/标签结构变化）
+
+\cite{} 变化：
+  + 新增（M 处）：key1, key2, ...
+  - 删除（N 处）：key3, key4, ...
+
+\ref{} 变化：
+  + 新增：...
+  - 删除：...
+
+\label{} 变化：
+  + 新增：...
+  - 删除：...
+
+选项：
+  [1] 接受全部变化（确认是合理重写，进入 Step 6 审阅完整 diff）
+  [2] 回退并重试（重新调用 polisher，prompt 中再次强调"不得改动 \cite/\ref/\label"）
+  [3] 部分接受（用户指明哪些变化保留、哪些恢复原样，主 agent 据此手动合并）
+```
+
+**严禁**在未显式呈现 Token Drift 的情况下进入 Step 6。即使 polisher 自称"未改动引用结构"，仍必须执行多重集对比——polisher 越界是**静默 bug**，本步骤为核心原则 5 提供强制执行兜底。
 
 #### Step 6 — 展示修改对比
 
@@ -198,7 +250,7 @@ git push
 2. **先审后改**：所有修改必须先以报告形式展示，用户确认后才执行
 3. **逐章推进**：每次只处理一章，避免大规模并行修改导致失控
 4. **术语表优先**：读取 CLAUDE.md 术语表（应在 outline 或 draft 阶段已建立），严格遵循。如发现不一致，报告并建议修正。如术语表不存在，发出警告提示先补建
-5. **保留 LaTeX 结构**：润色只改文字内容，不改 LaTeX 命令、标签、引用结构
+5. **保留 LaTeX 结构**：润色只改文字内容，不改 LaTeX 命令、标签、引用结构。**该原则由 Step 5.3 Token Drift 检查机制强制执行**——`\cite/\ref/\label` 多重集前后对比，任何变化必须显式报告并由用户决策，绝不静默吸收
 
 ---
 
