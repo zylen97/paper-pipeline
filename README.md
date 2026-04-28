@@ -144,7 +144,7 @@ This layer is an independent writing input/output pipeline, not a loose extensio
 | Skill | Description |
 |:------|:------------|
 | `/kb` | Personal values knowledge base with 3 modes: `ingest` (batch import with content filtering + parallel sub-agents), `lint` (health check: contradictions, duplicates, format, sensitive content), `model` (view/update living mental model `_mental-model.md`). Supports pre-classification + parallel sub-agent integration for large batches |
-| `/daily-write` | Daily writing workflow (9 phases): source mode (lyrics/links/library) → topics → 3 directions/topic → personal anchors → deep-forging (Challenger × Deep-Diver) → 3000-3500 word draft → NB2 images (literary graphic novel style) → site deploy → WeChat draft push. Dashboard-aligned data contract; supports `from-phase=N` resume + `--skip-deploy` / `--skip-wechat` escape hatches |
+| `/daily-write` | Daily writing workflow (Phase 0-9): source mode (lyrics/links/library) → 3 directions → select → personal anchors → deep-forging (Challenger × Deep-Diver) → 3000-3500 word draft → NB2 images (literary graphic novel style) → site deploy → WeChat draft push. Dashboard-aligned data contract; supports `from-phase=N` resume + `--skip-deploy` / `--skip-wechat` escape hatches |
 | `/wechat-publish` | Standalone post-only entry: adapt existing blog slug and push to WeChat draft (協议 sync with /daily-write Phase 8) |
 
 ## Utilities
