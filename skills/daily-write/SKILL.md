@@ -1,5 +1,5 @@
 ---
-description: "每日写作完整 workflow：源选择 → 主题/方向漏斗 → 思想锻造 → 长文撰写 → NB2 配图 → 站点部署 → 微信公众号草稿"
+description: "每日写作完整 workflow：源选择 → 方向漏斗 → 思想锻造 → 长文撰写 → NB2 配图 → 站点部署 → 微信公众号草稿"
 ---
 
 # /daily-write — 每日写作 Workflow
@@ -100,7 +100,7 @@ mkdir -p "{RunDir}/drafts" "{RunDir}/images" "{RunDir}/wechat" "{RunDir}/sources
 ### 0.4 Resume 检测
 
 如果 `fromPhase > 0`，跳到指定 phase。从 `{RunDir}/` 读取已有产物作为上下文：
-- `topics.json` / `directions.json` / `selected.json` / `workflow.json`
+- `directions.json` / `selected.json` / `workflow.json`
 - `drafts/blog-draft.md` / `drafts/blog-context-card.md`
 - `images/image-manifest.json`
 
@@ -196,37 +196,17 @@ mkdir -p "{RunDir}/drafts" "{RunDir}/images" "{RunDir}/wechat" "{RunDir}/sources
 
 ---
 
-## Phase 1c：抽 Topics（候选主题）
+## Phase 1c：生成 3 Directions
 
-读 `source-pack.json`，从中提取 **5-8 个候选主题**。
+读 `source-pack.json`，**直接生成 3 个写作方向**，必须有实质差异——不同的 topic 切入 + 不同的论证路径 + 不同的情感基调，**不是同一个 topic 的三种风格变体**。
 
-每个 topic 包含：
-- `id`：snake-case slug
-- `title`：中文主题名
-- `kernel`：1 句话核心命题
-- `sourcePointers`：[]（指向 source-pack 中的素材索引）
-- `tensionScore`：1-5 分（基于 _mental-model.md §六「内在张力」的契合度）
-
-写出：
-- `{RunDir}/topics.json`
-- `{RunDir}/topics.md`（人类可读版）
-
-向用户展示 topics.md，要求选 1 个深挖（也可选多个或要求重新生成）。
-
-**Decision Card 1**：用户选 topic 后才进入 Phase 1d。
-
----
-
-## Phase 1d：每 Topic 深挖 3 Directions
-
-对用户选定的 topic，**生成 3 个写作方向**，必须有实质差异（不是换个标题，而是不同的论证路径 / 不同的情感基调 / 不同的读者收获）。
-
-每个 direction 字段（与 dashboard `directions.json` 对齐）：
+每个 direction 字段（与 dashboard `directions.json` 兼容）：
 
 ```json
 {
   "id": "kebab-case-slug",
   "title": "完整中文标题",
+  "topic": "本 direction 的 topic（核心命题，1 句话）",
   "angle": "切入角度描述（哲学思辨 / 挑衅型 / 叙事型 ...）",
   "hook": "开头第一句话（必须制造认知冲突：反直觉断言 / 具体画面 / 灵魂拷问）",
   "logicChain": ["论点1", "论点2", "论点3", "收尾余味"],
@@ -238,19 +218,19 @@ mkdir -p "{RunDir}/drafts" "{RunDir}/images" "{RunDir}/wechat" "{RunDir}/sources
 
 写出：
 - `{RunDir}/directions.json`
-- `{RunDir}/directions.md`
+- `{RunDir}/directions.md`（人类可读版）
 
 **写作方案设计要求**（来自 `_writing-craft.md`）：
 - 开头必须制造认知冲突（**禁用**"在这个快节奏的时代"这种烂大街开头）
 - 逻辑链至少穿透三层（现象 → 原因 → 结构性洞察）
 - 标明哪些环节会用到个人经历做锚点
-- 三个方向之间的差异必须实质化，不是"严肃版 / 调侃版"这种换风格
+- 三个方向之间的差异必须实质化（**topic 错开 + angle 错开**，不是同一主题的三种风格变体）
 
 ---
 
-## Phase 1e：选 Direction（Decision Card）
+## Phase 1d：选 Direction（Decision Card）
 
-向用户展示 3 个 directions（拼接 topics.md + directions.md），用户选 1 个或要求混搭。
+向用户展示 3 个 directions（读 `directions.md`），用户选 1 个或要求混搭。
 
 派生字段（用 writing-daily.cjs 的同款 inferCategory/inferTags 逻辑）：
 
@@ -932,7 +912,7 @@ API 标题：{≤10 字}
 
 - ❌ 具体时间戳：凌晨 1 点 / 深夜 2 点 / 周末还在改 / 每天 12 小时
 - ❌ 具体数量：几十个 skill / 18 个项目 / 10 篇论文 / N 门课
-- ❌ 具体工具链清单：`/lit-plan` `/pen-outline` `/method-end` 这种暴露工作流细节
+- ❌ 具体工具链清单：`/lit-plan` `/pen-outline` `/method-audit` 这种暴露工作流细节
 - ❌ 具体学术指标：一篇 SSCI / 某影响因子期刊 / 某专项基金
 - ✅ 替代表达：一个深夜 / 前阵子 / 这段时间 / 一些 skill / 陆续搭了一些 / 一份成果 / 一篇论文（单数指代）
 
@@ -953,8 +933,7 @@ sub-agent（尤其是 Phase 3 Deep-Diver）输出里如果出现具体歌词 / �
 | from-phase | 前置必需 |
 |:-----------|:--------|
 | 1c | request.json + source-pack.json |
-| 1d | topics.json |
-| 1e | directions.json |
+| 1d | directions.json |
 | 2  | selected-direction.json + workflow.json |
 | 3  | drafts/blog-context-card.md（含 Personal Anchors） |
 | 4  | drafts/blog-context-card.md（含 Deep-Forging） |
