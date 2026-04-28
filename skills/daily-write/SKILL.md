@@ -4,7 +4,7 @@ description: "每日写作完整 workflow：源选择 → 主题/方向漏斗 �
 
 # /daily-write — 每日写作 Workflow
 
-合并原 `/blog-draft` + `/wechat-publish` 完整工作流，从素材选源到公众号草稿一站式完成。对齐 academic-os-dashboard 的数据契约（`_writing/daily/{date}/runs/{runId}/`），dashboard 作为只读 viewer。
+合并原 `/blog-draft` + `/wechat-publish` 完整工作流，从素材选源到公众号草稿一站式完成。本 skill 是 `_writing/daily/{date}/runs/{runId}/` 目录的唯一写入方（目录结构沿用早期 academic-os-dashboard 的设计，便于历史 run 复用）。
 
 **输入语法**：
 ```
@@ -75,8 +75,15 @@ runId   = "{HHMMSS}-{mode}-{4位hex}"                      # 例：200503-lyrics
 ### 0.2 创建目录结构
 
 ```bash
-mkdir -p "{RunDir}/drafts" "{RunDir}/images" "{RunDir}/wechat"
+mkdir -p "{RunDir}/drafts" "{RunDir}/images" "{RunDir}/wechat" "{RunDir}/sources"
 ```
+
+| 子目录 | 用途 |
+|:-------|:-----|
+| `drafts/` | blog-draft.md / blog-context-card.md / site-preview.md / site-sync-checklist.md |
+| `images/` | image-plan.md / image-manifest.json |
+| `wechat/` | wechat-draft.md / wechat-checklist.md / wechat-body.html / wechat-publish-result.json |
+| `sources/` | 外部素材原始文件（YouTube 字幕 / 完整歌词 / 链接抓取内容等），按类型 + slug 命名（如 `youtube-{videoId}.{json,md}` / `lyrics-{song-slug}.md`） |
 
 ### 0.3 写 run.json
 
@@ -775,7 +782,9 @@ curl -s -X POST \
 - `<p>` 间空行由 margin 控制，不要 `<br>`
 - 列表/引用按 block 为单位转换（连续同类行属于同一 block）
 
-写出：`{RunDir}/wechat/wechat-draft.md`（含 inline HTML 完整内容）。
+写出两个文件：
+- `{RunDir}/wechat/wechat-draft.md`（含 inline HTML 完整内容，给用户预览用）
+- `{RunDir}/wechat/wechat-body.html`（纯 HTML 备份，不含 markdown 头尾，供 Phase 8.8 直接 POST 到微信 API）
 
 ### 8.8 推送草稿（External Action Gate）
 
@@ -821,6 +830,23 @@ r = requests.post(
 > **不要用 `json=draft_data`**——`requests` 默认 `ensure_ascii=True`，中文标题/正文全变 `\uXXXX`。
 
 成功返回 `{"media_id": "..."}` → 草稿创建完成。
+
+**写出 API 响应记录**：
+```
+{RunDir}/wechat/wechat-publish-result.json
+{
+  "createdAt": "{ISO8601}",
+  "title": "{≤10 字}",
+  "digest": "{≤15 字}",
+  "thumb_media_id": "...",
+  "draft_media_id": "{微信返回的 media_id}",
+  "errcode": 0,
+  "errmsg": "ok",
+  "uploadedImages": [{"local": "...", "wechatUrl": "https://mmbiz.qpic.cn/..."}]
+}
+```
+
+记录用于：失败重试 / 去重检测 / 审计追溯。
 
 ### 8.9 清理测试草稿（如有）
 
@@ -937,17 +963,12 @@ sub-agent（尤其是 Phase 3 Deep-Diver）输出里如果出现具体歌词 / �
 | 7  | {SiteBlogDir}/{slug}.md（publish-clean） |
 | 8  | site deployed（如未 skip-deploy） |
 | 9  | wechat draft created（用户已提供最终发布标题） |
-| 9  | wechat draft created |
 
 ### 三层目录铁律
 
 - 工作区污染允许：`{RunDir}/`（process notes / sidecar / 迭代历史）
 - 发布区严控：`{SiteBlogDir}/{slug}.md` 必须 publish-clean
 - 归档区永久：`{WechatBlogDir}/{date}_{cat}_{title}/`
-
-### Dashboard 协作
-
-dashboard `academic-os-dashboard` 读取 `{DailyRoot}/` 目录展示状态，**不写入**。本 skill 是唯一写入方。
 
 ### 边界条件
 
