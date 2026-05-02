@@ -366,25 +366,19 @@ import fitz  # PyMuPDF
    - Simulation/Numerical Analysis 完整层级（若存在：参数设定→基准情景→敏感性分析→管理启示的组织方式）
    - 对于博弈论/建模论文额外记录：模型数量及命名方式、假设集中呈现还是分散嵌入、命题/引理的放置位置（正文 vs 附录）、证明的呈现方式（正文完整证明/正文sketch+附录完整/纯附录）
 7. **图表清单**：所有方法/结果相关图表（编号+标题+内容简述+呈现方式）
-8. **各 section 字数统计**：
+8. **各 section 字数统计**：⚠️ **Deprecated since 2026-05-02** —— step 5.8 已改为硬编码（2-section 4500 / 3-section 5000 words），不再读取 benchmark 字数估算。本项 **subagent 可跳过**（节省时间）；如保留输出仅作历史归档参考，**不要在审计决策中消费**。
+
+   <details><summary>历史 prompt（不再调用）</summary>
+
    统计论文每个一级 section 的估算字数（Introduction, Literature Review,
    Methodology/Research Design, Results/Analysis, Discussion, Conclusion，
    以及 Simulation/Numerical Analysis 如存在）。
    - 统计方法：按 section 起止页计算正文面积，扣除图表、公式块、表格占位面积，
      按每页约 600-800 词（单栏）或 1000-1200 词（双栏）估算
-   - 如果 section 内有 subsection，同时统计每个 subsection 的字数
-   - 输出格式：
-     | Section | Subsections | 估算字数 |
-     |:--------|:-----------|:---------|
-     | Introduction | — | {N} |
-     | Literature Review | {sub1}, {sub2}, ... | {N} |
-     | Methodology | {sub1}, {sub2}, ... | {N} |
-     | Results | {sub1}, {sub2}, ... | {N} |
-     | Simulation（如有） | {sub1}, {sub2}, ... | {N} |
-     | Discussion | {sub1}, {sub2}, ... | {N} |
-     | Conclusion | — | {N} |
-     | **正文合计** | | **{total}** |
-   注：字数为估算值（±10%），不含 Abstract、References、Appendix。
+   - 输出格式（如执行）：见原表
+   注：字数为估算值（实证发现偏差 -35% 到 +119%，路线不可靠）。
+
+   </details>
 
 {METHOD_TYPE 差异化补充——见下方}
 
@@ -453,19 +447,7 @@ import fitz  # PyMuPDF
 
 > 注：结构列须包含 subsubsection 级别（即 `####` 对应的层级），每级用缩进表示层级关系。对于博弈论/建模论文，Methodology 列须标注各模型的起止小节和假设集中区段。
 
-**表 4：各章节字数对比**
-
-```markdown
-| 论文 | Intro | Lit Review | Methodology | Results | Simulation | Discussion | Conclusion | 正文合计 |
-|:-----|:-----:|:---------:|:-----------:|:-------:|:----------:|:----------:|:----------:|:--------:|
-| **本文** | **TBD** | **TBD** | **TBD** | **TBD** | **{如适用}** | **TBD** | **TBD** | **TBD** |
-| {key1} | ... | ... | ... | ... | ... | ... | ... | ... |
-| ... |
-| **中位数** | {N} | {N} | {N} | {N} | {N/—} | {N} | {N} | {N} |
-| **范围** | {min}-{max} | ... | ... | ... | ... | ... | ... | ... |
-
-> Simulation 列：仅部分论文含独立 Simulation 章节，中位数基于含该章节的论文计算；无该章节的论文标 "—"。
-```
+**表 4：各章节字数对比** —— ⚠️ **Deprecated since 2026-05-02**：5.8 已改硬编码，本表不再生成（数据来源不可靠）。如旧版 cross_comparison.md 中存在此表，5.8 不消费其数字。
 
 末尾附 **行业基线总结**：
 
@@ -507,21 +489,9 @@ import fitz  # PyMuPDF
 - 常见小节划分：{参数设定→基准情景→敏感性分析→管理启示 等}
 - 图表密度：平均 {X} 张/章
 
-### 章节字数基线（基于 {M} 篇对标论文）
+### 章节字数基线 —— ⚠️ **Deprecated since 2026-05-02**
 
-| Section | 中位数 | 范围 | 占比 |
-|:--------|:-----:|:----:|:----:|
-| Introduction | {N} | {min}-{max} | {%} |
-| Literature Review | {N} | {min}-{max} | {%} |
-| Methodology | {N} | {min}-{max} | {%} |
-| Results | {N} | {min}-{max} | {%} |
-| Simulation（如适用） | {N} | {min}-{max} | {%} |
-| Discussion | {N} | {min}-{max} | {%} |
-| Conclusion | {N} | {min}-{max} | {%} |
-| **正文合计** | **{N}** | {min}-{max} | 100% |
-
-> 注：字数为估算值（±10%），基于 PDF 页面分析。不含 Abstract、References、Appendix。
-> Simulation 行仅基于含该独立章节的论文（{K}/{M} 篇），其余论文标 "—" 不参与统计。
+5.8 改为硬编码（2-section 4500 / 3-section 5000 words），**本节不再生成**。如旧版 cross_comparison.md 含此节，5.8 不消费其数字。
 ```
 
 ### 📌 Checkpoint C1：Git 备份对标分析（不可跳过）
@@ -1319,83 +1289,83 @@ TODO: 待 /lit-pool 后期或手工填充
 
 ---
 
-### 步骤 5.8：各 section 字数目标确认
+### 步骤 5.8：技术型章节字数硬编码分配
 
-结构确认完成后，基于 benchmark 字数基线确认各正文 section 的字数目标，写入各章节 md。
+> **设计原则**：放弃基于 benchmark PDF 字数估算的方案——经实证（zy12 项目，2026-05-02）发现 PDF page-density 估算在 5 篇对标论文中偏差 -35% 到 +119%，且 basic vs strict-prose word count 双指标不一致，估算路线**不可靠**。
+>
+> 改为**硬编码总字数**：技术型章节合并字数仅按"技术型章节数量"二分。配比由用户在 5.8.3 选择，无 benchmark 依赖。
 
-#### 5.8.1 识别正文 section 列表
+#### 5.8.1 识别技术型章节集合
 
-根据 `{METHOD_TYPE}` 确定需要分配字数的 section：
+扫描 `structure/` 目录，按文件实际存在情况判断技术型章节数：
 
-| METHOD_TYPE | Sections |
-|:------------|:---------|
-| modeling | Introduction, Literature Review, Methodology, Results, Simulation, Discussion（6 个） |
-| survey-sem | Introduction, Literature Review, Methodology, Results, Discussion（5 个） |
-| panel-regression | Introduction, Literature Review, Methodology, Results, Discussion（5 个） |
+| 模式 | 条件 | 技术型章节集合 |
+|:--|:--|:--|
+| **2-section 模式** | `methodology.md` + `results.md` 存在；`simulation.md` 不存在或合并入 `results.md`（CLAUDE.md `## 项目阶段` 标注） | Methodology + Results |
+| **3-section 模式** | `methodology.md` + `results.md` + `simulation.md` 都存在且都有实质内容 | Methodology + Results + Simulation |
 
-**不含** Conclusion 和 Abstract（由 /finalize 处理，字数由期刊规范决定）。
+**判定逻辑**：
+- 用 Glob 检测三个文件是否存在
+- 用 Grep 检测 CLAUDE.md `## 项目阶段` 是否含 "simulation 合并入 results" 等措辞
+- 不确定时 AskUserQuestion 让用户明确
 
-进一步验证：扫描 `structure/` 目录，确认每个 section 对应的 md 文件存在。不存在的 section → 从列表中移除并提示用户。
+#### 5.8.2 应用硬编码总字数
 
-#### 5.8.2 读取字数基线
+| 模式 | 技术型章节合计字数（hard-coded） |
+|:--|:-:|
+| 2-section（Methodology + Results） | **4500 words** |
+| 3-section（Methodology + Results + Simulation） | **5000 words** |
 
-从 `structure/3_methodology/benchmark/cross_comparison.md` 的 `### 章节字数基线` 提取各 section 的中位数和范围。
+**字数定义**：strict prose word count（自然语言段落字数；不含 equation 内容、algorithm 伪码、figure/table caption 文字、reference 引用计数）—— 与 LaTeX `texcount` 主流默认行为一致。
 
-**无对标数据时**（降级模式 / cross_comparison.md 中无字数数据）：
-使用 Claude 知识中该期刊/领域的典型字数分布作为参考，明确标注"⚠️ 非 benchmark 依据，基于 Claude 知识估算"。
+**不再读取**：`cross_comparison.md` 的章节字数基线（已废弃；其数字基于不可靠的 PDF page-density 估算）。
 
-#### 5.8.3 生成字数建议
+#### 5.8.3 生成默认配比 + 用户调整
 
-为每个 section 生成目标字数建议：
+**默认配比**（基于"methodology 含公理化/模型设定，密度高于 results"的一般经验）：
 
-- **默认值** = benchmark 中位数（取整到最近的 50）
-- **调整依据**（如某项偏离中位数，须在"调整理由"列说明）：
-  - 本文某 section 内容密度明显偏离 benchmark 均值（如 Results 含行为共演化分析，benchmark 中罕见）
-  - 目标期刊有明确的总字数/页数限制 → 总字数需适配，各 section 等比缩放
-  - 某 section 的 subsection 数量显著多于/少于 benchmark → 按比例调整
+| 模式 | Methodology | Results | Simulation |
+|:--|:-:|:-:|:-:|
+| 2-section（4500 总） | **2700 (60%)** | **1800 (40%)** | — |
+| 3-section（5000 总） | **2000 (40%)** | **1500 (30%)** | **1500 (30%)** |
+
+**允许调整**：用户可在 5.8.4 调整配比，但**总字数必须保持 4500 / 5000 不变**（此为硬约束）。如要改总字数：用户必须明确说明"超出硬编码范围"，并在 method_audit_report.md 备注理由。
 
 #### 5.8.4 展示并确认
 
 ```
-📊 各 section 字数目标（基于 {M} 篇 benchmark 论文）
+📊 技术型章节字数分配（硬编码 {N}-section 模式，总 {4500/5000} words）
 
-| Section | Benchmark 中位数 | Benchmark 范围 | 建议目标 | 调整理由 |
-|:--------|:---------------:|:-------------:|:-------:|:---------|
-| Introduction | {N} | {min}-{max} | {N} | — |
-| Literature Review | {N} | {min}-{max} | {N} | — |
-| Methodology | {N} | {min}-{max} | {N} | {如有} |
-| Results | {N} | {min}-{max} | {N} | {如有} |
-| {仅 modeling:} Simulation | {N} | {min}-{max} | {N} | {如有} |
-| Discussion | {N} | {min}-{max} | {N} | {如有} |
-| **正文合计** | **{N}** | | **{sum}** | |
+| Section | 默认建议 | 占比 | 调整理由 |
+|:--------|:-------:|:--:|:---------|
+| Methodology | 2700 | 60% | — |
+| Results | 1800 | 40% | — |
+| {仅 3-section:} Simulation | — | — | — |
+| **合计** | **4500** | 100% | （硬编码上限）|
 
-注：不含 Conclusion（由 /finalize 处理）和 Abstract。
+附注：叙述型章节由 /narrative 写入 manuscript.tex，遵循硬约束：
+  Introduction 1000-1200 / Literature Review 1500 / Discussion 1800-2500
+（method-audit 不写入叙述型章节字数。）
 
-你可以调整各 section 的目标字数。确认后写入各章节 md。
+你可以调整 Methodology / Results / Simulation 的配比，但合计须保持 {4500/5000} 不变。
 ```
 
-AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 → 再次展示 → 直到确认。
+AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配比 → 再次展示 → 直到确认。
 
-#### 5.8.5 写入各章节 md（**仅技术型章节**）
+#### 5.8.5 写入各章节 md
 
-> **职责边界**：method-audit 5.8 是方法论审计产出，按行业基线为论文各章节确定字数**锚点**。但写入动作应**只限于技术型章节**（Methodology/Results/Simulation）——这些是 method-audit 可信决策的范围。
->
-> 叙述型章节（Introduction/Literature Review/Discussion）由 `/narrative` 直接读 manuscript.tex 写 tex，字数遵循硬约束（intro 1000-1200 / LR 1500 / discussion 1800-2500），method-audit 不越位写入叙述型章节字数。
->
-> 显示在 5.8.4 的字数分配**总表**可以仍列出所有章节（作为全局配比可视化），但 5.8.5 只写技术型 3 节。
+> **职责边界**：5.8 写入仅限技术型章节（Methodology / Results / Simulation）。叙述型章节由 `/narrative` 直接读 manuscript.tex 写 tex，method-audit 不越位。
 
 用户确认后，遍历以下文件（仅存在的文件），用 Edit 修改头部的 `目标字数` 行：
 
-| Section | 文件路径（Glob 匹配） |
-|:--------|:-------------------|
+| Section | 文件路径 |
+|:--------|:---------|
 | Methodology | `structure/3_methodology/methodology.md` |
 | Results | `structure/4_results/results.md` |
-| Simulation | `structure/*simulation*/simulation.md`（仅 modeling 类型） |
-
-**不在本步骤写入**（由 `/narrative` 负责，直接读 tex 写 tex）：Introduction / Literature Review / Discussion。
+| Simulation | `structure/*simulation*/simulation.md`（仅 3-section 模式）|
 
 替换规则：
-- 匹配 `> 目标字数:` 开头的行
+- 匹配 `> 目标字数:` 或 `> 字数目标:` 开头的行
 - 替换为 `> 目标字数: {N} words`
 
 > 写入的文件将纳入 Checkpoint C3 的 git add 范围。
@@ -1405,10 +1375,8 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改 →
 ✓ 字数目标已写入技术型章节 md
   - methodology.md: {N} words
   - results.md: {N} words
-  {仅 modeling:} - simulation.md: {N} words
-
-（Introduction / Literature Review / Discussion 由 /narrative 直接读 tex 写 tex，
- 字数遵循硬约束：intro 1000-1200 / LR 1500 / discussion 1800-2500。）
+  {仅 3-section:} - simulation.md: {N} words
+  - 技术型合计: {4500/5000} words（硬编码）
 ```
 
 ---
