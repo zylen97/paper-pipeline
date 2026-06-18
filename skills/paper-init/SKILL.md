@@ -163,10 +163,9 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 
 ```
 ~/.claude/skills/paper-init/
-├── common/              # 通用章节模板（所有方法共享）
+├── common/              # 叙述型 blueprint 模板（Introduction / Literature Review）
 │   ├── introduction.md.tmpl
-│   ├── literature.md.tmpl
-│   └── discussion.md.tmpl
+│   └── literature.md.tmpl
 ├── modeling/            # 建模类方法专用模板
 │   ├── methodology.md.tmpl
 │   ├── results.md.tmpl
@@ -218,12 +217,12 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
-| `1_introduction/` | Introduction 素材 | `introduction.md` |
-| `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 模型设定（符号、假设、框架） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
-| `4_results/` | 均衡求解、命题、比较静态 | `results.md`（成稿）, `results_dev.md`（过程文件） |
-| `5_simulation/` | 仿真脚本、案例数据 | `simulation.md`（成稿）, `simulation_dev.md`（过程文件） |
-| `6_discussion/` | Discussion 素材 | `discussion.md` |
+| `1_introduction/` | Introduction blueprint 与素材 | `introduction.md` |
+| `2_literature/` | Literature Review blueprint、RIS、direction reports、citation_pool/ | `literature.md`, direction reports, master.bib（lit-pool） |
+| `3_methodology/` | 模型设定（符号、假设、框架） | `methodology.md`（唯一权威源） |
+| `4_results/` | 均衡求解、命题、比较静态 | `results.md`（唯一权威源） |
+| `5_simulation/` | 仿真脚本、案例数据 | `simulation.md`（唯一权威源） |
+| `6_discussion/` | Discussion 写作素材（不强制中间 md） | `manuscript.tex` 中的 Discussion section |
 | `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
@@ -232,11 +231,11 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
-| `1_introduction/` | Introduction 素材 | `introduction.md` |
-| `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 研究设计（框架、问卷、抽样） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
-| `4_results/` | 信效度、模型拟合、假设检验 | `results.md`（成稿）, `results_dev.md`（过程文件） |
-| `5_discussion/` | Discussion 素材 | `discussion.md` |
+| `1_introduction/` | Introduction blueprint 与素材 | `introduction.md` |
+| `2_literature/` | Literature Review blueprint、RIS、direction reports、citation_pool/ | `literature.md`, direction reports, master.bib（lit-pool） |
+| `3_methodology/` | 研究设计（框架、问卷、抽样） | `methodology.md`（唯一权威源） |
+| `4_results/` | 信效度、模型拟合、假设检验 | `results.md`（唯一权威源） |
+| `5_discussion/` | Discussion 写作素材（不强制中间 md） | `manuscript.tex` 中的 Discussion section |
 | `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
@@ -245,11 +244,11 @@ description: "初始化论文项目骨架（多出版社+多方法类型 + Git +
 | 子目录 | 内容 | 核心文件 |
 |:-------|:-----|:---------|
 | `0_global/` | 跨章节纲领、参考PDF库 | `idea.md`（纲领）, `pandoc_header.tex` |
-| `1_introduction/` | Introduction 素材 | `introduction.md` |
-| `2_literature/` | 文献综述素材、RIS、检索报告 | `literature.md` |
-| `3_methodology/` | 研究设计（数据、变量、模型） | `methodology.md`（成稿）, `methodology_dev.md`（过程文件） |
-| `4_results/` | 回归结果、稳健性检验 | `results.md`（成稿）, `results_dev.md`（过程文件） |
-| `5_discussion/` | Discussion 素材 | `discussion.md` |
+| `1_introduction/` | Introduction blueprint 与素材 | `introduction.md` |
+| `2_literature/` | Literature Review blueprint、RIS、direction reports、citation_pool/ | `literature.md`, direction reports, master.bib（lit-pool） |
+| `3_methodology/` | 研究设计（数据、变量、模型） | `methodology.md`（唯一权威源） |
+| `4_results/` | 回归结果、稳健性检验 | `results.md`（唯一权威源） |
+| `5_discussion/` | Discussion 写作素材（不强制中间 md） | `manuscript.tex` 中的 Discussion section |
 | `figures_tables/` | 图表集中管理 | `index.md`（注册表）, `tables.tex`（所有表格）, `figures/`（所有图片） |
 ```
 
@@ -291,12 +290,12 @@ gh repo create paper_{ID} --private --source=. --remote=origin
 
 **modeling**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_simulation structure/6_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness data/notes submission
 ```
 
 **survey-sem / panel-regression**：
 ```bash
-mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness submission
+mkdir -p structure/0_global structure/1_introduction structure/2_literature structure/3_methodology structure/4_results structure/5_discussion structure/figures_tables/figures data/raw data/processed data/scripts data/models data/results data/robustness data/notes submission
 ```
 
 ---
@@ -502,37 +501,38 @@ esac
 | 15 | `common/introduction.md.tmpl` | `structure/1_introduction/introduction.md` |
 | 16 | `common/literature.md.tmpl` | `structure/2_literature/literature.md` |
 
+> `introduction.md` 与 `literature.md` 是 narrative blueprint，不是最终正文正本。`/narrative section=introduction|literature` 必须先更新并 checkpoint 这些文件，再写入 `manuscript.tex`。Discussion 仍由 `/narrative section=discussion` 直接基于 Methodology/Results 写入 tex，不强制中间 md。
+
 #### structure/ 方法相关文件（根据 {METHOD_TYPE} 选择）
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
 | 17 | `{METHOD_TYPE}/methodology.md.tmpl` | `structure/3_methodology/methodology.md` |
-| 18 | `{METHOD_TYPE}/methodology_dev.md.tmpl` | `structure/3_methodology/methodology_dev.md` |
-| 19 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
-| 20 | `{METHOD_TYPE}/results_dev.md.tmpl` | `structure/4_results/results_dev.md` |
+| 18 | `{METHOD_TYPE}/results.md.tmpl` | `structure/4_results/results.md` |
 
 **仅 modeling**：
 
 | # | 模板文件 | 目标路径 |
 |---|---------|---------|
-| 21 | `modeling/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
-| 22 | `modeling/simulation_dev.md.tmpl` | `structure/5_simulation/simulation_dev.md` |
+| 19 | `modeling/simulation.md.tmpl` | `structure/5_simulation/simulation.md` |
 
-#### Discussion（目录编号因方法类型而异）
+#### Discussion 目录（仅创建空目录，不预生成 md）
 
-| 方法类型 | 模板文件 | 目标路径 |
-|---------|---------|---------|
-| modeling | `common/discussion.md.tmpl` | `structure/6_discussion/discussion.md` |
-| survey-sem | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
-| panel-regression | `common/discussion.md.tmpl` | `structure/5_discussion/discussion.md` |
+| 方法类型 | 创建空目录 |
+|---------|---------|
+| modeling | `structure/6_discussion/` |
+| survey-sem | `structure/5_discussion/` |
+| panel-regression | `structure/5_discussion/` |
+
+> Discussion 章节由 `/narrative section=discussion` 直接生成 tex，不需要预先创建 discussion.md。
 
 #### 图表管理文件（所有方法类型通用）
 
 | # | 操作 | 目标路径 |
 |---|------|---------|
-| 23 | 直接创建空注册表 | `structure/figures_tables/index.md` |
-| 24 | 直接创建空表格文件 | `structure/figures_tables/tables.tex` |
-| 25 | 空目录占位 | `structure/figures_tables/figures/.gitkeep` |
+| 20 | 直接创建空注册表 | `structure/figures_tables/index.md` |
+| 21 | 直接创建空表格文件 | `structure/figures_tables/tables.tex` |
+| 22 | 空目录占位 | `structure/figures_tables/figures/.gitkeep` |
 
 **index.md 初始内容**：
 ```markdown
@@ -583,11 +583,11 @@ esac
 | §2 行业背景 | §2 行业背景与实践难题 | 直接迁移 |
 | §2 Gap 分析 | §2 文献不足（简述） | 压缩为每个 Gap 1-2 句话的简述 |
 | §2 RQ | §2 Gap→Objective→RQ 表格 | 重组为表格形式，从每个 Gap 提炼 Objective |
-| §3 方法论 | §3 方法论选择论证 | 只保留方法选择的论证和总体框架描述，**不放具体公式和推导细节**（那些属于 methodology_dev.md） |
+| §3 方法论 | §3 方法论选择论证 | 只保留方法选择的论证和总体框架描述，**不放具体公式和推导细节**（那些属于 `methodology.md`） |
 | §4 贡献意图 | §4 贡献意图 | 拆分为理论贡献和实践贡献，精简为要点式 |
 | §5 风险评估 | §5 风险评估 | 转为表格形式（风险/等级/应对） |
 
-> **注意**：idea.md 只放"为什么"和"方向"，不含具体公式/推导/数值。idea 文件 §3 中的详细模型设定（决策变量定义、收益函数、求解过程等）不写入 idea.md，后续填入 `methodology_dev.md`。
+> **注意**：idea.md 只放"为什么"和"方向"，不含具体公式/推导/数值。idea 文件 §3 中的详细模型设定（决策变量定义、收益函数、求解过程等）不写入 idea.md，后续填入 `methodology.md`（章节成稿，唯一权威源）。
 
 ---
 
@@ -671,10 +671,10 @@ git push -u origin main
    - 运行 `/lit-plan` 规划文献检索方向
    - WoS 检索完成后，文献量大时先运行 `/lit-screen`(分区+相关性筛选)，再运行 `/lit-review`(方向报告) → `/lit-tag`(打标签) → `/lit-pool`(引用池 + 方法论综述)
    - 文献工作流完成后运行 `/idea-refine` 迭代优化 idea 和方法设计，直至满意
-   - 填写 _dev.md 过程文件后运行 `/method-audit`（方法论审计 + 结构确认）
-   - 审计通过后运行 `/method-end`（从 _dev.md 凝练到成稿 md）
-   - 技术型章节：`/method-end` → `/pen-draft`(初稿) → `/pen-polish`(打磨)
-   - 叙述型章节：`/pen-outline`(大纲) → `/pen-draft`(初稿) → `/pen-polish`(打磨)
+   - 直接在 `methodology.md` / `results.md` / `simulation.md`（modeling）中填写技术型章节成稿内容
+   - 内容成熟后运行 `/method-audit`（方法论审计 + 章节结构确认 + 字数分配 + 必备元素验收 + 阶段转换 foundation→drafting）
+   - 技术型章节：`/method-audit`（审计 + 写作蓝图）→ `/technical`（直接 tex 生成）→ `/polish`（可选打磨）
+   - 叙述型章节：`/narrative section=introduction|literature`（先更新 blueprint md 再写 tex）/ `/narrative section=discussion`（直接 tex）→ `/polish`（可选打磨）
    - 论文主体定稿后运行 `/finalize`(Conclusion → Abstract → Cover Letter) → `/pre-submit`(投稿终检) → 投稿
 
    **如果未导入（空白项目）**：

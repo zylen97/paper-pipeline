@@ -2,8 +2,8 @@
 
 > 对应 manuscript.tex §4 Equilibrium analysis
 > 目标字数: TBD（由 /method-audit 基于 benchmark 确定）
-> 关联文件: `_dev.md`（过程文件）, `3_methodology/methodology.md`（模型设定）, `0_global/idea.md`（纲领）
-> 本文件为**成稿文件**，内容 = manuscript 正文要点。/pen-draft 读取本文件。
+> 关联文件: `3_methodology/methodology.md`（模型设定）, `0_global/idea.md`（纲领）
+> 本文件为**唯一权威源**：研究推导、正文要点、引用、字数分配、写作蓝图均落在这里。`/technical` 读取本文件直接生成 tex。
 
 ---
 
@@ -15,7 +15,7 @@
 2. **4.2 {Model comparison and propositions}**: 命题（显式编号）+ 证明思路 + 经济直觉
 3. **4.3 {Sensitivity analysis}**: 参数敏感性分析 + 关键推论 + 汇总表（→ Table in tables.tex）
 
-> **颗粒度标准**：同 methodology.md。命题编号必须与 simulation.md 和 discussion.md 一致。
+> **颗粒度标准**：同 methodology.md。命题编号在 results.md 中**首次确定**（按 4.2 内的命题陈列顺序赋号 P1, P2, ...）；simulation.md 引用本编号体系，后续 manuscript.tex `\section{Discussion}` 也必须沿用同一编号（叙述型章节无 md 中间产物，由 /narrative 直接写 tex 时主 agent 从 results section 提取编号）。
 > 均衡解汇总表和比较静态汇总表写入 `figures_tables/tables.tex`。
 
 ---
@@ -33,6 +33,19 @@ TODO
 ### 4.3 TODO: Sensitivity analysis
 
 TODO
+
+---
+
+## 写作蓝图
+
+> **由 /method-audit step 5.7+ 填充**——/technical 必读此区块作为写作 prompt 的核心输入。在 /method-audit 完成前保持 TODO 占位。
+>
+> 完整版含三层结构：
+> - **整体 Reader Journey**（1-2 句概述本章读者认知路径）
+> - **Subsection 级 5 字段**：Reader Entry Point / Content Journey / Exit Point / Why This Order / Visual Anchor
+> - **跨章节过渡**：本章与前后章节的衔接句指南
+
+TODO（待 /method-audit step 5.7+ 填充）
 
 ---
 

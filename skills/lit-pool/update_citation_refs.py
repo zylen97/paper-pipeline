@@ -32,34 +32,30 @@ from pathlib import Path
 # 章节 → 引用池映射
 # ---------------------------------------------------------------------------
 
+# 标签消费规则——只针对技术型章节（X.md 是 /method-audit + /technical 的素材源，需要在 md 中插入引用池区块）。
+# 叙述型章节（Introduction / Literature Review / Discussion）由 /narrative 在交互中按 lit-pool/SKILL.md
+# 标签消费表的优先级直接读 citation_pool/，不写入 md 中间产物。
 CHAPTER_POOL_MAP = {
-    "introduction": {
-        "[主] BG": "2_literature/citation_pool/BG.md",
-        "[主] GAP": "2_literature/citation_pool/GAP.md",
-        "[次] LR": "2_literature/citation_pool/LR.md",
-    },
-    "literature": {
-        "[主] LR": "2_literature/citation_pool/LR.md",
-        "[主] GAP": "2_literature/citation_pool/GAP.md",
-        "[次] METHOD": "2_literature/citation_pool/METHOD.md",
-        "[次] DISC": "2_literature/citation_pool/DISC.md",
-    },
     "methodology": {
         "[主] METHOD": "2_literature/citation_pool/METHOD.md",
     },
-    "discussion": {
-        "[主] DISC": "2_literature/citation_pool/DISC.md",
-        "[主] COMP": "2_literature/citation_pool/COMP.md",
+    "results": {
+        "[次] METHOD-基础": "2_literature/citation_pool/METHOD.md",
+    },
+    "simulation": {
+        "[次] BG": "2_literature/citation_pool/BG.md",
         "[次] LR": "2_literature/citation_pool/LR.md",
     },
 }
 
-# 章节文件名模式（按优先级）
+# LABEL_MAP 别名（与 lit-pool/SKILL.md "契约提示" 中的命名对齐）
+LABEL_MAP = CHAPTER_POOL_MAP
+
+# 章节文件名模式（按优先级，仅技术型）
 CHAPTER_FILE_PATTERNS = {
-    "introduction": ["introduction.md", "1_introduction.md", "intro.md"],
-    "literature": ["literature.md", "literature_review.md", "2_literature.md", "lit_review.md"],
     "methodology": ["methodology.md", "3_methodology.md", "method.md", "methods.md"],
-    "discussion": ["discussion.md", "5_discussion.md", "4_discussion.md", "disc.md"],
+    "results": ["results.md", "4_results.md"],
+    "simulation": ["simulation.md", "5_simulation.md", "numerical_simulation.md"],
 }
 
 

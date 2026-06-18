@@ -1,5 +1,5 @@
 ---
-description: "交互式打磨已有论文段落（Pipeline：journal-scout → strict-reviewer → 用户确认 → 主agent直接修改 → language-polisher）"
+description: "交互式打磨已有论文段落（Pipeline：[Writing Brief 可选] → strict-reviewer → 用户确认 → 主agent直接修改 → language-polisher）。Writing Brief 改为可选——存在则复用，不存在则跳过，不强制 journal-scout。"
 ---
 
 # Polish Workflow — 交互式打磨已有文本
@@ -19,6 +19,9 @@ description: "交互式打磨已有论文段落（Pipeline：journal-scout → s
 
 - 提取主体内容和 `section` 参数
 - 空或 < 50 字符 → 停止，提示用户选中文本
+- **可选标志 `with_brief=true`**：语义为"**强制重新生成** Writing Brief"开关，不是"是否使用"开关。
+  - `with_brief=true` → 设置 `{WITH_BRIEF}` = true，步骤 1 强制调用 journal-scout 重新生成 brief（无论原 brief 是否存在/过期）
+  - `with_brief=false` 或参数缺省 → 设置 `{WITH_BRIEF}` = false，步骤 1 走默认"已存在则复用，不存在则跳过"逻辑（即"使用现有 brief"是默认行为，不需要显式开关）
 
 ### 0.2 获取项目文件路径
 
@@ -58,11 +61,15 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
 
 创建 `{WORK_DIR}`，保存原始文本 → `{WORK_DIR}/01_original_text.md`
 
-## 步骤 1：生成 Writing Brief
+## 步骤 1：Writing Brief（可选）
 
-1. **复用检查**：读取 `drafts/writing_brief.md`，检查时间戳（> 24h→重新生成）和字数变化（> 20%→重新生成）。两项通过→复用
-2. **如需生成**：Web 搜索期刊 Guide for Authors → 调用 journal-scout → 保存到 `drafts/writing_brief.md`
-3. **展示**：期刊名称、期刊画像摘要
+**新工作流不再依赖 Writing Brief**——`/narrative` 和 `/technical` 直接 tex→tex，不预生成 brief。本步骤按 `{WITH_BRIEF}` 标志（步骤 0.1 解析）和 `drafts/writing_brief.md` 存在性分支：
+
+| `{WITH_BRIEF}` | brief 文件状态 | 行为 | 显示 |
+|:---:|:---|:---|:---|
+| false | 存在 + 未过期（≤24h, 字数变化 ≤20%） | 复用 brief 作为下游 prompt 的可选参考 | `📄 复用 drafts/writing_brief.md（{journal name}）` |
+| false | 不存在 / 过期 | 跳过本步骤，下游 prompt 中的 `If brief exists, read it` 条件会自动跳过 | `ℹ️ 跳过 Writing Brief（润色基于 idea.md + 章节上下文，不依赖期刊画像）` |
+| true | 任意 | 强制重新生成：Web 搜索期刊 Guide for Authors → 调用 journal-scout → 保存到 `drafts/writing_brief.md` | 生成中：`🔍 正在生成 Writing Brief（搜索期刊 Guide for Authors → journal-scout）...`<br/>完成：`✅ Brief 已生成: drafts/writing_brief.md（{journal name}）` |
 
 ## 步骤 2：第1轮审稿
 
@@ -71,7 +78,7 @@ python3 ~/.claude/skills/shared/tex_section.py match-section \
 调用 strict-reviewer（`subagent_type: "strict-reviewer"`），prompt 要素：
 
 ```
-Read `drafts/writing_brief.md` for journal conventions and style guidance. Pay special attention to the Journal Profile section for the journal's aesthetic preferences.
+If `drafts/writing_brief.md` exists, read it for journal conventions and style guidance (Journal Profile section for aesthetic preferences). If absent, proceed without journal-specific tuning — base recommendations on general top-tier conventions.
 
 Read `structure/0_global/idea.md` for the research context (Gap/RQ/contributions).
 
@@ -180,7 +187,7 @@ AskUserQuestion：
 调用 language-polisher（`subagent_type: "language-polisher"`），prompt 要素：
 
 ```
-Read `drafts/writing_brief.md` for journal conventions and style guidance. Refer to the Journal Profile section for the journal's tone and style preferences.
+If `drafts/writing_brief.md` exists, read it for journal conventions and style guidance (refer to Journal Profile for tone and style). If absent, proceed without journal-specific tuning.
 
 ## Section: {SECTION_TITLE}
 ## Mode: Language polish (final step after review cycles)
@@ -283,6 +290,6 @@ END FOR
      - `(1) 是，全部写入` → 执行写入逻辑
      - `(2) 取消` → 保留 `final.md` 供用户手动粘贴，不碰 manuscript.tex
   3. 用户选 (1) 后才用 Edit 工具写入
-- 定位策略：**按 section 标题语义匹配（非行号）**——`old_string` = manuscript.tex 中 `\section{SECTION_NAME}` 至下一个同级标题之间的原段落内容；`new_string` = `final.md` 对应段落。与 pen-draft SKILL.md:415/433/453 的定位策略保持一致，避免多次写入后行号漂移导致的错位。
+- 定位策略：**按 section 标题语义匹配（非行号）**——`old_string` = manuscript.tex 中 `\section{SECTION_NAME}` 至下一个同级标题之间的原段落内容；`new_string` = `final.md` 对应段落。与 `/narrative` 和 `/technical` 的写入策略保持一致，避免多次写入后行号漂移导致的错位。
 - 💡 写入后执行 git checkpoint：`git add manuscript.tex && git commit -m "polish: {SECTION_NAME}"`
 - 💡 所有章节 polish 完成后，运行 `/finalize` 完成 Conclusion → Abstract → Cover Letter

@@ -1029,173 +1029,133 @@ END FOR
 
 ---
 
-### 步骤 5.7：技术型章节结构确认
+### 步骤 5.7：技术型章节结构确认（user-governed structure lock）
 
-一致性扫描完成后，基于审计发现和 benchmark 共性模式，重组成稿 md 的章节结构（reader-centered 顺序），为 `/technical` 锁定可读结构。
+**Chapter structure is a user-governed manuscript decision. method-audit may propose, sanity-check, and document structure, but must not lock, infer, or override manuscript structure from benchmark papers or X.md source granularity.**
 
-#### 5.7.1 收集结构信息（硬约束：benchmark 一手实测 + 三章一体）
+一致性扫描完成后，确认成稿 md 的章节结构作为 `/technical` 的输入。本步职责限于：(1) 读取已有 handoff structure 与用户给定结构；(2) 在用户犹豫时提供 method-type default template；(3) 用 benchmark 做 readability sanity-check（仅作 question，不作 constraint）。
 
-读取以下四类信息：
+#### 5.7.1 收集结构信息（user-given structure 优先；benchmark 不作硬约束）
 
-1. **Benchmark 一手实测结构**（硬约束，**首要依据**）：
+读取以下五类信息，按优先级排序：
 
-   **优先路径（默认）**：从每篇论文的 per-paper 报告 `structure/3_methodology/benchmark/{citation_key}/{citation_key}_benchmark.md` 的 **A6（章节结构）** 字段直接读取——该字段已由步骤 2.4 的 subagent 一手提取，覆盖：§3 / §4 / §5 完整层级、subsection 数 + subsubsection 深度、假设位置、命题/定理位置、特殊章节安排（框架图 / 算法块 / 独立 simulation 节等）。**不需要重复跑 subagent**。
+1. **Existing handoff structure（已有 handoff 视为 candidate user-confirmed structure，最高优先级）**：扫描每个技术型 X.md 顶部，读取已存在的 `## 正文要点` / `## 写作蓝图` / `## 字数分配` 三个区块。**如三个区块均已存在且非 paper-init 默认 TODO 占位** → 视为用户先前已确认的结构，5.7.2/5.7.3 默认 echo（不重新生成 default template、不覆盖），除非用户在本次调用时明确要求重做（如 `/method-audit methodology --restructure`）。
 
-   **Fallback 路径**（仅在以下情形之一时启动并行 subagent 一手补提取）：
-   - 某篇论文 per-paper 报告缺失（步骤 2.0 决策表 B 分支：复用 cross_comparison.md 缓存但 per-paper 子目录不存在）
-   - per-paper 报告存在但 A6 字段不完整 / 缺失结构层级数据
-   - cross_comparison.md 时间戳早于 2025-10（旧版 prompt 未含 A6 章节结构提取项）
-   
-   Fallback subagent 配置：`subagent_type=general-purpose, run_in_background=true`，**禁止**传 `isolation: worktree` 参数；prompt 仅提取 §3/§4/§5 的 `###`/`####` 实测标题、subsection 数 + 深度、假设/命题位置、特殊章节安排，跳过 Introduction / LR / Discussion / Conclusion。
+2. **User-given structure（本次调用显式给定）**：检查 `/method-audit` 调用参数或本次会话上下文是否含用户明确给定的 manuscript target structure。如有 → 直接进入 5.7.3 echo + sanity check。
 
-   两条路径汇总后，主 agent 整理为**实测对照矩阵**（论文 × 章节 × 节数 × subsubsection 深度），作为 5.7.2 的首要依据。
+3. **Idea 故事线**：从 `idea.md` §3（方法论选择）提取故事线总览和结论群架构，作为 default template 的项目化填充依据。
 
-2. **Benchmark 横向比对表**（辅助交叉验证）：从 `structure/3_methodology/benchmark/cross_comparison.md` 表 3 "章节结构详细比对" + "技术型章节结构共性模式" 段落读取聚合数据，与 step 1 实测对照矩阵交叉验证。如二者出现冲突，以 step 1（per-paper 一手数据）为准。
+4. **Benchmark sanity-check 输入**（**降级为可选 reference**）：如 per-paper 报告或 `cross_comparison.md` 已存在，读取章节结构数据用于 5.7.3 readability sanity-check（仅作 question，不作 constraint）。**不**强制运行 fallback subagent 补提取——benchmark 数据缺失不阻塞 5.7。
 
-3. **Idea 故事线**：从 `idea.md` §3（方法论选择）提取故事线总览和结论群架构。
+5. **现有 X.md 状态盘点**：读取所有技术型 md 的当前 `###`/`####` 标题。如某 md 按 METHOD_TYPE 应有但不存在 → **不自动创建 placeholder**；在 5.7.4 输出 `deferred until {chapter}.md is created or activated`。
 
-4. **现有成稿 md 结构 + 缺失文件 placeholder（三章一体硬约束）**：读取所有技术型 md 的当前 `###`/`####` 标题。**如某 md 按 METHOD_TYPE 应有但不存在**（如 modeling 类应有 `results.md` / `simulation.md` 但目录下不存在），**不得跳过其结构规划**——必须在 5.7.4 阶段创建 placeholder 骨架文件。三章一体规划是硬约束，**不允许只做 methodology 单章而留 results / simulation 给下轮**——这会让 §3 的 subsection 划分出现"该挪到 §4 的内容留在 §3""§4 该有的接口没在 §3 留"等错位。
+#### 5.7.2 决定结构来源（user-given / existing handoff / default template）
 
-   **唯一例外**：用户在 `/method-audit` 调用时明确指定单章节模式（如 `/method-audit methodology`），此时 5.7.1 第 4 项可跳过缺失文件规划，但需在 5.7.3 + 5.7.4 显式标注 "single-section override，跨章节 reader logic 暂未锁定，下一轮补做"。
+按 5.7.1 收集的优先级，决定本次 5.7 进入哪条路径：
 
-#### 5.7.2 生成结构建议
+**Path A — Existing handoff treated as candidate user-confirmed structure**：
+5.7.1 第 1 项判定 X.md 已含完整 handoff structure → echo 当前结构，并在 5.7.3 通过 AskUserQuestion 询问 (1) keep as-is（沿用） / (2) modify（修改部分 subsection） / (3) replace with default template（推倒重选）。**不**自动跳过确认。仅当用户在本次调用上下文中明确说"沿用现有 handoff，不需重新确认"时，skill 才跳过 AskUserQuestion 直接 echo。
 
-综合以上信息，为每个技术型成稿 md 生成建议的 `###`/`####` 层级结构。
+**Path B — User-given structure**：
+5.7.1 第 2 项检测到用户明确给定结构（参数 / 会话上下文）→ 直接进入 5.7.3 echo + sanity check，使用用户给定的 subsection 列表。
 
-**建议依据优先级（硬约束）**：
+**Path C — Default template**：
+仅当 Path A、Path B 均不触发时（即 X.md 无 handoff 且用户未给定）→ 输出 method-type default template 作为**起点建议**，明示"this is a default; user may adopt verbatim, modify, or replace entirely"，然后进入 5.7.3 让用户确认或修改。
 
-1. **Benchmark 一手实测结构（首要硬约束）**：建议结构的每个 `###`/`####` 必须能映射到 5.7.1 step 1 提取的实测对照矩阵中**至少一篇** benchmark 论文的对应小节。**不允许出现 "benchmark 中没有任何论文这么分" 的小节划分**，除非该小节是当前论文独有方法学创新（且必须在调整说明中显式标注 "X-original (no benchmark precedent)"）。
-
-2. **节数硬上限（硬约束）**：建议 subsection 数 ≤ benchmark median + 1。例：benchmark §3 节数 median = 3 → 建议 §3 ≤ 4 节。超过即视为违规，须合并/降级。
-
-3. **Idea 故事线**（次要依据）：与 idea.md §3 故事线对齐，确保贡献 / RQ / 章节映射一致。
-
-4. **X.md 实际内容分布**：每个 subsection 必须有足够素材支撑，避免空节。
-
-5. **Reader-centered 原则**：优先 mimic ≥50% benchmark 论文的开篇模式。如 ≥50% benchmark 用 "framework / preliminaries / scope / problem description" 作为 §X.1 → 建议结构必须有对应的开篇节。
-
-6. **跨章节 reader logic 一体（硬约束）**：§3 → §4 → §5（如适用）必须形成连续故事线。每个章节末尾的素材必须能接到下一章节开头。在 5.7.2 输出中显式列出 "§3 末尾 → §4 开头" 等衔接关系。
-
-> **强制可视化**：建议输出**必须**包含三栏对照表——`benchmark 共性模式（来自一手矩阵）` | `当前 X.md 结构` | `建议结构 + benchmark 来源映射`。每条结构调整必须标注 benchmark 依据（"X/M 篇对标论文采用此分节方式 + 具体论文名 + 对应 §X.Y"），使用户能判断建议的可信度。
-
-**输出格式**（强制三章并列展示 + benchmark 实测对照）：
+**Method-type default template（modeling 类，generic）**：
 
 ```
-📐 技术型章节结构建议（基于 {M} 篇 benchmark 一手实测）
+Methodology — 2 二级 + 三级展开
+  §X.1 Research method [and theoretical rationale]   (rationale only)
+  §X.2 Model formulation
+    §X.2.1 [Setting and information environment]
+    §X.2.2 [Behavior / decision component]
+    §X.2.3 [Payoff / objective specification]
+    §X.2.4 [Equilibrium solution procedure]
+    §X.2.5 [Scope / regime classification]   (optional, if applicable)
 
-═══ Step 1: Benchmark 实测对照矩阵（来自 5.7.1 并行 subagent）═══
+Results — 二级 = analytical result blocks; 三级 = block 内部组件
+  §X.1 [Main analytical block 1]
+    §X.1.1 [Scope / setup]
+    §X.1.2 [Statement / proof]
+    §X.1.3 [Numerical reconciliation / mechanism reading]
+  §X.2 [Main analytical block 2]
+    §X.2.1 [...]
+    §X.2.2 [...]
+  + closing paragraph (analytical scope + forward link to Simulation)
 
-| 论文 | §3 节数 | §3.x 深度 | §4 节数 | §5 节数（独立 sim） | 模式 | 框架图 |
-|:-----|:-:|:-:|:-:|:-:|:-----|:-:|
-| {key1} | {n} | {depth} | {n} | {n or —} | {pattern} | {y/n} |
-| ...   | ... | ... | ... | ... | ... | ... |
-
-**Median**: §3 = {N_M}，§4 = {N_R}，§5 = {N_S}（如适用）
-**Range**: §3 = {min}-{max}
-**节数硬上限**: §3 ≤ {N_M+1}，§4 ≤ {N_R+1}
-
-═══ Step 2: methodology.md 结构对照与建议 ═══
-
-| Benchmark 共性模式（≥50% 论文）| 当前 X.md | 建议结构 + benchmark 来源映射 |
-|:-----|:-----|:-----|
-| {N}/{M} 用 "framework/preliminaries" 开篇 | {当前现状} | **§3.1 ...**（仿 {key1} §3.1 + {key2} §X.Y）|
-| {N}/{M} 把 model setup 与 utility 同节 | {当前现状} | **§3.2 ...**（仿 {key3} §3.2 三级）|
-| ...  | ...  | ... |
-
-节数对比: benchmark median {N_M} | 当前 {N_curr} | 建议 {N_new} ≤ {N_M+1} ✓
-
-═══ Step 3: results.md 结构对照与建议（即使 md 不存在也必须规划）═══
-
-（同样格式，三栏对照——若 results.md 不存在，"当前 X.md" 列标 "❌ 不存在，须 5.7.4 创建 placeholder"）
-
-═══ Step 4: simulation.md 结构对照与建议（如 METHOD_TYPE 适用）═══
-
-（同样格式）
-
-═══ Step 5: 跨章节 reader logic 衔接 ═══
-
-§3.{last} → §4.1: "{衔接句指南，明示 §3 末尾产出如何被 §4 开头消费}"
-§4.{last} → §5.1: "{衔接句指南，如适用}"
-§4 / §5 → §6 Discussion: "{衔接句指南，按 RQ 分组消费 §4 finding}"
+Simulation — 3 二级，sensitivity 下设三级
+  §X.1 Calibration and numerical protocol
+  §X.2 Baseline numerical outcomes [+ distributional effects, if applicable]
+  §X.3 Sensitivity and boundary experiments
+    §X.3.1 [1D sensitivity]
+    §X.3.2 [Joint / 2D geometry]
+    §X.3.3 [Counterfactual / regime boundary]
 ```
 
-#### 5.7.3 交互确认
+**panel-regression / survey-sem default templates**: TBD; out of revision scope (2026-05-03).
 
-**强制三章一体确认（硬约束）**：AskUserQuestion **必须**一次性展示 §3 + §4 + §5（如 METHOD_TYPE 适用）三章建议结构 + 跨章节 reader logic 衔接，让用户做整体判断。**不允许只确认 methodology 而把 results / simulation 留到下一轮**——这会导致 §3 末尾接不上 §4 开头的接口错位。
+**项目化填充**：default template 中的方括号占位（如 `[Behavior / decision component]`）由 idea.md §3 故事线提示用户填充具体术语，**禁止** skill 自动填入。
 
-用户可以：
-- 接受整套建议结构（§3 + §4 + §5 一体确认）
-- 修改任意章节的标题措辞、增删 subsection/subsubsection
+#### 5.7.3 Echo 用户结构 + readability sanity check
+
+按 5.7.2 决定的路径展示结构：
+
+**Path A / B（已有 handoff 或用户给定）**：echo 当前结构，明示"本步未生成新结构建议；以下为已锁定结构"。
+
+**Path C（default template）**：展示 default template + idea.md §3 故事线提示，让用户填空 / 修改 / 替换。
+
+**Benchmark as sanity-check only**（所有 path 通用）：
+- Benchmark structure data may be used to flag soft readability risks, e.g., if the user-confirmed structure is substantially more granular or flatter than typical benchmark papers.
+- The warning must be phrased as a question for user confirmation, not as a constraint.
+- If the user is uncertain, the skill may surface benchmark patterns as optional examples.
+- Benchmark structure data must never override, constrain, or auto-rewrite a user-given structure.
+
+**用户可以**：
+- 接受当前结构（Path A/B 默认）或 default template（Path C）
+- 修改任意章节标题措辞、增删 subsection/subsubsection
 - 调整层级（`###` ↔ `####`）
-- 跨章节挪动内容（§3.X 内容挪到 §4.Y 等）
+- 跨章节挪动内容（如适用）
+- 直接给出全新结构（覆盖 default template 或已有 handoff）
 
-**循环**：用户不满意 → 修改结构 → 再次展示三章对照 + benchmark 节数对比 + 跨章节衔接 → 直到用户确认整套结构。
-
-**唯一例外**：5.7.1 第 4 项标注的 single-section override 模式下，仅确认指定章节即可，但需提示用户 "跨章节 reader logic 暂未锁定，下一轮补做"。
+**循环**：用户不满意 → 修改 → 再展示 → 直到确认。Skill **不**强制三章一体——单章节模式（`/method-audit methodology`）允许仅确认指定章节，跨章节衔接产出在 5.7+ 中标注 `deferred until {missing chapter}.md is created or activated`。
 
 #### 5.7.4 写入成稿 md
 
-用户确认后，按新结构重组对应的成稿 md 文件：
+用户确认后，按确认结构写入对应 X.md：
 
-**A. 已有 md 重组**：
+**A. Path A（已有 handoff，未要求重做）**：不重写结构，仅在审计修复阶段（步骤 5.1-5.6）触发的内容修订写回。本步无独立写入动作。
+
+**B. Path B / C（用户给定 / default template 修改后）**：
 - 替换 `## 正文要点` 下的所有 `###`/`####` 标题
 - **保留所有已有实质内容**：将原 X.md 中已填的正文要点按语义映射到新标题下（不丢内容）
-- 标题变更但内容仍可对应时 → 内容跟随新标题
-- 标题被合并/拆分时 → 内容按用户在 5.7.3 给的指示分配
-- 新增的 subsection 标题下放 `TODO: 待用户填充内容`
+- 标题变更但内容仍可对应 → 内容跟随新标题
+- 标题被合并/拆分 → 内容按用户在 5.7.3 给的指示分配
+- 新增 subsection 标题下放 `TODO: 待用户填充内容`
 - **不修改** `## 必备元素` 和 `## 引用池` 部分
 
-**B. 缺失文件 placeholder 强制创建（硬约束）**：
+**C. 缺失文件不自动创建（user-explicit only）**：
 
-如 5.7.1 第 4 项判定 `results.md` / `simulation.md` 按 METHOD_TYPE 应存在但当前不存在（且未走 single-section override 模式），**必须**为每个缺失文件创建 placeholder 骨架。
+如 METHOD_TYPE 应有但当前不存在的 X.md（如 modeling 类 `simulation.md` 缺失），**不自动创建** placeholder 骨架。Skill 在 5.7.4 输出：
 
-**写入模板**（硬编码，不依赖外部 paper-init/templates 路径——该路径不保证存在）：
-
-```markdown
-<!-- placeholder created by /method-audit step 5.7.4-B; awaiting user fill. step 0.3 will skip empty-content detection on this file. -->
-
-> 目标字数: {N} words  （5.8 已锁定时填具体值；否则 TBD）
-
-## 必备元素
-
-{按 METHOD_TYPE 从 step 1.1 复制对应清单}
-
-## 正文要点
-
-**目标总字数: {N} words**  （同头部）
-
-| Subsection | 目标字数 | 写作说明 |
-|:-----------|:-------:|:--------|
-| {5.7.3 确认的标题1} | TBD | TBD |
-| {5.7.3 确认的标题2} | TBD | TBD |
-| ... | ... | ... |
-
-> 字数分配表的 TBD 由 5.9 跑完后回填；当前为 placeholder 状态。
-
-### {5.7.3 确认的标题1}
-TODO: 待用户填充内容
-
-### {5.7.3 确认的标题2}
-TODO: 待用户填充内容
-
-## 写作蓝图
-
-TODO: 待 /method-audit step 5.7+ 写入
-
-## 引用池
-
-TODO: 待 /lit-pool 后期或手工填充
+```
+⏳ {chapter}.md 不存在 — deferred until {chapter}.md is created or activated.
+   To plan structure for this chapter, the user must:
+     (a) Manually create the X.md, OR
+     (b) Re-run /method-audit with --create-{chapter} explicit flag.
+   Cross-chapter bridge (5.7+) will mark this chapter as deferred.
 ```
 
-**区块顺序硬约束**：`## 必备元素 → ## 正文要点 → ## 写作蓝图 → ## 引用池`，与 5.7+ 位置约束一致。
-
-**与 step 0.3 + step 7.1 的交互**（预期行为，非 bug）：
-- placeholder 文件全是 TODO → 由 step 0.3 多章节模式分级豁免（标记 `placeholder-pending`，跳过内容审计但参与结构 / 字数 / 蓝图规划）
-- 步骤 6.5 必备元素验收会自然 fail（placeholder 无实质内容） → 步骤 7.1 第 1 / 3 条阻塞阶段转换 → **正确保持 foundation 阶段**，等待用户后续填充 results 内容
-- 用户填充 results.md 实质内容后，再次跑 `/method-audit` → placeholder 标记自动失效，进入正常审计流程，此时才会触发 7.2 阶段转换
+这一规则确保 method-audit **不替用户造章节**，章节存在性由用户决定。
 
 > 写入的文件将纳入 Checkpoint C3 的 git add 范围。
 > **不丢内容原则**：审计修复的目的是审稿质量，不是清空 X.md。如映射出现冲突或歧义，标记 🔴 Issue 记入报告，不自动覆盖。
+
+---
+
+#### 5.7 Scope 声明（防止后续步骤误读）
+
+**This revision changes only the structural-lock logic in 5.7-5.9. Benchmark extraction (step 2), method landscape (step 2.5.1), and structure-related audit findings (step 3.4 SO-S/SO-M/SO-F) remain valid. Benchmark evidence may support critique or optional examples in those steps, but must not determine final manuscript structure.**
 
 ---
 
@@ -1207,13 +1167,14 @@ TODO: 待 /lit-pool 后期或手工填充
 
 #### 5.7+.1 收集 reader journey 输入
 
-主 agent 综合以下信息为每个技术型章节构建 reader journey：
+主 agent 综合以下信息为每个**已存在且 active** 的技术型 X.md 构建 reader journey：
 
 - **5.7.4 已确认的结构**（subsection 列表 + 顺序）
 - **idea.md §3**（方法论选择故事线）
 - **X.md 的 `## 正文要点`**（各 subsection 实际内容摘要）
-- **benchmark per-paper 报告 A6**（对标论文的章节衔接模式）
-- **benchmark cross_comparison.md 的"技术型章节结构共性模式"**
+- **benchmark 衔接模式**（仅作 optional reference；如 per-paper 报告 / cross_comparison.md 缺失，不阻塞 5.7+）
+
+**单章节模式 / 缺失 X.md 处理**：仅对已存在、已 active 的 X.md 产出 cross-chapter bridge。缺失的 X.md 输出 `deferred until {chapter}.md is created or activated`，**不**自动 placeholder。如 `/method-audit methodology` 模式下 results.md / simulation.md 不存在，跨章节衔接相应字段标 `deferred`。
 
 #### 5.7+.2 生成蓝图建议
 
@@ -1309,12 +1270,14 @@ TODO: 待 /lit-pool 后期或手工填充
 - 用 Grep 检测 CLAUDE.md `## 项目阶段` 是否含 "simulation 合并入 results" 等措辞
 - 不确定时 AskUserQuestion 让用户明确
 
-#### 5.8.2 应用硬编码总字数
+#### 5.8.2 Default total word budget（suggestion only）
 
-| 模式 | 技术型章节合计字数（hard-coded） |
+| 模式 | 技术型章节合计字数（default suggestion） |
 |:--|:-:|
-| 2-section（Methodology + Results） | **4500 words** |
-| 3-section（Methodology + Results + Simulation） | **5000 words** |
+| 2-section（Methodology + Results） | 4500 words（建议） |
+| 3-section（Methodology + Results + Simulation） | 5000 words（建议） |
+
+**Authoritative source**: User-confirmed allocation is authoritative. The skill default above is a **suggestion only**, not a hard-coded lock. Users may set total budgets above or below the default values without justification.
 
 **字数定义**：strict prose word count（自然语言段落字数；不含 equation 内容、algorithm 伪码、figure/table caption 文字、reference 引用计数）—— 与 LaTeX `texcount` 主流默认行为一致。
 
@@ -1329,34 +1292,36 @@ TODO: 待 /lit-pool 后期或手工填充
 | 2-section（4500 总） | **2700 (60%)** | **1800 (40%)** | — |
 | 3-section（5000 总） | **2000 (40%)** | **1500 (30%)** | **1500 (30%)** |
 
-**允许调整**：用户可在 5.8.4 调整配比，但**总字数必须保持 4500 / 5000 不变**（此为硬约束）。如要改总字数：用户必须明确说明"超出硬编码范围"，并在 method_audit_report.md 备注理由。
+**允许调整**：用户可在 5.8.4 调整配比 + 总字数。Skill 不锁定 4500/5000 总字数。User-confirmed total is authoritative; default values above are starting suggestions. 如最终值与 default 偏差较大，可在 method_audit_report.md 备注理由（optional，非强制）。
 
 #### 5.8.4 展示并确认
 
 ```
-📊 技术型章节字数分配（硬编码 {N}-section 模式，总 {4500/5000} words）
+📊 技术型章节字数分配（{N}-section 模式 / default suggestion，总 {4500/5000} words）
 
-| Section | 默认建议 | 占比 | 调整理由 |
-|:--------|:-------:|:--:|:---------|
+| Section | Default suggestion | 占比 | 调整理由 |
+|:--------|:----------------:|:--:|:---------|
 | Methodology | 2700 | 60% | — |
 | Results | 1800 | 40% | — |
 | {仅 3-section:} Simulation | — | — | — |
-| **合计** | **4500** | 100% | （硬编码上限）|
+| **合计（user-confirmed total）** | **4500** | 100% | — |
 
-附注：叙述型章节由 /narrative 写入 manuscript.tex，遵循硬约束：
+附注：叙述型章节由 /narrative 写入 manuscript.tex，default 字数建议：
   Introduction 1000-1200 / Literature Review 1500 / Discussion 1800-2500
 （method-audit 不写入叙述型章节字数。）
 
-你可以调整 Methodology / Results / Simulation 的配比，但合计须保持 {4500/5000} 不变。
+你可以调整 Methodology / Results / Simulation 的各章配比和总字数。Skill 不锁定 4500/5000 总字数 — user-confirmed total is authoritative.
 ```
 
-AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配比 → 再次展示 → 直到确认。
+AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配比 / 总字数 → 再次展示 → 直到确认。
 
 #### 5.8.5 写入各章节 md
 
 > **职责边界**：5.8 写入仅限技术型章节（Methodology / Results / Simulation）。叙述型章节由 `/narrative` 直接读 manuscript.tex 写 tex，method-audit 不越位。
 
-用户确认后，遍历以下文件（仅存在的文件），用 Edit 修改头部的 `目标字数` 行：
+> **Authoritative source**: `## 字数分配` 区块（在 X.md 内，由 5.9.4 写入）is the primary word-budget source. `/technical` should treat `## 字数分配` as authoritative; header word-budget lines (`> 目标字数: ...`), if present, are secondary and must be synchronized to it.
+
+用户确认后，遍历以下文件（仅存在的文件），用 Edit 同步头部的 `目标字数` 行：
 
 | Section | 文件路径 |
 |:--------|:---------|
@@ -1364,19 +1329,19 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配�
 | Results | `structure/4_results/results.md` |
 | Simulation | `structure/*simulation*/simulation.md`（仅 3-section 模式）|
 
-替换规则：
-- 匹配 `> 目标字数:` 或 `> 字数目标:` 开头的行
-- 替换为 `> 目标字数: {N} words`
+**Header sync 规则**：
+- 如 X.md 已存在 `> 目标字数:` 或 `> 字数目标:` 行 → 用 Edit 同步为 `> 目标字数: {N} words`
+- 如 X.md 没有该行 → **不强制新增**（避免污染格式）。`## 字数分配` 区块（5.9.4 写入）仍保证 `/technical` 能读到字数。
 
 > 写入的文件将纳入 Checkpoint C3 的 git add 范围。
 
 显示确认：
 ```
-✓ 字数目标已写入技术型章节 md
-  - methodology.md: {N} words
-  - results.md: {N} words
-  {仅 3-section:} - simulation.md: {N} words
-  - 技术型合计: {4500/5000} words（硬编码）
+✓ 字数目标已同步至技术型章节 md
+  - methodology.md: {N} words {(header synced) 或 (header absent, will rely on ## 字数分配)}
+  - results.md: {N} words {同上}
+  {仅 3-section:} - simulation.md: {N} words {同上}
+  - 技术型合计: {N} words（user-confirmed）
 ```
 
 ---
@@ -1389,6 +1354,10 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配�
 
 对每个技术型 X.md：
 
+**Authoritative source**: User-confirmed subsection allocation is authoritative. If the user provides a subsection word allocation table directly, skill **echoes** that table without auto-redistribution; line-count proxy below is **fallback only**.
+
+**Fallback auto-allocation（仅在用户未给定 subsection 分配时启用）**:
+
 - **基础分配** = 章节总字数 × (该 subsection 正文要点行数 / 全部 subsection 正文要点总行数)
 - **密度调整**：
   - 含大量编号公式的 subsection：权重 ×1.1
@@ -1396,6 +1365,8 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配�
   - 含命题+证明骨架的 subsection：每个命题约需 80-120 词
   - 含比较静态/敏感性分析的 subsection：每个参数约 50-80 词
 - 取整到最近的 50
+
+> **Note on line-count proxy**: 正文要点行数 is not a proxy for importance. A one-line proposition statement may carry more weight than ten lines of background. The fallback allocation should be reviewed by the user in 5.9.3 and overridden where line count misrepresents content weight.
 
 #### 5.9.2 生成写作说明
 
@@ -1458,13 +1429,16 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配�
 > **格式约定**：技术型章节使用 3 列（Subsection | 目标字数 | 写作说明）。叙述型章节由 `/narrative` 直接处理（不写 md、直接 tex），不在 X.md 中维护字数分配表。`/technical` 仅解析技术型 X.md 的 3 列格式。
 
 > **覆盖优先（避免重复表）**：写入前先扫描 `## 正文要点` 与第一个 `###` 之间的内容：
-> - 若已存在 `**目标总字数:` 行 + 3 列字数分配表（来自 5.7.4-B placeholder 的 TBD 占位表，或上一轮 method-audit 写入） → 用 Edit 用本次确认数据**整体覆盖**该区段（含总字数行 + 表格）
+> - 若已存在 `**目标总字数:` 行 + 3 列字数分配表（来自上一轮 method-audit 写入或用户手写） → 用 Edit 用本次确认数据**整体覆盖**该区段（含总字数行 + 表格）
 > - 若不存在 → 按当前插入逻辑写入
 > 严禁出现两个并列的字数分配表（会让 /technical 解析失败）
 
-> **双写一致性**：5.8.5 已写入头部 `> 目标字数: {N} words`，5.9.4 在此处写 `## 正文要点` 区块的 `**目标总字数: {N} words**`，二者必须一致。若不一致：
-> - `/technical` 检测到不一致 → 按头部值为准并报警
-> - **自动修复**：method-audit 完成 5.9.4 写入后，立即用 Edit 工具校验头部和区块的字数行数值匹配。如不一致（理论上不应发生，仅作 safety net），用 Edit 覆盖区块内的总字数行至与头部一致并提示用户。
+> **Authoritative source**: `## 字数分配` 区块 is the primary word-budget source for `/technical`. Header word-budget lines (if present) are secondary and must be synchronized to `## 字数分配`.
+>
+> **同步规则**：
+> - 如 X.md 头部已有 `> 目标字数:` 行 → 写入 `## 字数分配` 后，校验头部值是否与区块总字数一致；如不一致，自动同步头部至区块值。
+> - 如 X.md 头部没有 `> 目标字数:` 行 → **不强制新增**。`## 字数分配` 区块仍能保证 `/technical` 读到完整字数表。
+> - `/technical` 检测到二者不一致时（理论上 5.9.4 同步后不应发生）→ 以 `## 字数分配` 区块为准并报警。
 
 ---
 
@@ -1583,7 +1557,7 @@ AskUserQuestion 等待用户确认。**循环**：用户不满意 → 修改配�
 2. 遍历 X.md：`## 正文要点` 区块的字数分配表均已写入（步骤 5.9.4 完成） → 缺失则 ❌ 不转换
 3. issues_log 中有 🔴 实质问题（缺项、符号冲突、命题遗漏） → ❌ 不转换
 4. `method_audit_report.md` 中有 🔴 MUST-FIX 未标记 ✅ Fixed → ❌ 不转换
-5. 仅当 `$ARGUMENTS` 为空（多章节模式，覆盖全部技术型章节）时执行 7.2；单章节模式（指定 section）→ 跳过阶段转换
+5. 仅当 `$ARGUMENTS` 为空（多章节模式，覆盖全部技术型章节）时执行 7.2；单章节模式（指定 section）→ 跳过阶段转换。**Single-section audit may return PASS for that chapter's technical readiness, but it must not trigger foundation→drafting stage transition unless all active technical chapters required by the project have passed.**
 6. **写作蓝图完整性检查**（仅多章节模式触发；步骤 5.7+ 产物校验）：遍历该 METHOD_TYPE 下所有 X.md，每份必须满足：
    - 存在 `## 写作蓝图` 区块且**非 paper-init 默认 TODO 占位**
    - 含 `### 整体 Reader Journey` + 每个 subsection 的 5 字段（Entry / Journey / Exit / Order / Anchor） + `### 跨章节过渡`，且字段非空

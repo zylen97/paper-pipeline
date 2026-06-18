@@ -44,13 +44,13 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 ### 阶段字段快速定位
 
 优先读取 CLAUDE.md 的 `## 项目阶段` 部分（如存在）：
-- `状态: foundation` → idea + 文献 + 技术型章节开发阶段（pipeline ①-⑤.5）。重点看 structure/ 中的 _dev.md 进展、idea.md 版本、citation pool 是否就绪
+- `状态: foundation` → idea + 文献 + 技术型章节撰写/审计阶段（pipeline ①-⑤）。重点看 structure/ 各技术型 X.md 的 `## 正文要点` 进度、idea.md 版本、citation pool 是否就绪
 - `状态: drafting` → 叙述型章节撰写 + 全文定稿阶段（pipeline ⑥-⑨）。重点看各章节 md 和 manuscript.tex 的填充进度
 - `状态: submitted` → 已投稿，等待审稿
 - `状态: revision-R{N}` → 第 N 轮修改（额外读取基准文件名和轮次历史）
 - `状态: accepted` → 已录用（`accepted` 由用户手动设置，表示论文已被接收，无主动提醒。）
 
-如果有阶段字段，后续步骤可以有的放矢：foundation 阶段重点看 _dev.md 和 idea.md，drafting 阶段重点看章节 md 和 manuscript.tex，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
+如果有阶段字段，后续步骤可以有的放矢：foundation 阶段重点看技术型 X.md 和 idea.md，drafting 阶段重点看章节 md 和 manuscript.tex，revision 阶段重点看 revision/。如果没有阶段字段（遗留项目），按原有逻辑从文件扫描推断。
 
 ---
 
@@ -74,7 +74,7 @@ description: "新 session 快速加载项目上下文，让 Claude 立即进入�
 - 这个章节有没有开始写
 - 大致在写什么内容
 - 叙述型章节（introduction/literature/discussion）的大纲是否已填充
-- 技术型章节（methodology/results 等）：优先检查**成稿 md**（X.md）是否有实质内容（非 TODO）；同时检查**过程文件**（X_dev.md）是否存在及内容量，判断研究进展阶段
+- 技术型章节（methodology/results 等）：检查 X.md 的 `## 正文要点` 区块是否有实质内容（非 TODO），判断研究进展阶段
 
 > **清理后状态识别**：如果 `structure/1_introduction/` 目录不存在且 `drafts/` 目录不存在，说明已完成 `/finalize` Phase 4 清理。此时跳过本步骤，在步骤 4 中直接从 `manuscript.tex` 判断所有章节的完成状态，并在输出中注明"已完成定稿清理，manuscript.tex 为唯一正本"。
 
@@ -141,15 +141,14 @@ git log -15 --date=short --format="%ad %s"
 根据步骤 1 检测到的项目阶段，在简述末尾输出对应的 skill 建议（一句话，非强制）：
 
 - **foundation**：
-  - 如果 _dev.md 有实质内容但成稿 md 仍为空 → 建议 `/method-end`
-  - 如果技术章节基本成形 → 建议 `/method-audit`
+  - 如果技术型 X.md 已有实质内容（公式、命题、假设等）但未审计 → 建议 `/method-audit`
   - 如果 idea.md 近期有较大改动或用户表达不确定 → 建议 `/idea-refine`
   - 否则 → 不输出建议，直接问用户
 - **drafting**：
-  - 如果叙述型章节 md 为空 → 建议 `/pen-outline`
-  - 如果叙述型章节 md 有内容但 tex 对应 section 仍为 TODO → 建议 `/pen-draft`
-  - 如果 tex 有正文但未经 polish → 建议 `/pen-polish`
-  - 如果所有章节已写入 tex → 建议 `/finalize`
+  - 如果技术型 section（\section{Methodology}/\section{Results}/\section{Simulation}）在 manuscript.tex 中为空骨架 → 建议 `/technical section={...}`
+  - 如果技术型已写但叙述型 section（\section{Introduction}/\section{Literature review}/\section{Discussion}）为空骨架 → 建议 `/narrative section={...}`
+  - 如果 tex 已有正文但需要段落级语言打磨 → 建议 `/polish section={...}`
+  - 如果所有 section 已写入 tex → 建议 `/finalize`
 - **submitted**：无主动提醒
 - **revision-R{N}**：
   - 如果 response-letter.tex 中有 `[TO BE FILLED]` → 建议 `/rev-respond`

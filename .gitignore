@@ -13,6 +13,7 @@
 !agents/*.md
 !skills/
 !skills/*/
+!skills/paper-init/common/
 !skills/*/*.md
 !skills/**/*.tmpl
 !skills/**/publishers/

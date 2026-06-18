@@ -2,7 +2,7 @@
 """
 tex_section.py — LaTeX Section Tree 工具（共用）
 
-供 pen-draft / pen-outline / pen-polish 三个 skill 共用。
+供 narrative / technical / polish 三个 skill 共用。
 替代主 Agent 的正则解析、模糊匹配、引用池路径提取、BibTeX 操作。
 
 功能:
@@ -18,8 +18,9 @@ tex_section.py — LaTeX Section Tree 工具（共用）
     # 2. 匹配 section
     python3 tex_section.py match-section --tree _section_tree.json --query "Literature Review"
 
-    # 3. 提取引用池路径
-    python3 tex_section.py citation-paths --chapter-md structure/2_literature/literature.md
+    # 3. 提取引用池路径（仅技术型章节 X.md 含 ## 引用池 区块；
+    #    叙述型章节由 /narrative 直接读 citation_pool/，不调用此命令）
+    python3 tex_section.py citation-paths --chapter-md structure/3_methodology/methodology.md
 
     # 4. 更新 bib
     python3 tex_section.py update-bib \
@@ -50,8 +51,8 @@ def build_section_tree(tex_content: str) -> list[dict]:
     LEVEL_MAP = {"section": 1, "subsection": 2, "subsubsection": 3}
 
     # 匹配 \section{...}, \subsection{...}, \subsubsection{...} 及星号变体
-    # 星号变体（如 \subsection*{Literature positioning}）由 pen-outline 7.2c 产出，
-    # pen-draft 调度契约要求纳入定位表（不再跳过）
+    # 星号变体（如 \subsection*{Literature positioning}）由 /narrative 在 LR 子模式产出，
+    # /narrative 和 /technical 调度契约都要求纳入定位表（不再跳过）
     # 使用括号计数来正确处理嵌套括号（如 \section{Introduction to \emph{Game Theory}}）
     cmd_pattern = re.compile(
         r"^[^%]*?"  # 忽略注释行

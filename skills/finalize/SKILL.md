@@ -185,7 +185,7 @@ Read `drafts/writing_brief.md` for journal conventions and style guidance.
 
 ### 1.5b Language Auditor 系统审查
 
-对润色后的文本，**并行**调用 3 个 language-auditor（`subagent_type: "language-auditor"`），分别指定 Group 1/2/3。收集报告后，如有 issues，展示给用户并在确认后应用修改（流程同 pen-polish 步骤 4.5）。
+对润色后的文本，**并行**调用 3 个 language-auditor（`subagent_type: "language-auditor"`），分别指定 Group 1/2/3。收集报告后，如有 issues，展示给用户并在确认后应用修改（流程同 polish 步骤 4.5）。
 
 ### 1.6 用户确认并写入
 
@@ -411,17 +411,17 @@ git add submission/coverletter.tex && git commit -m "finalize: write Cover Lette
 
 ### 4.1 扫描并生成清理清单
 
-扫描 `structure/` 和项目根目录，列出待删除项：
+扫描 `structure/` 和项目根目录，列出待删除项（仅列出**实际存在**的——新工作流下，叙述型 md 通常不再创建，旧项目可能仍有残留）：
 
 ```
 🗑️ 即将删除（施工脚手架）：
 
-structure/1_introduction/          ← 叙述型章节，整个目录
-structure/*discussion*/            ← 叙述型章节，整个目录（modeling: 6_discussion/, 其他: 5_discussion/）
-structure/2_literature/literature.md  ← 叙述型章节 md
-structure/3_methodology/*.md        ← 技术章节 md（methodology.md, methodology_dev.md）
+structure/1_introduction/          ← 旧项目残留：叙述型章节空目录或笔记（新项目下通常已无 md）
+structure/*discussion*/            ← 旧项目残留：叙述型章节空目录（modeling: 6_discussion/, 其他: 5_discussion/）
+structure/2_literature/literature.md  ← 旧项目残留：叙述型章节 md（新项目不创建此文件）
+structure/3_methodology/*.md        ← 技术章节 md（methodology.md）— X.md 是 /method-audit + /technical 的素材源，定稿后清理
 structure/3_methodology/_citation_paths.json
-structure/4_results/*.md            ← 技术章节 md（results.md, results_dev.md）
+structure/4_results/*.md            ← 技术章节 md（results.md）
 structure/4_results/_citation_paths.json
 structure/5_simulation/*.md         ← 技术章节 md（仅 modeling，不存在则跳过）
 structure/5_simulation/_citation_paths.json
@@ -433,9 +433,10 @@ structure/0_global/                ← idea.md + idea-refine/（迭代审稿轨�
 structure/2_literature/（除 literature.md）  ← search plan、direction reports、citation_pool/、method_landscape.md
 structure/figures_tables/          ← 图表资产
 structure/3_methodology/benchmark/ ← /method-audit 产出（对标论文 + 审计报告），如存在则保留
+manuscript-R*.tex / .revision-baseline ← /rev-init 冻结的修订基线，永不删除
 ```
 
-> 注意：只列出实际存在的文件/目录。不存在的项不显示。
+> 注意：只列出实际存在的文件/目录。不存在的项不显示。`/narrative` 改造后叙述型已不创建 md，新项目首次 finalize 通常只看到技术型 md 待清理。
 
 ### 4.2 用户确认
 
@@ -462,6 +463,7 @@ git add structure/ drafts/ && git commit -m "Snapshot before finalize Phase 4 cl
 rm -rf structure/1_introduction/ structure/*discussion*/
 rm -f structure/2_literature/literature.md
 find structure/ -name "_citation_paths.json" -delete
+find structure/ -name "_technical_*_buffer.json" -delete 2>/dev/null  # 旧版本残留兜底
 rm -f structure/3_methodology/*.md structure/4_results/*.md structure/5_simulation/*.md
 
 # 保留 writing_brief 到 submission/

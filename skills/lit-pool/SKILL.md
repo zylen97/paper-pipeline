@@ -24,7 +24,7 @@ description: "从direction reports生成按标签汇总的引用池（Citation P
 **汇报格式**：原样粘贴脚本 stderr/stdout 错误信息 + 说明出错步骤 + 等待用户指示。
 
 ### 模型选择
-**subAgent 使用 Opus 模型**（不传 `model` 参数，继承主 Agent）。引用场景生成是写作任务，质量直接传导到下游 pen-draft，需要 Opus 的理解深度。
+**subAgent 使用 Opus 模型**（不传 `model` 参数，继承主 Agent）。引用场景生成是写作任务，质量直接传导到下游 /narrative 和 /technical 写作，需要 Opus 的理解深度。
 
 ### 输出语言
 **所有描述性文本必须使用中文**，包括但不限于：引用场景、与本研究的关键差异、标签文件header/备注。文献的标题、期刊名、作者名保持原文（通常为英文）。
@@ -295,13 +295,25 @@ python3 ~/.claude/skills/lit-pool/update_citation_refs.py \
 ```
 
 **脚本职责**（`update_citation_refs.py`）：
-- introduction.md → BG[主] + GAP[主] + LR[次]
-- literature.md → LR[主] + GAP[主] + METHOD[次] + DISC[次]
-- methodology.md → METHOD[主]
-- discussion.md → DISC[主] + COMP[主] + LR[次]
 
-自动查找章节文件、插入/更新引用池区块、校验引用池文件存在性。
-stdout 输出 `VERIFY: PASS|FAIL`。
+引用池消费方按章节类型分两类——技术型章节（X.md 是唯一权威源，由 /method-audit + /technical 接力）需要在 md 中插入引用池区块；叙述型章节（无 md 中间产物，由 /narrative 直接读 citation_pool/ 写 tex）不需要 md 区块插入，只需保证 citation_pool 目录下对应标签文件齐备。
+
+| 章节 | 类型 | 标签消费规则 | md 区块插入 |
+|:---|:---|:---|:---:|
+| Methodology（X.md：methodology.md） | 技术型 | METHOD[主] | ✓ |
+| Results（X.md：results.md） | 技术型 | METHOD[次基础] | ✓ |
+| Simulation（X.md：simulation.md，仅 modeling） | 技术型 | BG[次] + LR[次] | ✓ |
+| Introduction（manuscript.tex \section{Introduction}） | 叙述型 | BG[主] + GAP[主] + LR[次] | — |
+| Literature Review（manuscript.tex \section{Literature review}） | 叙述型 | LR[主] + GAP[主] + METHOD[次] + DISC[次] | — |
+| Discussion（manuscript.tex \section{Discussion}） | 叙述型 | DISC[主] + COMP[主] + LR[次] | — |
+
+脚本自动查找技术型 X.md 文件、插入/更新引用池区块、校验引用池文件存在性。叙述型章节的 citation 由 `/narrative` 在交互中按上表标签优先级消费。
+
+> **契约提示**：本表是 `update_citation_refs.py` 脚本的硬编码标签消费规则的**事实标准**。修改本表（增删行 / 调整 [主]/[次] 优先级 / 改变标签集合）必须**同步修改脚本内部的 `CHAPTER_POOL_MAP` 字典**（脚本中也提供 `LABEL_MAP` 别名指向同一字典，两个名字均可），否则会出现脚本与文档不一致。
+>
+> 关键约束：脚本只为**技术型章节**（methodology / results / simulation）插入 `## 引用池` 区块。**叙述型章节**（introduction / literature / discussion）按本表 "—" 标记，**不在脚本配置中**——由 /narrative 在交互中按表格优先级直接读 citation_pool/。修改时必须保持这一边界（叙述型不应进入 `CHAPTER_POOL_MAP`）。
+
+脚本 stdout 输出 `VERIFY: PASS|FAIL`（仅显示 methodology/results/simulation 三个 chapter 的处理结果；panel-regression / survey-sem 项目无 simulation → 显示 ⏭️ skipped 不视为错误）。
 
 ---
 
@@ -378,7 +390,7 @@ python3 ~/.claude/skills/lit-pool/generate_master_report.py \
 
 **设计原理**：从 `citation_pool/METHOD.md` 的结构化引用数据中，综合文献方向报告和 idea.md 的方法设计，生成一份面向技术章节开发的方法论地图。该报告是 `/idea-refine` 和技术章节开发的关键输入。
 
-> **生命周期**：本步骤产出的是**文献视角初版**。后续 `/method-audit` 步骤 2.5.1 会**覆盖**此文件为 benchmark 对标视角（二者共用路径 `structure/2_literature/method_landscape.md`，不并存）。lit-pool → method-audit 之间运行 `/idea-refine` 时读到的是此文献视角初版，method-audit 完成后下游（method-end / finalize）读到的是 benchmark 视角终版。
+> **生命周期**：本步骤产出的是**文献视角初版**。后续 `/method-audit` 步骤 2.5.1 会**覆盖**此文件为 benchmark 对标视角（二者共用路径 `structure/2_literature/method_landscape.md`，不并存）。lit-pool → method-audit 之间运行 `/idea-refine` 时读到的是此文献视角初版，method-audit 完成后下游（finalize）读到的是 benchmark 视角终版。
 
 ### 7.5.1 主 Agent 综合写作（不开 subAgent）
 
@@ -455,8 +467,8 @@ VERIFY 必须为 PASS。如有未匹配文献（stub），展示列表提醒用�
 
 **注意**：
 - master.bib 是完整文献库（~200-300 条），项目 bib 文件只包含正文实际引用的条目
-- `/method-end` 和 `/pen-outline` 在确认要点写入章节 md 时，从 master.bib 提取新增 citation key 条目追加到项目 bib
-- `/pen-draft` 仅做 bib 验证（检查 key 是否存在），不负责同步
+- `/method-audit` 在确认 X.md `## 正文要点` 时，从 master.bib 提取新增 citation key 条目追加到项目 bib
+- `/narrative` 和 `/technical` 在写入 manuscript.tex 后立即同步 bib（提取本次写入的 keys → 不在项目 bib 则从 master.bib 补充）
 
 > **中文文献 BibTeX 提示**：CNKI 来源文献的 BibTeX 条目自动包含 `language = {chinese}` 字段。LaTeX 编译需使用 xelatex/lualatex + UTF-8 编码以正确渲染中文。
 
@@ -495,7 +507,7 @@ git add structure/2_literature/citation_pool/ \
 git commit -m "Checkpoint: lit-pool complete (citation pool + master.bib + method_landscape)"
 ```
 
-> **为什么**：这是 lit-plan → [lit-screen] → lit-review → lit-tag → lit-pool 管线的最终交付物，直接喂给下游 pen-draft 写作。
+> **为什么**：这是 lit-plan → [lit-screen] → lit-review → lit-tag → lit-pool 管线的最终交付物，直接喂给下游 /narrative 和 /technical 写作。
 
 ---
 

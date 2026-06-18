@@ -2,9 +2,8 @@
 
 > 对应 manuscript.tex §3 Research method and modeling process
 > 目标字数: TBD（由 /method-audit 基于 benchmark 确定）
-> 关联文件: `_dev.md`（过程文件）, `4_results/results.md`（均衡求解）, `0_global/idea.md`（纲领）
-> 本文件为**成稿文件**，内容 = manuscript 正文要点。/pen-draft 读取本文件。
-> 研究过程的详细推导、中间步骤、备注见同目录下的 `methodology_dev.md`。
+> 关联文件: `4_results/results.md`（均衡求解）, `0_global/idea.md`（纲领）
+> 本文件为**唯一权威源**：研究推导、正文要点、引用、字数分配、写作蓝图均落在这里。`/technical` 读取本文件直接生成 tex。
 
 ---
 
@@ -18,11 +17,11 @@
 3. **3.3 {Model A / Benchmark model}**: 收益函数 + 均衡求解结果 + 经济直觉
 4. **3.4 {Model B / Proposed model}**: 收益函数 + 均衡求解结果 + 与 Model A 的结构对比
 
-> **颗粒度标准**（验证原则：sci-writer 翻译时不需要做任何技术判断）：
+> **颗粒度标准**（验证原则：/technical 生成 tex 时不需要做任何技术判断）：
 > 每个 `###` subsection 下必须包含：
 > - 每一个会出现在正文中的公式（编号公式和关键行内公式）
 > - 每一个命题/引理的完整陈述
-> - 每一个证明的思路骨架（完整证明用 `> **Proof (→ Supplementary):**` 标记，sci-writer 外放至附录）
+> - 每一个证明的思路骨架（完整证明用 `> **Proof (→ Supplementary):**` 标记，/technical 外放至附录）
 > - 每一个假设的文字表述 + 合理性论证
 > - 每一个经济直觉/含义解读
 > - 每一个模型间的对比说明
@@ -47,6 +46,19 @@ TODO
 ### 3.4 TODO: Proposed model
 
 TODO
+
+---
+
+## 写作蓝图
+
+> **由 /method-audit step 5.7+ 填充**——/technical 必读此区块作为写作 prompt 的核心输入。在 /method-audit 完成前保持 TODO 占位。
+>
+> 完整版含三层结构：
+> - **整体 Reader Journey**（1-2 句概述本章读者认知路径）
+> - **Subsection 级 5 字段**：Reader Entry Point / Content Journey / Exit Point / Why This Order / Visual Anchor
+> - **跨章节过渡**：本章与前后章节的衔接句指南
+
+TODO（待 /method-audit step 5.7+ 填充）
 
 ---
 

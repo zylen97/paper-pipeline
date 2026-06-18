@@ -430,7 +430,7 @@ git add chapters/ch{N}_material.md && git commit -m "diss-outline: ch{N} materia
 
 素材文件中引用的 citation key 必须在项目 bib 中可用，否则 `/diss-draft` 写入的 `\cite{}` 将无法编译。本步骤确保 bib 同步。
 
-> **设计原理**：英文论文工作流中，`/method-end` 和 `/pen-outline` 在确认要点时逐条从 master.bib 同步到项目 bib。学位论文工作流中，`/diss-outline` 承担了等价职责，因此 bib 同步在此完成。
+> **设计原理**：英文论文工作流中，`/method-audit` 在 X.md 要点确认时同步 bib，`/narrative` 和 `/technical` 在写入 manuscript.tex 时再次同步。学位论文工作流中，`/diss-outline` 承担了等价职责，因此 bib 同步在此完成。
 
 **执行逻辑**（幂等，多次运行安全）：
 

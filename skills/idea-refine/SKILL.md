@@ -4,7 +4,7 @@ description: "交互式研究idea与方法设计审稿迭代（idea-reviewer审�
 
 # Idea Refine — 交互式 idea + 方法设计 + 技术实现审稿迭代
 
-调用 idea-reviewer agent 对 `idea.md` 和技术实现（_dev.md / chapter md / manuscript.tex）进行多轮审稿，迭代优化研究 idea、方法设计和正文表述，直到用户满意。
+调用 idea-reviewer agent 对 `idea.md` 和技术实现（chapter md / manuscript.tex）进行多轮审稿，迭代优化研究 idea、方法设计和正文表述，直到用户满意。
 
 **核心特征**：
 - **idea + 方法 + 技术实现同步审**：idea 和方法设计是耦合的，审稿人同时评估两者及其技术实现
@@ -48,32 +48,21 @@ description: "交互式研究idea与方法设计审稿迭代（idea-reviewer审�
 
 | 状态 | 检查 | 解释 |
 |------|------|------|
-| State A | `structure/{3,4,5}_*/*_dev.md` 内容 > 500 字符 | 开发中，_dev.md 是工作文档 |
-| State B | `structure/{3,4,5}_*/*.md`（非 dev）有实质内容 | method-end 完成或进行中 |
-| State C | `manuscript.tex` 的 §3/§4/§5 中**至少一个**有实质正文（非 `% TODO`） | 正文已写，drafting/post-finalize |
+| State X | `structure/{3,4,5}_*/*.md` 的 `## 正文要点` 区块有实质内容（非 TODO） | 技术章节成稿 md 在写或已 audited |
+| State M | `manuscript.tex` 的 §3/§4/§5 中**至少一个**有实质正文（非 `% TODO`） | 正文已写，drafting/post-finalize |
 
 **路由规则**：
-- State C 存在 → 使用 State C（无论 A/B 是否也存在）
-- State C 不存在，A + B 共存 → 使用 State A + B
-- State C 不存在，仅 B → 使用 State B only
-- State C 不存在，仅 A → 使用 State A only
+- State M 存在 → 使用 State M（最高优先级，manuscript 是最终权威源）
+- State M 不存在，仅 X → 使用 State X
 - 全部不存在 → None
-
-如果 State C 检查不通过（所有技术 section 均为 `% TODO`），降级为 State B 或 A 或 None。
-
-**用户展示**使用最高状态名称（C > B > A > None），**prompt 模板**使用完整组合（见步骤 1.1）。
 
 向用户展示：
 ```
-📍 项目状态：State C — 正文已完成（manuscript.tex 为唯一正本）
+📍 项目状态：State M — 正文已完成（manuscript.tex 为唯一正本）
 ```
 或
 ```
-📍 项目状态：State A — 开发中（检测到 _dev.md：methodology_dev.md, results_dev.md）
-```
-或
-```
-📍 项目状态：State B — 章节定稿中（检测到成稿 md）
+📍 项目状态：State X — 技术章节成稿 md 撰写中（检测到 methodology.md, results.md ...）
 ```
 或
 ```
@@ -95,7 +84,7 @@ Glob 检查每项，记录存在/不存在：
 | 文献总报告 | `structure/2_literature/master_report.md` | reviewer 交叉验证 Gap |
 | 方向报告 | `structure/2_literature/direction*_report.md` | reviewer 了解文献覆盖 |
 | method-audit 基准 | `structure/3_methodology/benchmark/*.md` | reviewer 对标方法论竞品 |
-| 技术开发文件 | `structure/{3,4,5}_*/*_dev.md` | State A/B 一致性检查 |
+| 技术章节成稿 | `structure/{3,4,5}_*/*.md`（非 idea/literature/discussion） | State X 一致性检查 |
 
 向用户展示材料可用性摘要：
 ```
@@ -148,26 +137,15 @@ Read `structure/0_global/idea.md` as the primary review target.
 ## Available Context Materials
 {逐条列出 Step 0.4 中标记为 ✅ 的文件的完整绝对路径}
 
-## Project Technical Material State: {State A/B/C/None}
+## Project Technical Material State: {State X/M/None}
 
-{State A 时：}
-## Technical Development Files
-Read the following _dev.md files for technical detail:
-{列出所有 _dev.md 文件的完整绝对路径}
+{State X 时（成稿 md 是技术权威源）：}
+## Chapter MD Files (Authoritative)
+Read the following technical chapter md files as the authoritative source:
+{列出所有成稿 md 文件路径}
 Check consistency with idea.md, opportunity discovery, assumption revision.
 
-{State B only 时（成稿 md 存在，_dev.md 已清理）：}
-## Chapter MD Files
-Read the following chapter md files:
-{列出所有成稿 md 文件路径}
-
-{State A + B 时（两者共存）：}
-## Chapter MD Files (Primary) + Dev Files (Cross-reference)
-Read chapter md files as primary:
-{列出所有成稿 md 文件路径}
-Cross-reference _dev.md for derivation details when needed.
-
-{State C 时：}
+{State M 时（manuscript.tex 是最终权威源）：}
 ## Manuscript (Single Source of Truth)
 Read `{manuscript.tex 的完整绝对路径}` — specifically the Methodology,
 Results/Equilibrium Analysis, Simulation, Discussion, and Limitations sections.
@@ -321,16 +299,16 @@ git commit -m "Checkpoint: idea-refine round {M} complete (v{FINAL_VERSION})"
 📂 工作目录：structure/0_global/idea-refine/
   {列出所有文件}
 
-{State None / State A 时：}
+{State None 时：}
 💡 下一步：开始或继续技术章节开发（步骤④）。开发过程中随时可再次 /idea-refine 重新评估。
 
-{State B 时：}
-💡 idea.md 已更新，请继续技术章节开发。注意检查 _dev.md / 成稿 md 中是否有内容需要同步调整。
+{State X 时：}
+💡 idea.md 已更新，请继续技术章节开发。注意检查 X.md 中是否有内容需要同步调整。
 
-{State C 时：}
+{State M 时：}
 💡 idea.md 和 manuscript.tex 已同步更新。下一步可考虑 /pre-submit 投稿终检。
 
-{State B / C 且涉及 Gap/RQ 变更时（额外提示）：}
+{State X / M 且涉及 Gap/RQ 变更时（额外提示）：}
 ⚠️ 文献管线同步警告：本轮如修改了 Gap/RQ 定义，以下下游产物**可能已经过时**，建议复查：
   - `structure/2_literature/literature_search_plan.md`（检索式基于旧 Gap）
   - `structure/2_literature/direction*_report.md`（文献筛选基于旧 RQ）
@@ -338,7 +316,7 @@ git commit -m "Checkpoint: idea-refine round {M} complete (v{FINAL_VERSION})"
   - `structure/2_literature/master_report.md`（汇总依据旧 Gap）
 
 建议：
-  (a) Gap/RQ 微调（方向不变）→ 无需重跑文献管线，但下一轮 /pen-outline 时复查对齐性
+  (a) Gap/RQ 微调（方向不变）→ 无需重跑文献管线，但下一轮 /narrative（写 intro/LR/discussion）时复查对齐性
   (b) Gap/RQ 显著变更（方向漂移）→ 重跑 /lit-plan → /lit-review → /lit-tag → /lit-pool
 ```
 

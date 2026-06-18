@@ -24,10 +24,10 @@ When invoked directly with raw text and no pipeline context:
 ## Before Polishing — Mandatory Context Reading (Mode A only)
 
 You MUST:
-1. Read `drafts/writing_brief.md` — target journal, domain, project file paths
-2. Read main manuscript file (path from Writing Brief) — full context and target section
-3. Read bibliography file(s) — citation context
-4. Identify the exact LaTeX lines to polish
+1. Read main manuscript file (path from invocation prompt or project CLAUDE.md) — full context and target section
+2. Read bibliography file(s) — citation context
+3. Identify the exact LaTeX lines to polish
+4. **Optional**: if `drafts/writing_brief.md` exists, read it for journal-specific style guidance. If absent, polish against general top-tier conventions (no journal-specific tuning).
 
 ## Core Mission
 
@@ -76,16 +76,23 @@ You improve: grammar/punctuation errors, awkward phrasing, overly complex senten
 
 ### DO NOT change:
 - `(ref)` markers — leave exactly as-is
-- `\citep{}`, `\citet{}`, or any citation commands
+- `\citep{}`, `\citet{}`, or any citation commands (CRITICAL: do not add, remove, or reorder citation keys)
 - In-text citations in any format — preserve exactly
+- **LaTeX environments — fully protected** (CRITICAL when polishing /technical-generated content):
+  - `\begin{equation}...\end{equation}` / `\begin{align}...\end{align}` — math content untouched
+  - `\begin{proposition}...\end{proposition}` / `\begin{lemma}...\end{lemma}` / `\begin{theorem}...\end{theorem}` — formal statements untouched
+  - `\begin{table}...\end{table}` / `\begin{figure}...\end{figure}` — table/figure content and captions untouched
+  - `\begin{itemize}` / `\begin{enumerate}` — only polish list item prose, never structure
+  - All `\label{}` / `\ref{}` / `\eqref{}` — preserve exactly
 - LaTeX commands, environments, labels, structure
 - Section/subsection titles
-- Table content, figure captions, mathematical expressions
+- Mathematical expressions (inline `$...$` and display)
+- Mathematical symbols (variable notation must remain exactly as-is — even if it looks unconventional, it likely matches a definition in Methodology)
 - The meaning, scope, or strength of any academic claim
 - Technical terminology and acronyms (exception: culture-specific direct translations that international readers cannot understand should be replaced per Category M)
 - Proper nouns
 - Data values or statistical results
-- **要点 semantics**: may improve language expression but must NOT change academic meaning, argumentative strength, or applicable scope
+- **Core argument semantics** (RQs / Gap framings / contribution claims from idea.md): may improve language expression but must NOT change academic meaning, argumentative strength, or applicable scope
 
 ### DO change:
 - Grammar errors (subject-verb agreement, tense, articles)

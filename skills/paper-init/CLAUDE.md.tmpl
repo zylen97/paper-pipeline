@@ -12,7 +12,7 @@
 - 更新时间: {TODAY}
 
 > **阶段枚举**（由 skills 自动维护，勿手动跳级）：
-> - `foundation`：idea 确定 + 文献 + idea-refine + 技术型章节开发/定稿（步骤①-⑤.5）
+> - `foundation`：idea 确定 + 文献 + idea-refine + 技术型章节撰写/审计（步骤①-⑤）
 > - `drafting`：叙述型章节撰写 + 全文定稿（步骤⑥-⑨）
 > - `submitted`：已投稿，等待审稿
 > - `revision-R{N}`：第 N 轮审稿修改
@@ -32,8 +32,15 @@ data/
 ├── models/       # 模型估计对象（.rds/.RData，用于 warm start 和交叉引用）
 ├── results/      # 模型输出日志（.txt，人类可读的估计结果）
 ├── robustness/   # 稳健性检验（脚本 + 结果 + 日志）
+├── notes/        # 分析过程笔记（自由格式 markdown，不进正文）
 └── _archive/     # 废弃的旧版本文件（不删，按原子目录归档）
 ```
+
+**`data/notes/` 用法**：
+- 命名：`{YYYY-MM-DD}_{topic}.md`，如 `2026-04-29_pretest_failed_specs.md`、`2026-05-03_anomaly_in_subsample_C.md`
+- 内容：分析过程中的"为什么用这个 spec / 试了什么没成 / 发现什么 anomaly / 留待后续探索的问题"——**不进正文，但是审稿弹药 + 自己未来回头的参考**
+- 边界：不写公式推导（那进 X.md）；不写最终数值结果（那进 `data/results/`）；只写**研究判断的过程性思考**
+- `/method-audit` 在维度 C/D（参数与数据、结果可靠性）审计时会主动读 `data/notes/` 作为上下文
 
 **命名规范**：所有文件以项目编号为前缀（如 `{ID}_`）
 - 脚本：`{ID}_data_pipeline.R`、`{ID}_models.R`
@@ -62,54 +69,65 @@ data/
 - **`index.md`** 是唯一注册表，记录每个图表的编号、标题、所属章节、状态
 - 各章节 md 中**不放图表内容**，只标注"此处引用 Table X / Fig. X"
 - 新增/修改图表时，必须同步更新 `index.md`
-- **表格即时落地**：当章节 md 中的表格内容定稿后，应立即写入 `tables.tex`（使用 /latex-table 或直接编写），并更新 `index.md` 状态为 `drafted`。manuscript.tex 正文中仅用 `Table~\ref{tab:xxx}` 引用，不嵌入表格代码。不得将表格制作推迟到 /pen-draft 或其他后续环节——/pen-draft 只管正文文字。
+- **表格即时落地**：当章节 md 中的表格内容定稿后，应立即写入 `tables.tex`（使用 /latex-table 或直接编写），并更新 `index.md` 状态为 `drafted`。manuscript.tex 正文中仅用 `Table~\ref{tab:xxx}` 引用，不嵌入表格代码。不得将表格制作推迟到 /technical 或 /narrative 等写作 skill——这些 skill 只管正文文字。
 
 ### 文件交互规则
 
-**层级**: idea.md（纲领：为什么/方向）→ 各章节 X.md（成稿：正文要点）→ manuscript.tex（产出）
+**层级**: idea.md（纲领：为什么/方向）→ 各章节 X.md（唯一权威源：正文要点）→ manuscript.tex（产出）
 
-**章节 md 的两种类型**:
+**章节处理的两种路径**:
 
-章节 md 分为两类，颗粒度要求不同：
+章节按性质分两类，处理方式不同：
 
-| 类型 | 章节 | 文件 | 内容要求 | sci-writer 的任务 |
-|:-----|:-----|:-----|:---------|:-----------------|
-| 叙述型 | Introduction, Literature Review, Discussion | `X.md`（含 `## 大纲`） | 句子级要点（1 要点 = 1 句话 + `[citep]/[citet]/[—]` 标记） | 按粒度声明 **1:1 翻译**为英文句子（不做自由扩展） |
-| 技术型 | {TECHNICAL_SECTIONS} | `X.md`（成稿）+ `X_dev.md`（过程文件） | 成稿 md：按 manuscript 结构组织的正文要点（`###` = `\subsection`） | **原样转译**为学术英文，按 `###` 层级生成 `\subsection`，不做任何技术判断 |
+| 类型 | 章节 | 写作路径 | 中间产物 |
+|:-----|:-----|:---------|:---------|
+| 叙述型（blueprint-first） | Introduction, Literature Review | `/narrative` 先生成/更新 blueprint 并 checkpoint，再写 manuscript.tex | `introduction.md` / `literature.md`（逻辑合约，非最终正文） |
+| 叙述型（tex-in/out） | Discussion | `/narrative` 直接基于 Methodology/Results 写 tex | 不强制 Discussion 中间 md |
+| 技术型 | {TECHNICAL_SECTIONS} | 主 agent 在 `X.md` 填写素材 → `/method-audit` 审计 + 写作蓝图 → `/technical` 直接 tex 生成 | `X.md`（含 `## 正文要点` + `## 写作蓝图` + `## 必备元素`） |
 
-**技术型双文件体系**：
-- **`X.md`（成稿文件）**：内容 = manuscript 正文要点。/pen-draft 只读这个文件。`###` 标题 = `\subsection`，`####` = `\subsubsection`。不含非正文材料（版本说明、中间推导、备注等）。
-- **`X_dev.md`（过程文件）**：研究工作台，记录详细推导、中间步骤、版本迭代、备注。格式自由。不被 /pen-draft 读取。
+**技术型 X.md 单文件原则**：
+- **`X.md`** 是技术型章节的**唯一权威源**：研究推导、正文要点、引用、字数分配、写作蓝图全部落在这里。
+- `/technical` 只读 X.md。`###` 标题 = `\subsection`，`####` = `\subsubsection`。X.md 必须含 method-audit 输出的 `## 写作蓝图` 区块，含三层结构：
+  - **整体 Reader Journey**（1-2 句概述本章读者认知路径）
+  - **Subsection 级 5 字段**：Reader Entry Point / Content Journey / Exit Point / Why This Order / Visual Anchor
+  - **跨章节过渡**：本章与前后章节的衔接句指南
+- 完整证明用 `> **Proof (→ Supplementary):**` 标记外放至附录；中间推导步骤、失败尝试、版本对比等过程性内容留在 git 历史中，不进 X.md。
 
-**md 书写语言**：中文表述，但以下内容用英文原文：citation key（`\citet{}`/`\citep{}`）、专用术语、公式符号、`###` 标题（与 manuscript 一致）
+**叙述型原则**：
+- `manuscript.tex` 是最终正文正本；`introduction.md` 与 `literature.md` 是 Introduction/Literature Review 的 blueprint 逻辑合约，不是最终正文
+- `/narrative section=introduction|literature` 必须先更新并 checkpoint 对应 blueprint，再生成和替换 tex 段落
+- `/narrative section=discussion` 直接基于实际 Methodology/Results 和 `manuscript.tex` 写入，不强制 Discussion 中间 md
 
-**叙述型颗粒度标准**：
-- 每个论点、每个要引用的文献（citation key）都必须写明
-- 可用 `/pen-outline` 自动生成，再根据需要修改
+**权威源优先级**（冲突时遵循）：
+1. `manuscript.tex`（最终唯一正本）
+2. `X.md`（仅技术型；manuscript 插入前的素材源）
+3. `idea.md`、audit 报告、修改计划
+4. `data/` 输出、figure/table 注册表、可复现脚本
 
-**技术型颗粒度标准**（验证原则：sci-writer 翻译时不需要做任何技术判断）：
+**md 书写语言**（仅技术型 X.md）：中文表述，但以下内容用英文原文：citation key（`\citet{}`/`\citep{}`）、专用术语、公式符号、`###` 标题（与 manuscript 一致）
+
+**技术型颗粒度标准**（验证原则：/technical 翻译时不需要做任何技术判断）：
 每个 `###` subsection 下必须包含：
 - 每一个会出现在正文中的公式（编号公式和关键行内公式）
 - 每一个命题/引理的完整陈述
-- 每一个证明的思路骨架（完整证明用 `> **Proof (→ Supplementary):**` 标记，sci-writer 外放至附录）
+- 每一个证明的思路骨架（完整证明用 `> **Proof (→ Supplementary):**` 标记，/technical 外放至附录）
 - 每一个假设的文字表述 + 合理性论证
 - 每一个经济直觉/含义解读
 - 每一个模型间的对比说明
 - 表格和图表仅标注"此处引用 Table X / Fig. X"，内容在 `figures_tables/tables.tex`
 
 **技术型素材迭代工作流**:
-1. 步骤④（交互填充）：用户与 Claude 交互 → 填充 `X_dev.md`（过程文件），记录所有推导细节和研究过程
-2. 步骤⑤（/method-audit）：审计 + 修复 _dev.md + 确认成稿 md 的章节结构（Step 5.7）
-3. 步骤⑤.5（/method-end）：从 `X_dev.md` 交互式凝练正文要点 → 填充 `X.md`（成稿），按 manuscript subsection 结构组织
-4. `X.md` 是 /pen-draft 的唯一素材源——成稿 md 中的每一段内容都会出现在 manuscript 正文中
+1. 步骤④（交互填充）：用户与 Claude 交互 → 直接在 `X.md` 填充正文要点（公式、假设、命题、证明骨架、引用），过程中可反复调用 `/figure` 和 `/latex-table` 落实图表
+2. 步骤⑤（/method-audit）：方法论审计（基线完整性 + 对标 + 假设/模型/命题等七维度）→ 修复回写 X.md → 确认章节结构（reader-centered 顺序）→ 基于 benchmark 确定字数 → 生成字数分配表 → 必备元素验收 → 阶段转换 foundation→drafting
+3. `X.md` 是 /technical 的唯一素材源——X.md 的 `## 正文要点` + `## 写作蓝图` 决定 manuscript 正文的内容选择和段落组织
 
 **idea.md 规范**:
 - 修改必须先征得用户同意，不得自行回写
 - 保持文档结构不变，覆盖式更新内容（迭代历史由 git 追踪）
 - 只放"为什么"和"方向"，不含具体公式/推导/数值结果。违反则移至对应章节 md
 
-**章节 md 间一致性约束**:
-- RQ编号：idea.md §2 定义 → introduction.md 展开 → discussion.md 回应，三处编号和措辞必须一致
-- 贡献声明：idea.md §4 意图 → discussion.md 论证，逻辑必须对应
+**跨章节一致性约束**:
+- RQ编号：idea.md §2 定义 → /narrative 生成的 \section{Introduction} 中展开 → /narrative 生成的 \section{Discussion} 中回应（manuscript.tex 内三处编号和措辞必须一致）
+- 贡献声明：idea.md §4 意图 → /narrative 生成的 \section{Discussion} 中论证（manuscript.tex 内逻辑对应）
 
 **研究推进顺序**：见全局 `~/.claude/CLAUDE.md` 中的"科研论文研究推进顺序"。

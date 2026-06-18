@@ -26,7 +26,9 @@ Step 0 — 项目类型探测 + 确定 `{TABLES_FILE}`：
 3. 都不行 → AskUserQuestion 询问用户："当前表格归属第几章（如 3）？"
 
 - 每次创建/修改表格后，**必须同步更新** `structure/figures_tables/index.md` 的 Tables 表格（不存在则 mkdir + touch）
-- 定稿时（/finalize）将 `tables.tex` 内容贴到 manuscript.tex 末尾
+- 集成方式（二选一）：
+  - **A. 写作时引用**（推荐）：`/technical` 写作时在 manuscript.tex 中用 `\input{structure/figures_tables/tables.tex}` 引入，或单个表用 `Table~\ref{tab:xxx}` 引用
+  - **B. 定稿时贴入**：`/finalize` 时把 `tables.tex` 内容贴到 manuscript.tex 末尾
 
 ## Step 1 — 主 tex 文件发现 + Caption/threeparttable 宏包预检（写入前必做）
 

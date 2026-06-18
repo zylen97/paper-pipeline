@@ -220,7 +220,7 @@ AskUserQuestion：
 
 #### Part B — 稿件修改方案
 
-逐条列出具体修改（pen-polish 风格）：
+逐条列出具体修改（polish 风格）：
 
 ```
 ### 修改 1: [简述]

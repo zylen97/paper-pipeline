@@ -127,6 +127,14 @@ echo "Total pages: $TOTAL_PAGES"
 - **研究情境的嵌入**：假设推导是否扎根于具体研究情境？还是泛泛的一般性论述？
 
 ### 1.4 Methodology 审查要点
+
+> ⚠️ **用户偏好（重要）**：方法论批评要**克制**。用户对统计/计量/技术方法的细节不精通，刻意避免 judge 自己不熟悉的方法细节。**优先用 Introduction/Literature/Discussion/Conclusion 的逻辑问题替代方法论 deep dive**——这些用户审稿经验深、判断准。
+>
+> - 方法部分最多 1 条 Major（且聚焦在"评估样本规模/案例代表性/评估周期"这类**逻辑层面**问题，不纠缠具体算法/统计技术）
+> - 不要出现 "DSR 框架不严谨"、"EFA 步骤缺失"、"共同方法偏差未检验"、"抽样偏差"这类专业方法学批评
+> - 腾出的条数给 Intro-Discussion alignment、理论贡献、文献对话等用户强项
+
+以下审查点**仅作参考**，只在确信且有具体线索时提出：
 - **抽样方法**：样本代表性、选择偏差、样本量充分性
 - **测量工具**：量表来源与信效度、操作化与构念是否匹配
 - **数据分析方法**：方法选择的合理性、步骤的完整性（如是否做了 EFA/CFA、共同方法偏差检验等）
@@ -355,6 +363,8 @@ Word 文档生成完毕后，在对话框中（**不写入 Word**）向用户给
 
 ### C. 高频批评模式（按出现频率排序）
 
+> **意见分配偏好**：Major 10 条中，Introduction/Literature/Discussion/Conclusion 相关应占 **5-6 条**（用户强项），方法论相关**最多 1 条**且聚焦评估逻辑而非技术细节。**Intro ↔ Discussion/Conclusion 一致性**是高频且犀利的批评角度，优先使用。
+
 1. **引言缺乏 practical problem 驱动**（出现率 ~80%）
    - "The introduction contains excessive background information without efficiently transitioning to the specific practical problem"
    - "Beginning directly with theoretical frameworks rather than a clearly articulated practical problem diminishes the paper's relevance"
@@ -372,13 +382,17 @@ Word 文档生成完毕后，在对话框中（**不写入 Word**）向用户给
    - "The manuscript lacks an overarching theoretical framework to support the hypothesis development process"
    - "Multiple theories invoked post-hoc without a coherent ex-ante framework"
 
-5. **讨论与引言脱节**（出现率 ~50%）
+5. **讨论与引言脱节 / 理论贡献未兑现**（出现率 ~70%，**用户优先批评角度**）
    - "The discussion section fails to address the theoretical implications emphasized in the introduction"
    - "The articulation of research contributions is not sufficiently prominent"
+   - "The discussion reads as a feature checklist rather than a dialogue with the literature"
+   - "The conclusion largely restates the abstract without returning to the conceptual gaps identified in Section 2"
+   - 适用场景：工程类/技术类论文尤其容易犯，Discussion 变成"产品特性罗列"而非"研究发现对话"
 
-6. **抽样/方法论问题**（出现率 ~40%）
-   - 质疑单一来源、单一项目、非概率抽样的合理性
-   - 要求披露访谈协议、编码过程
+6. **抽样/方法论问题**（出现率 ~15%，**克制使用**）
+   - ⚠️ 用户方法论背景有限，刻意避免 judge 具体统计/算法细节
+   - 仅限**逻辑层面**：单一案例代表性、评估周期过短、评估与 RQ 不匹配
+   - 不要批评：DSR 框架严谨性、EFA/CFA 步骤、共同方法偏差、抽样技术、算法选型
 
 7. **构念不一致**（出现率 ~30%）
    - 假设中的构念 vs 数据收集中的操作化不匹配
